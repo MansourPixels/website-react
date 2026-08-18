@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@layer utilities {
+  .preview {
+    @apply absolute top-1/2 rounded-lg p-2 bg-white;
+
+    width: 5.125rem;
+    height: 4.5rem;
+
+    &:nth-child(1) {
+      right: 2rem;
+      transform: rotate(-5deg);
+    }
+    &:nth-child(2) {
+      right: 6rem;
+      transform: rotate(14deg);
+    }
+    &:nth-child(3) {
+      right: 10rem;
+      transform: rotate(-6deg);
+    }
+    &:nth-child(4) {
+      right: 14rem;
+      transform: rotate(16deg);
+    }
+
+    & span {
+      display: block;
+      margin-bottom: 6px;
+      background-color: #e3e3e3;
+      border-radius: 14px;
+      height: 0.5rem;
+    }
+
+    & span:nth-child(1) {
+      width: 100%;
+    }
+
+    & span:nth-child(2) {
+      width: 80%;
+    }
+
+    & span:nth-child(3) {
+      width: 60%;
+    }
+  }
+}
