@@ -1,10 +1,11 @@
 import { Button } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Ellipsis } from "lucide-react";
-import { FABButton } from "../components/FABButton";
-import { NavMenu } from "../components/NavMenu";
+import { FABButton } from "../../components/FABButton";
+import { NavMenu } from "../../components/NavMenu";
+import { ModalAdicionarPasta } from "./ModalAdicionarPasta";
 
-export const Route = createFileRoute("/pastas")({
+export const Route = createFileRoute("/pastas/")({
   component: Pastas,
 });
 
@@ -39,7 +40,7 @@ const pastas = [
 function Pastas() {
   return (
     <main className="p-6 gap-8 flex flex-col">
-      <NavMenu title="Pastas" />
+      <NavMenu title="Pastas" hasSearch />
       <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {pastas.map(({ color, name, amount }) => (
           <article className="relative hover:brightness-105">
@@ -73,7 +74,7 @@ function Pastas() {
         ))}
       </div>
 
-      <FABButton />
+      <ModalAdicionarPasta />
     </main>
   );
 }
