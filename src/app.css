@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+@layer base {
+  html,
+  body,
+  #root {
+    @apply min-h-full min-w-full;
+  }
+}
 @layer utilities {
   .preview {
     @apply absolute top-1/2 rounded-lg p-2 bg-white max-w-1/3;
