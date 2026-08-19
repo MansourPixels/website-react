@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PastasIndexRouteImport } from './routes/pastas/index'
+import { Route as PastasPastaIdIndexRouteImport } from './routes/pastas/$pastaId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const PastasIndexRoute = PastasIndexRouteImport.update({
   path: '/pastas/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PastasPastaIdIndexRoute = PastasPastaIdIndexRouteImport.update({
+  id: '/pastas/$pastaId/',
+  path: '/pastas/$pastaId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/pastas/': typeof PastasIndexRoute
+  '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/pastas': typeof PastasIndexRoute
+  '/pastas/$pastaId': typeof PastasPastaIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/pastas/': typeof PastasIndexRoute
+  '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pastas/'
+  fullPaths: '/' | '/pastas/' | '/pastas/$pastaId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pastas'
-  id: '__root__' | '/' | '/pastas/'
+  to: '/' | '/pastas' | '/pastas/$pastaId'
+  id: '__root__' | '/' | '/pastas/' | '/pastas/$pastaId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PastasIndexRoute: typeof PastasIndexRoute
+  PastasPastaIdIndexRoute: typeof PastasPastaIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PastasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pastas/$pastaId/': {
+      id: '/pastas/$pastaId/'
+      path: '/pastas/$pastaId'
+      fullPath: '/pastas/$pastaId/'
+      preLoaderRoute: typeof PastasPastaIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PastasIndexRoute: PastasIndexRoute,
+  PastasPastaIdIndexRoute: PastasPastaIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
