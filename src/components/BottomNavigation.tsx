@@ -31,7 +31,7 @@ export function BottomNavigation() {
       {links.map(({ to, label, icon: Icon, exact }) => (
         <Link
           to={to}
-          className="button button--md button--ghost h-16 w-full p-2 flex flex-col items-center justify-center rounded-none gap-0 font-semibold text-muted [&.active]:text-accent group"
+          className="button button--md button--ghost h-16 w-full p-2 flex flex-col items-center justify-center rounded-none gap-0 font-medium text-muted [&.active]:text-accent group"
           activeOptions={{ exact }}
         >
           <Icon />
