@@ -1,7 +1,7 @@
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { SquarePen } from "lucide-react";
 import { useState } from "react";
-import type { Subject } from "../../../types/Subject";
+import type { Subject } from "@/types/Subject";
 
 interface DialogFormSubjectProps {
   isOpen: boolean;

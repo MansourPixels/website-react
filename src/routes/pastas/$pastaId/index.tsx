@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { NavMenu } from "../../../components/NavMenu";
-import type { Subject } from "../../../types/Subject";
-import { normalizeText } from "../../../utils/text";
+import { NavMenu } from "@/components/NavMenu";
+import type { Subject } from "@/types/Subject";
+import { normalizeText } from "@/utils/text";
 import { SubjectCard } from "./SubjectCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/")({

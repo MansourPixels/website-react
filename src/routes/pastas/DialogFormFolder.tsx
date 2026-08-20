@@ -1,9 +1,9 @@
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { FolderPen, FolderPlus } from "lucide-react";
 import { useState } from "react";
-import { ColorPicker } from "../../components/ColorPicker";
-import type { Folder } from "../../types/Folder";
-import { getRandomColor } from "../../utils/color";
+import { ColorPicker } from "@/components/ColorPicker";
+import type { Folder } from "@/types/Folder";
+import { getRandomColor } from "@/utils/color";
 
 interface DialogFormFolderProps {
   isOpen: boolean;

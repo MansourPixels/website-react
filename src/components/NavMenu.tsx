@@ -57,7 +57,7 @@ export function NavMenu({
                 <ChevronLeft className="size-6" />
               </Button>
             ) : null}
-            <h1 className="text-3xl font-semibold">{title}</h1>
+            <h1 className="text-3xl font-semibold line-clamp-1 break-all">{title}</h1>
           </div>
         )}
       </div>

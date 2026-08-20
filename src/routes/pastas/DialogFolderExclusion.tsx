@@ -1,6 +1,6 @@
 import { Button, Modal } from "@heroui/react";
 import { Trash } from "lucide-react";
-import type { Folder } from "../../types/Folder";
+import type { Folder } from "@/types/Folder";
 
 interface DialogFolderExclusionProps {
   isOpen: boolean;

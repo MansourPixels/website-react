@@ -1,6 +1,6 @@
 import { Button, Modal } from "@heroui/react";
 import { Trash } from "lucide-react";
-import type { Subject } from "../../../types/Subject";
+import type { Subject } from "@/types/Subject";
 
 interface DialogSubjectExclusionProps {
   isOpen: boolean;

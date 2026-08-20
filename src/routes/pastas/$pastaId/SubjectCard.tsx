@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Popover, Skeleton } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import {
   Ellipsis,
   FileText,
@@ -9,25 +9,23 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import type { Subject } from "../../../types/Subject";
+import type { Subject } from "@/types/Subject";
 import { DialogFormSubject } from "./DialogFormSubject";
 import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
-type SubjectCardProps =
-  | {
-      isLoading: true;
-      subject?: never;
-      onChangeSubject?: never;
-      onDeleteSubject?: never;
-    }
-  | {
-      isLoading?: false;
-      subject: Subject;
-      onChangeSubject: (subject: Subject) => void;
-      onDeleteSubject: (subject: Subject) => void;
-    };
+interface SubjectCardProps {
+  isLoading?: boolean;
+  subject: Subject;
+  onChangeSubject: (subject: Subject) => void;
+  onDeleteSubject: (subject: Subject) => void;
+}
 
-export function SubjectCard(props: SubjectCardProps) {
+export function SubjectCard({
+  isLoading = false,
+  subject,
+  onChangeSubject,
+  onDeleteSubject,
+}: SubjectCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -37,7 +35,7 @@ export function SubjectCard(props: SubjectCardProps) {
     open(true);
   }
 
-  if (props.isLoading) {
+  if (isLoading) {
     return (
       <article className="relative bg-white rounded-xl">
         <div className="px-3 pt-4 pb-2 flex flex-col gap-4 h-full justify-between">
@@ -59,11 +57,19 @@ export function SubjectCard(props: SubjectCardProps) {
     );
   }
 
-  const { subject, onChangeSubject, onDeleteSubject } = props;
+  const { pastaId } = useParams({ from: "/pastas/$pastaId/" });
+  const linkParams = {
+    pastaId,
+    assuntoId: subject?.id,
+  };
 
   return (
     <article className="relative bg-white rounded-xl hover:brightness-105">
-      <Link to="/" className="px-3 block h-full">
+      <Link
+        to="/pastas/$pastaId/assuntos/$assuntoId"
+        params={linkParams}
+        className="px-3 block h-full"
+      >
         <div className="pt-3 pb-2 flex flex-col gap-4 h-full justify-between">
           <h2 className="leading-tight font-semibold line-clamp-2 h-10">
             {subject.name}
@@ -101,19 +107,22 @@ export function SubjectCard(props: SubjectCardProps) {
           <Popover.Dialog className="p-2">
             <ButtonGroup orientation="vertical">
               <Link
-                to="/"
+                to="/pastas/$pastaId/assuntos/$assuntoId/flash-cards"
+                params={linkParams}
                 className="button button--md button--ghost w-full justify-start rounded-t-lg text-cyan-700"
               >
                 <Zap /> Flash Cards
               </Link>
               <Link
-                to="/"
+                to="/pastas/$pastaId/assuntos/$assuntoId/resumo"
+                params={linkParams}
                 className="button button--md button--ghost w-full justify-start text-purple-700"
               >
                 <FileText /> Resumo
               </Link>
               <Link
-                to="/"
+                to="/pastas/$pastaId/assuntos/$assuntoId/simulado-prova"
+                params={linkParams}
                 className="button button--md button--ghost w-full justify-start border-b text-orange-600"
               >
                 <ListCheck /> Simulado de prova

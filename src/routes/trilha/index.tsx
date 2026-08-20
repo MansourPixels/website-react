@@ -1,7 +1,7 @@
 import { Button } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CircleStar } from "lucide-react";
-import { NavMenu } from "../../components/NavMenu";
+import { NavMenu } from "@/components/NavMenu";
 
 export const Route = createFileRoute("/trilha/")({
   component: PathPage,

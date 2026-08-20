@@ -1,9 +1,11 @@
 import { Button, type ButtonRootProps } from "@heroui/react";
-import { Plus } from "lucide-react";
+import { Plus, type LucideIcon } from "lucide-react";
 
-type FABButtonProps = Omit<ButtonRootProps, "children">;
+type FABButtonProps = Omit<ButtonRootProps, "children"> & {
+  icon: LucideIcon;
+};
 
-export function FABButton(props: FABButtonProps) {
+export function FABButton({ icon: Icon = Plus, ...props }: FABButtonProps) {
   return (
     <Button
       isIconOnly
@@ -12,7 +14,7 @@ export function FABButton(props: FABButtonProps) {
       className="fixed bottom-20 right-4 size-14 rounded-full"
       {...props}
     >
-      <Plus className="size-6" />
+      <Icon className="size-6" />
     </Button>
   );
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import iconeAscensao from "../../assets/icone-ascensao.svg";
-import { NavMenu } from "../../components/NavMenu";
+import iconeAscensao from "@/assets/icone-ascensao.svg";
+import { NavMenu } from "@/components/NavMenu";
 import { AscentionCalendar } from "./AscentionCalendar";
 
 export const Route = createFileRoute("/ascensao/")({

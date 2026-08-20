@@ -2,7 +2,7 @@ import { Button, ButtonGroup, Popover } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { Ellipsis, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
-import type { Folder } from "../../types/Folder";
+import type { Folder } from "@/types/Folder";
 import { DialogFolderExclusion } from "./DialogFolderExclusion";
 import { DialogFormFolder } from "./DialogFormFolder";
 

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { useState } from "react";
-import { FABButton } from "../../components/FABButton";
-import { NavMenu } from "../../components/NavMenu";
-import type { Folder as FolderType } from "../../types/Folder";
-import { normalizeText } from "../../utils/text";
+import { FABButton } from "@/components/FABButton";
+import { NavMenu } from "@/components/NavMenu";
+import type { Folder as FolderType } from "@/types/Folder";
+import { normalizeText } from "@/utils/text";
 import { DialogFormFolder } from "./DialogFormFolder";
 import { FolderCard } from "./FolderCard";
 
