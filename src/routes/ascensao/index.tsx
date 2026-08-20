@@ -4,12 +4,12 @@ import { NavMenu } from "../../components/NavMenu";
 import { AscentionCalendar } from "./AscentionCalendar";
 
 export const Route = createFileRoute("/ascensao/")({
-  component: RouteComponent,
+  component: Ascensao,
 });
 
-function RouteComponent() {
+function Ascensao() {
   return (
-    <div className="p-6 gap-8 flex flex-col">
+    <main className="p-6 gap-8 flex flex-col">
       <NavMenu title="Ascensão" />
       <div className="grid grid-cols-2 bg-accent-soft p-4 rounded-3xl">
         <h2 className="grid">
@@ -29,6 +29,6 @@ function RouteComponent() {
         se apagar.
       </p>
       <AscentionCalendar />
-    </div>
+    </main>
   );
 }

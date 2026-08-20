@@ -12,7 +12,7 @@ interface FolderProps {
   onDeleteFolder: (folder: Folder) => void;
 }
 
-export function Folder({
+export function FolderCard({
   folder,
   onChangeFolder,
   onDeleteFolder,
@@ -68,14 +68,14 @@ export function Folder({
             <ButtonGroup orientation="vertical">
               <Button
                 variant="ghost"
-                className="w-full rounded-t-lg border-b text-accent-soft-foreground"
+                className="w-full justify-start rounded-t-lg border-b text-accent-soft-foreground"
                 onPress={() => openDialog(setIsEditOpen)}
               >
                 <Pencil /> Editar pasta
               </Button>
               <Button
                 variant="ghost"
-                className="w-full rounded-b-lg text-danger"
+                className="w-full justify-start rounded-b-lg text-danger"
                 onPress={() => openDialog(setIsDeleteOpen)}
               >
                 <Trash /> Excluir pasta

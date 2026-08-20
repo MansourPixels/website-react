@@ -27,7 +27,7 @@ const links = [
 
 export function BottomNavigation() {
   return (
-    <nav className="grid w-full grid-cols-4 border-t fixed bottom-0 inset-x-0 bg-white">
+    <nav className="grid w-full grid-cols-4 border-t fixed bottom-0 inset-x-0 bg-white md:max-w-md md:mx-auto md:rounded-full md:overflow-hidden md:border md:mb-4">
       {links.map(({ to, label, icon: Icon, exact }) => (
         <Link
           to={to}

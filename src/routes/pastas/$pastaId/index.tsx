@@ -1,11 +1,85 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { NavMenu } from "../../../components/NavMenu";
+import type { Subject } from "../../../types/Subject";
+import { normalizeText } from "../../../utils/text";
+import { SubjectCard } from "./SubjectCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/")({
-  component: RouteComponent,
+  component: SubjectListPage,
 });
 
-function RouteComponent() {
-  const { pastaId } = Route.useParams();
+const defaultSubjects: Subject[] = [
+  {
+    id: "1",
+    name: "Equação de terceiro grau",
+    images: Array.from(
+      { length: 4 },
+      (_, index) => `https://picsum.photos/300/300?random=${index}`,
+    ),
+  },
+  {
+    id: "2",
+    name: "Trigonometria no triângulo retângulo",
+    images: Array.from(
+      { length: 4 },
+      (_, index) => `https://picsum.photos/300/300?random=${index + 4}`,
+    ),
+  },
+];
 
-  return <div>Pasta ID: {pastaId}</div>;
+function SubjectListPage() {
+  const [subjects, setSubjects] = useState<Subject[]>(defaultSubjects);
+  const [search, setSearch] = useState("");
+
+  const normalizedSearch = normalizeText(search);
+  const filteredSubjects = normalizedSearch
+    ? subjects.filter((subject) =>
+        normalizeText(subject.name).includes(normalizedSearch),
+      )
+    : subjects;
+
+  function handleChangeSubject(subject: Subject) {
+    setSubjects((current) =>
+      current.map((item) => (item.id === subject.id ? subject : item)),
+    );
+  }
+
+  function handleDeleteSubject(subject: Subject) {
+    setSubjects((current) => current.filter((item) => item.id !== subject.id));
+  }
+
+  return (
+    <main className="p-6 gap-8 flex flex-col">
+      <NavMenu
+        title="Matemática"
+        hasBackButton
+        hasSearch
+        onSearch={setSearch}
+      />
+
+      {filteredSubjects.length > 0 ? (
+        <section
+          id="subjects"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5"
+        >
+          {filteredSubjects.map((subject) => (
+            <SubjectCard
+              key={subject.id}
+              subject={subject}
+              onChangeSubject={handleChangeSubject}
+              onDeleteSubject={handleDeleteSubject}
+            />
+          ))}
+          <SubjectCard isLoading />
+        </section>
+      ) : (
+        <p className="text-muted text-center py-8">
+          {normalizedSearch
+            ? `Nenhum assunto encontrado para "${search.trim()}".`
+            : "Esta pasta ainda não tem assuntos."}
+        </p>
+      )}
+    </main>
+  );
 }

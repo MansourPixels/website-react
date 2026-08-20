@@ -1,4 +1,5 @@
 import { Button, SearchField } from "@heroui/react";
+import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import { useState } from "react";
 
@@ -15,6 +16,9 @@ export function NavMenu({
   hasSearch = false,
   onSearch = () => {},
 }: NavMenuProps) {
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
+
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   function toggleSearch() {
@@ -24,12 +28,7 @@ export function NavMenu({
 
   return (
     <header className="flex items-center justify-between gap-2">
-      {hasBackButton ? (
-        <Button isIconOnly variant="tertiary">
-          <ChevronLeft />
-        </Button>
-      ) : null}
-      <div className="relative flex-1">
+      <div className="flex-1 max-w-[75vw]">
         {isSearchVisible ? (
           <SearchField
             name="search"
@@ -47,7 +46,19 @@ export function NavMenu({
             </SearchField.Group>
           </SearchField>
         ) : (
-          <h1 className="text-3xl font-semibold">{title}</h1>
+          <div className="flex items-center">
+            {hasBackButton && canGoBack ? (
+              <Button
+                isIconOnly
+                variant="ghost"
+                onClick={() => router.history.back()}
+                size="lg"
+              >
+                <ChevronLeft className="size-6" />
+              </Button>
+            ) : null}
+            <h1 className="text-3xl font-semibold">{title}</h1>
+          </div>
         )}
       </div>
       {hasSearch ? (
@@ -56,6 +67,7 @@ export function NavMenu({
           variant="tertiary"
           aria-label={isSearchVisible ? "Fechar pesquisa" : "Pesquisar"}
           onPress={toggleSearch}
+          size="lg"
         >
           <Search />
         </Button>

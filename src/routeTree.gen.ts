@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscensaoIndexRouteImport } from './routes/ascensao/index'
 import { Route as PastasIndexRouteImport } from './routes/pastas/index'
+import { Route as TrilhaIndexRouteImport } from './routes/trilha/index'
 import { Route as PastasPastaIdIndexRouteImport } from './routes/pastas/$pastaId/index'
+import { Route as PastasPastaIdAssuntosAssuntoIdIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,44 +31,82 @@ const PastasIndexRoute = PastasIndexRouteImport.update({
   path: '/pastas/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrilhaIndexRoute = TrilhaIndexRouteImport.update({
+  id: '/trilha/',
+  path: '/trilha/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PastasPastaIdIndexRoute = PastasPastaIdIndexRouteImport.update({
   id: '/pastas/$pastaId/',
   path: '/pastas/$pastaId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PastasPastaIdAssuntosAssuntoIdIndexRoute =
+  PastasPastaIdAssuntosAssuntoIdIndexRouteImport.update({
+    id: '/pastas/$pastaId/assuntos/$assuntoId/',
+    path: '/pastas/$pastaId/assuntos/$assuntoId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ascensao/': typeof AscensaoIndexRoute
   '/pastas/': typeof PastasIndexRoute
+  '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId/': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascensao': typeof AscensaoIndexRoute
   '/pastas': typeof PastasIndexRoute
+  '/trilha': typeof TrilhaIndexRoute
   '/pastas/$pastaId': typeof PastasPastaIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ascensao/': typeof AscensaoIndexRoute
   '/pastas/': typeof PastasIndexRoute
+  '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId/': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ascensao/' | '/pastas/' | '/pastas/$pastaId/'
+  fullPaths:
+    | '/'
+    | '/ascensao/'
+    | '/pastas/'
+    | '/trilha/'
+    | '/pastas/$pastaId/'
+    | '/pastas/$pastaId/assuntos/$assuntoId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ascensao' | '/pastas' | '/pastas/$pastaId'
-  id: '__root__' | '/' | '/ascensao/' | '/pastas/' | '/pastas/$pastaId/'
+  to:
+    | '/'
+    | '/ascensao'
+    | '/pastas'
+    | '/trilha'
+    | '/pastas/$pastaId'
+    | '/pastas/$pastaId/assuntos/$assuntoId'
+  id:
+    | '__root__'
+    | '/'
+    | '/ascensao/'
+    | '/pastas/'
+    | '/trilha/'
+    | '/pastas/$pastaId/'
+    | '/pastas/$pastaId/assuntos/$assuntoId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AscensaoIndexRoute: typeof AscensaoIndexRoute
   PastasIndexRoute: typeof PastasIndexRoute
+  TrilhaIndexRoute: typeof TrilhaIndexRoute
   PastasPastaIdIndexRoute: typeof PastasPastaIdIndexRoute
+  PastasPastaIdAssuntosAssuntoIdIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,11 +132,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PastasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trilha/': {
+      id: '/trilha/'
+      path: '/trilha'
+      fullPath: '/trilha/'
+      preLoaderRoute: typeof TrilhaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pastas/$pastaId/': {
       id: '/pastas/$pastaId/'
       path: '/pastas/$pastaId'
       fullPath: '/pastas/$pastaId/'
       preLoaderRoute: typeof PastasPastaIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pastas/$pastaId/assuntos/$assuntoId/': {
+      id: '/pastas/$pastaId/assuntos/$assuntoId/'
+      path: '/pastas/$pastaId/assuntos/$assuntoId'
+      fullPath: '/pastas/$pastaId/assuntos/$assuntoId/'
+      preLoaderRoute: typeof PastasPastaIdAssuntosAssuntoIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -106,7 +160,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AscensaoIndexRoute: AscensaoIndexRoute,
   PastasIndexRoute: PastasIndexRoute,
+  TrilhaIndexRoute: TrilhaIndexRoute,
   PastasPastaIdIndexRoute: PastasPastaIdIndexRoute,
+  PastasPastaIdAssuntosAssuntoIdIndexRoute:
+    PastasPastaIdAssuntosAssuntoIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

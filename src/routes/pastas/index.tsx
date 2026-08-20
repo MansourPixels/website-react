@@ -6,10 +6,10 @@ import { NavMenu } from "../../components/NavMenu";
 import type { Folder as FolderType } from "../../types/Folder";
 import { normalizeText } from "../../utils/text";
 import { DialogFormFolder } from "./DialogFormFolder";
-import { Folder } from "./Folder";
+import { FolderCard } from "./FolderCard";
 
 export const Route = createFileRoute("/pastas/")({
-  component: Pastas,
+  component: FolderListPage,
 });
 
 const defaultFolders: FolderType[] = [
@@ -45,7 +45,7 @@ const defaultFolders: FolderType[] = [
   },
 ];
 
-function Pastas() {
+function FolderListPage() {
   const [folders, setFolders] = useState<FolderType[]>(defaultFolders);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -77,7 +77,7 @@ function Pastas() {
       {filteredFolders.length > 0 ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredFolders.map((folder) => (
-            <Folder
+            <FolderCard
               key={folder.id}
               folder={folder}
               onChangeFolder={handleChangeFolder}

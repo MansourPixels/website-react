@@ -4,14 +4,14 @@ import { Zap, ZapOff } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: CameraPage,
 });
 
-function Index() {
+function CameraPage() {
   const [isFlashOn, setIsFlashOn] = useState(false);
 
   return (
-    <footer className="p-10 flex items-center justify-between fixed bottom-16 inset-x-0">
+    <footer className="p-10 flex items-center justify-between fixed bottom-16 md:bottom-20 inset-x-0">
       <Button id="galeria" className="size-13 rounded-lg p-0 overflow-hidden">
         <img id="galeria-thumb" src="" alt="" className="size-full" />
       </Button>
