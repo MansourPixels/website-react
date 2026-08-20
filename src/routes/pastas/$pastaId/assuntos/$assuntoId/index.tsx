@@ -1,4 +1,8 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useState } from "react";
 
 import { FABButton } from "@/components/FABButton";
@@ -13,7 +17,11 @@ export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
 
 function SubjectDetailsPage() {
   const [search, setSearch] = useState("");
+
   const params = useParams({ from: "/pastas/$pastaId/assuntos/$assuntoId/" });
+  const navigate = useNavigate({
+    from: "/pastas/$pastaId/assuntos/$assuntoId/",
+  });
 
   return (
     <main className="p-6 gap-8 flex flex-col">
@@ -60,7 +68,7 @@ function SubjectDetailsPage() {
           </Button>
         ))}
       </section>
-      <FABButton icon={Camera} />
+      <FABButton icon={Camera} onClick={() => navigate({ to: "camera" })} />
     </main>
   );
 }

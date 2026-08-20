@@ -1,4 +1,4 @@
-import { Button, SearchField } from "@heroui/react";
+import { Button, cn, SearchField } from "@heroui/react";
 import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import { useState } from "react";
@@ -8,6 +8,7 @@ interface NavMenuProps {
   hasBackButton?: boolean;
   hasSearch?: boolean;
   onSearch?: (term: string) => void;
+  variant?: "black" | "white";
 }
 
 export function NavMenu({
@@ -15,6 +16,7 @@ export function NavMenu({
   hasBackButton = false,
   hasSearch = false,
   onSearch = () => {},
+  variant = "black",
 }: NavMenuProps) {
   const router = useRouter();
   const canGoBack = useCanGoBack();
@@ -28,7 +30,7 @@ export function NavMenu({
 
   return (
     <header className="flex items-center justify-between gap-2">
-      <div className="flex-1 max-w-[75vw]">
+      <div className={cn("flex-1", hasSearch && "max-w-[75vw]")}>
         {isSearchVisible ? (
           <SearchField
             name="search"
@@ -53,11 +55,19 @@ export function NavMenu({
                 variant="ghost"
                 onClick={() => router.history.back()}
                 size="lg"
+                className={variant === "white" ? "not-active:text-white" : ""}
               >
-                <ChevronLeft className="size-6" />
+                <ChevronLeft className="size-6 transition-all" />
               </Button>
             ) : null}
-            <h1 className="text-3xl font-semibold line-clamp-1 break-all">{title}</h1>
+            <h1
+              className={cn(
+                "text-3xl font-semibold line-clamp-1 break-all flex-1",
+                variant === "white" && "text-white",
+              )}
+            >
+              {title}
+            </h1>
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ import { Route as PastasIndexRouteImport } from './routes/pastas/index'
 import { Route as TrilhaIndexRouteImport } from './routes/trilha/index'
 import { Route as PastasPastaIdIndexRouteImport } from './routes/pastas/$pastaId/index'
 import { Route as PastasPastaIdAssuntosAssuntoIdIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/index'
+import { Route as PastasPastaIdAssuntosAssuntoIdCameraIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/camera/index'
 import { Route as PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/flash-cards/index'
 import { Route as PastasPastaIdAssuntosAssuntoIdResumoIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/resumo/index'
 import { Route as PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRouteImport } from './routes/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/index'
@@ -50,6 +51,12 @@ const PastasPastaIdAssuntosAssuntoIdIndexRoute =
     path: '/pastas/$pastaId/assuntos/$assuntoId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PastasPastaIdAssuntosAssuntoIdCameraIndexRoute =
+  PastasPastaIdAssuntosAssuntoIdCameraIndexRouteImport.update({
+    id: '/pastas/$pastaId/assuntos/$assuntoId/camera/',
+    path: '/pastas/$pastaId/assuntos/$assuntoId/camera/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute =
   PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRouteImport.update({
     id: '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/',
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId/camera/': typeof PastasPastaIdAssuntosAssuntoIdCameraIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/': typeof PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/resumo/': typeof PastasPastaIdAssuntosAssuntoIdResumoIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/': typeof PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute
@@ -87,6 +95,7 @@ export interface FileRoutesByTo {
   '/trilha': typeof TrilhaIndexRoute
   '/pastas/$pastaId': typeof PastasPastaIdIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId/camera': typeof PastasPastaIdAssuntosAssuntoIdCameraIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/flash-cards': typeof PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/resumo': typeof PastasPastaIdAssuntosAssuntoIdResumoIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova': typeof PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute
@@ -99,6 +108,7 @@ export interface FileRoutesById {
   '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/': typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
+  '/pastas/$pastaId/assuntos/$assuntoId/camera/': typeof PastasPastaIdAssuntosAssuntoIdCameraIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/': typeof PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/resumo/': typeof PastasPastaIdAssuntosAssuntoIdResumoIndexRoute
   '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/': typeof PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/trilha/'
     | '/pastas/$pastaId/'
     | '/pastas/$pastaId/assuntos/$assuntoId/'
+    | '/pastas/$pastaId/assuntos/$assuntoId/camera/'
     | '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/'
     | '/pastas/$pastaId/assuntos/$assuntoId/resumo/'
     | '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/trilha'
     | '/pastas/$pastaId'
     | '/pastas/$pastaId/assuntos/$assuntoId'
+    | '/pastas/$pastaId/assuntos/$assuntoId/camera'
     | '/pastas/$pastaId/assuntos/$assuntoId/flash-cards'
     | '/pastas/$pastaId/assuntos/$assuntoId/resumo'
     | '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova'
@@ -134,6 +146,7 @@ export interface FileRouteTypes {
     | '/trilha/'
     | '/pastas/$pastaId/'
     | '/pastas/$pastaId/assuntos/$assuntoId/'
+    | '/pastas/$pastaId/assuntos/$assuntoId/camera/'
     | '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/'
     | '/pastas/$pastaId/assuntos/$assuntoId/resumo/'
     | '/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/'
@@ -146,6 +159,7 @@ export interface RootRouteChildren {
   TrilhaIndexRoute: typeof TrilhaIndexRoute
   PastasPastaIdIndexRoute: typeof PastasPastaIdIndexRoute
   PastasPastaIdAssuntosAssuntoIdIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdIndexRoute
+  PastasPastaIdAssuntosAssuntoIdCameraIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdCameraIndexRoute
   PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute
   PastasPastaIdAssuntosAssuntoIdResumoIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdResumoIndexRoute
   PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute: typeof PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute
@@ -195,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PastasPastaIdAssuntosAssuntoIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pastas/$pastaId/assuntos/$assuntoId/camera/': {
+      id: '/pastas/$pastaId/assuntos/$assuntoId/camera/'
+      path: '/pastas/$pastaId/assuntos/$assuntoId/camera'
+      fullPath: '/pastas/$pastaId/assuntos/$assuntoId/camera/'
+      preLoaderRoute: typeof PastasPastaIdAssuntosAssuntoIdCameraIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/': {
       id: '/pastas/$pastaId/assuntos/$assuntoId/flash-cards/'
       path: '/pastas/$pastaId/assuntos/$assuntoId/flash-cards'
@@ -227,6 +248,8 @@ const rootRouteChildren: RootRouteChildren = {
   PastasPastaIdIndexRoute: PastasPastaIdIndexRoute,
   PastasPastaIdAssuntosAssuntoIdIndexRoute:
     PastasPastaIdAssuntosAssuntoIdIndexRoute,
+  PastasPastaIdAssuntosAssuntoIdCameraIndexRoute:
+    PastasPastaIdAssuntosAssuntoIdCameraIndexRoute,
   PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute:
     PastasPastaIdAssuntosAssuntoIdFlashCardsIndexRoute,
   PastasPastaIdAssuntosAssuntoIdResumoIndexRoute:

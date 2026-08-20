@@ -1,31 +1,23 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarCheck, Folders, Home, Route } from "lucide-react";
+import {
+  CalendarCheck,
+  Folders,
+  Home,
+  Route,
+  type LucideIcon,
+} from "lucide-react";
 
-const links = [
-  {
-    to: "/",
-    exact: true,
-    label: "Início",
-    icon: Home,
-  },
-  {
-    to: "/pastas",
-    label: "Pastas",
-    icon: Folders,
-  },
-  {
-    to: "/ascensao",
-    label: "Ascensão",
-    icon: CalendarCheck,
-  },
-  {
-    to: "/trilha",
-    label: "Trilha",
-    icon: Route,
-  },
-];
 
-export function BottomNavigation() {
+interface BottomNavigationProps {
+  links: {
+    to: string;
+    exact?: boolean;
+    label: string;
+    icon: LucideIcon;
+  }[];
+}
+
+export function BottomNavigation({ links }: BottomNavigationProps) {
   return (
     <nav className="grid w-full grid-cols-4 border-t fixed bottom-0 inset-x-0 bg-white md:max-w-md md:mx-auto md:rounded-full md:overflow-hidden md:border md:mb-4">
       {links.map(({ to, label, icon: Icon, exact }) => (

@@ -93,7 +93,7 @@ function FolderListPage() {
         </p>
       )}
 
-      <FABButton onPress={() => setIsAddOpen(true)} />
+      <FABButton onPress={() => setIsAddOpen(true)} className="bottom-20" />
       <DialogFormFolder
         variant="add"
         isOpen={isAddOpen}
