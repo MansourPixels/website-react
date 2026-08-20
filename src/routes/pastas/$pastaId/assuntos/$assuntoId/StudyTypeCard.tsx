@@ -1,4 +1,4 @@
-import { buttonVariants } from "@heroui/styles";
+import { buttonVariants, cn } from "@heroui/styles";
 import { Link, useParams } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
@@ -30,7 +30,7 @@ export function StudyTypeCard({
       })}
     >
       <div
-        className={`size-9 rounded-xl flex items-center justify-center text-white ${iconClass}`}
+        className={cn("size-9 rounded-xl flex items-center justify-center text-white", iconClass)}
       >
         <Icon className="size-5" />
       </div>

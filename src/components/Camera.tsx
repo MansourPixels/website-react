@@ -64,9 +64,7 @@ export function Camera({ title, footerClass }: CameraProps) {
         muted
         playsInline
         aria-label="Visualização da câmera"
-        className={`size-full object-cover transition-opacity ${
-          status === "ready" ? "opacity-100" : "opacity-0"
-        }`}
+        className={cn("size-full object-cover transition-opacity", status === "ready" ? "opacity-100" : "opacity-0")}
       />
 
       {status === "loading" ? (
