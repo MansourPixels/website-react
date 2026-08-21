@@ -1,4 +1,11 @@
-import { Button, ButtonGroup, Popover, Skeleton } from "@heroui/react";
+import type { Subject } from "@/types/Subject";
+import {
+  Button,
+  ButtonGroup,
+  buttonVariants,
+  Popover,
+  Skeleton,
+} from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   Ellipsis,
@@ -9,7 +16,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import type { Subject } from "@/types/Subject";
 import { DialogFormSubject } from "./DialogFormSubject";
 import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
@@ -109,21 +115,30 @@ export function SubjectCard({
               <Link
                 to="/pastas/$pastaId/assuntos/$assuntoId/flash-cards"
                 params={linkParams}
-                className="button button--md button--ghost w-full justify-start rounded-t-lg text-cyan-700"
+                className={buttonVariants({
+                  className: "w-full justify-start border-b text-cyan-700",
+                  variant: "ghost",
+                })}
               >
                 <Zap /> Flash Cards
               </Link>
               <Link
                 to="/pastas/$pastaId/assuntos/$assuntoId/resumo"
                 params={linkParams}
-                className="button button--md button--ghost w-full justify-start text-purple-700"
+                className={buttonVariants({
+                  className: "w-full justify-start border-b text-purple-700",
+                  variant: "ghost",
+                })}
               >
                 <FileText /> Resumo
               </Link>
               <Link
                 to="/pastas/$pastaId/assuntos/$assuntoId/simulado-prova"
                 params={linkParams}
-                className="button button--md button--ghost w-full justify-start border-b text-orange-600"
+                className={buttonVariants({
+                  className: "w-full justify-start border-b text-orange-600",
+                  variant: "ghost",
+                })}
               >
                 <ListCheck /> Simulado de prova
               </Link>

@@ -5,8 +5,8 @@ import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Folder as FolderType } from "@/types/Folder";
 import { normalizeText } from "@/utils/text";
-import { DialogFormFolder } from "./DialogFormFolder";
-import { FolderCard } from "./FolderCard";
+import { DialogFormFolder } from "./-components/DialogFormFolder";
+import { FolderCard } from "./-components/FolderCard";
 
 export const Route = createFileRoute("/pastas/")({
   component: FolderListPage,

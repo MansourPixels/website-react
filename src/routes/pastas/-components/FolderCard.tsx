@@ -1,8 +1,8 @@
+import type { Folder } from "@/types/Folder";
 import { Button, ButtonGroup, Popover } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { Ellipsis, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
-import type { Folder } from "@/types/Folder";
 import { DialogFolderExclusion } from "./DialogFolderExclusion";
 import { DialogFormFolder } from "./DialogFormFolder";
 
@@ -27,11 +27,11 @@ export function FolderCard({
   }
 
   return (
-    <article className="relative hover:brightness-105">
+    <article className="relative group hover:brightness-105">
       <Link
         to="/pastas/$pastaId"
         params={{ pastaId: folder.id }}
-        className="block active:scale-98 transition-all bg-(--folder-color) relative w-full rounded-3xl after:content-[''] after:bg-[url('/detalhe-pasta.svg')] after:bg-no-repeat after:bg-top-right after:w-full after:h-full after:inset-0 after:flex after:absolute"
+        className="block active:scale-98 transition-all bg-(--folder-color) relative w-full rounded-3xl after:content-[''] after:bg-[url('/detalhe-pasta.svg')] after:bg-no-repeat after:bg-top-right after:w-full after:h-full after:inset-0 after:flex after:absolute group-hover:after:brightness-95"
         style={{ "--folder-color": folder.color } as React.CSSProperties}
       >
         <div className="relative flex overflow-hidden h-20">

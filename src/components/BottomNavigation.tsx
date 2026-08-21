@@ -1,12 +1,6 @@
+import { buttonVariants } from "@heroui/styles";
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarCheck,
-  Folders,
-  Home,
-  Route,
-  type LucideIcon,
-} from "lucide-react";
-
+import { type LucideIcon } from "lucide-react";
 
 interface BottomNavigationProps {
   links: {
@@ -23,7 +17,11 @@ export function BottomNavigation({ links }: BottomNavigationProps) {
       {links.map(({ to, label, icon: Icon, exact }) => (
         <Link
           to={to}
-          className="button button--md button--ghost h-16 w-full p-2 flex flex-col items-center justify-center rounded-none gap-0 font-medium text-muted [&.active]:text-accent group"
+          className={buttonVariants({
+            className:
+              "h-16 w-full p-2 flex flex-col items-center justify-center rounded-none gap-0 font-medium text-muted [&.active]:text-accent group",
+            variant: "ghost",
+          })}
           activeOptions={{ exact }}
         >
           <Icon />

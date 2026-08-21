@@ -25,12 +25,15 @@ export function StudyTypeCard({
       params={params}
       className={buttonVariants({
         className:
-          "bg-white rounded-xl px-5 py-4 flex items-center gap-4 h-auto",
+          "bg-white rounded-xl px-5 py-4 flex items-center gap-4 h-auto w-full",
         variant: "ghost",
       })}
     >
       <div
-        className={cn("size-9 rounded-xl flex items-center justify-center text-white", iconClass)}
+        className={cn(
+          "size-9 rounded-xl flex items-center justify-center text-white",
+          iconClass,
+        )}
       >
         <Icon className="size-5" />
       </div>

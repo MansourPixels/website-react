@@ -1,15 +1,11 @@
-import {
-  createFileRoute,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import { Button } from "@heroui/react";
 import { Camera, FileText, ListCheck, Zap } from "lucide-react";
-import { StudyTypeCard } from "./StudyTypeCard";
+import { StudyTypeCard } from "./-components/StudyTypeCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
   component: SubjectDetailsPage,
@@ -18,7 +14,6 @@ export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
 function SubjectDetailsPage() {
   const [search, setSearch] = useState("");
 
-  const params = useParams({ from: "/pastas/$pastaId/assuntos/$assuntoId/" });
   const navigate = useNavigate({
     from: "/pastas/$pastaId/assuntos/$assuntoId/",
   });
@@ -31,7 +26,10 @@ function SubjectDetailsPage() {
         hasSearch
         onSearch={setSearch}
       />
-      <section id="tipos-estudo" className="flex flex-col gap-3">
+      <section
+        id="tipos-estudo"
+        className="grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+      >
         <StudyTypeCard
           id="flash-cards"
           name="Flash Cards"
