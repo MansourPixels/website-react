@@ -1,34 +1,46 @@
-import { Button, Input, Label, Modal, TextField } from "@heroui/react";
-import { SquarePen } from "lucide-react";
-import { useState } from "react";
 import type { Subject } from "@/types/Subject";
+import { Button, Input, Label, Modal, TextField } from "@heroui/react";
+import { FilePlus, SquarePen } from "lucide-react";
+import { useState } from "react";
 
 interface DialogFormSubjectProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSubmit: (subject: Subject) => void;
-  subject: Subject;
+  variant?: "edit" | "add";
+  subject?: Subject;
+}
+
+function createEmptySubject(): Subject {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    images: [],
+  };
 }
 
 export function DialogFormSubject({
   isOpen,
   onOpenChange,
   onSubmit,
+  variant = "edit",
   subject,
 }: DialogFormSubjectProps) {
-  const [name, setName] = useState(subject.name);
+  const [form, setForm] = useState<Subject>(
+    () => subject ?? createEmptySubject(),
+  );
 
   function handleOpenChange(open: boolean) {
-    // Ao abrir, parte sempre do nome atual do assunto para que um
-    // cancelamento anterior não deixe rascunho no campo.
-    if (open) setName(subject.name);
+    if (open) setForm(subject ?? createEmptySubject());
     onOpenChange(open);
   }
 
   function handleSubmit() {
-    onSubmit({ ...subject, name: name.trim() });
+    onSubmit({ ...form, name: form.name.trim() });
     handleOpenChange(false);
   }
+
+  const isAdding = variant === "add";
 
   return (
     <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
@@ -38,9 +50,15 @@ export function DialogFormSubject({
             <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Icon className="bg-default text-foreground">
-                <SquarePen className="size-5" />
+                {isAdding ? (
+                  <FilePlus className="size-5" />
+                ) : (
+                  <SquarePen className="size-5" />
+                )}
               </Modal.Icon>
-              <Modal.Heading>Renomear assunto</Modal.Heading>
+              <Modal.Heading>
+                {isAdding ? "Adicionar novo assunto" : "Renomear assunto"}
+              </Modal.Heading>
             </Modal.Header>
             <Modal.Body>
               <TextField className="w-full">
@@ -49,8 +67,10 @@ export function DialogFormSubject({
                   autoFocus
                   id="nome-assunto"
                   placeholder="Equação de terceiro grau..."
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm({ ...form, name: event.target.value })
+                  }
                 />
               </TextField>
             </Modal.Body>
@@ -58,9 +78,9 @@ export function DialogFormSubject({
               <Button
                 className="w-full"
                 onPress={handleSubmit}
-                isDisabled={name.trim().length < 3}
+                isDisabled={form.name.trim().length < 3}
               >
-                Salvar assunto
+                {isAdding ? "Adicionar assunto" : "Salvar assunto"}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Subject } from "@/types/Subject";
 import { normalizeText } from "@/utils/text";
-import { SubjectCard } from "./-components/SubjectCard";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { DialogFormSubject } from "./-components/DialogFormSubject";
+import { LoadingSubjectCard, SubjectCard } from "./-components/SubjectCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/")({
   component: SubjectListPage,
@@ -30,6 +32,7 @@ const defaultSubjects: Subject[] = [
 
 function SubjectListPage() {
   const [subjects, setSubjects] = useState<Subject[]>(defaultSubjects);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const normalizedSearch = normalizeText(search);
@@ -38,6 +41,10 @@ function SubjectListPage() {
         normalizeText(subject.name).includes(normalizedSearch),
       )
     : subjects;
+
+  function handleAddSubject(subject: Subject) {
+    setSubjects((current) => [...current, subject]);
+  }
 
   function handleChangeSubject(subject: Subject) {
     setSubjects((current) =>
@@ -71,15 +78,23 @@ function SubjectListPage() {
               onDeleteSubject={handleDeleteSubject}
             />
           ))}
-          <SubjectCard isLoading />
+          <LoadingSubjectCard />
         </section>
       ) : (
         <p className="text-muted text-center py-8">
           {normalizedSearch
             ? `Nenhum assunto encontrado para "${search.trim()}".`
-            : "Esta pasta ainda não tem assuntos."}
+            : "Esta pasta ainda não tem assuntos. Crie o primeiro no botão +."}
         </p>
       )}
+
+      <FABButton onPress={() => setIsAddOpen(true)} />
+      <DialogFormSubject
+        variant="add"
+        isOpen={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onSubmit={handleAddSubject}
+      />
     </main>
   );
 }

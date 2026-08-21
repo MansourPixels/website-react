@@ -20,53 +20,25 @@ import { DialogFormSubject } from "./DialogFormSubject";
 import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
 interface SubjectCardProps {
-  isLoading?: boolean;
   subject: Subject;
   onChangeSubject: (subject: Subject) => void;
   onDeleteSubject: (subject: Subject) => void;
 }
 
-export function SubjectCard({
-  isLoading = false,
-  subject,
-  onChangeSubject,
-  onDeleteSubject,
-}: SubjectCardProps) {
+export function SubjectCard(props: SubjectCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const { pastaId } = useParams({ from: "/pastas/$pastaId/" });
 
   function openDialog(open: (isOpen: boolean) => void) {
     setIsMenuOpen(false);
     open(true);
   }
-
-  if (isLoading) {
-    return (
-      <article className="relative bg-white rounded-xl">
-        <div className="px-3 pt-4 pb-2 flex flex-col gap-4 h-full justify-between">
-          <header className="h-10 flex flex-col justify-between">
-            <Skeleton className="rounded-full h-4 w-3/4" />
-            <Skeleton className="rounded-full h-4 w-11/12" />
-          </header>
-          <div className="grid grid-cols-2 gap-2 *:rounded-lg *:w-full *:aspect-video">
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
-          </div>
-          <footer className="flex items-center h-8">
-            <Skeleton className="rounded-full h-4 w-1/2" />
-          </footer>
-        </div>
-      </article>
-    );
-  }
-
-  const { pastaId } = useParams({ from: "/pastas/$pastaId/" });
+  const { subject, onChangeSubject, onDeleteSubject } = props;
   const linkParams = {
     pastaId,
-    assuntoId: subject?.id,
+    assuntoId: subject.id,
   };
 
   return (
@@ -173,6 +145,28 @@ export function SubjectCard({
         onOpenChange={setIsDeleteOpen}
         onConfirm={onDeleteSubject}
       />
+    </article>
+  );
+}
+
+export function LoadingSubjectCard() {
+  return (
+    <article className="relative bg-white rounded-xl">
+      <div className="px-3 pt-4 pb-2 flex flex-col gap-4 h-full justify-between">
+        <header className="h-10 flex flex-col justify-between">
+          <Skeleton className="rounded-full h-4 w-3/4" />
+          <Skeleton className="rounded-full h-4 w-11/12" />
+        </header>
+        <div className="grid grid-cols-2 gap-2 *:rounded-lg *:w-full *:aspect-video">
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
+        </div>
+        <footer className="flex items-center h-8">
+          <Skeleton className="rounded-full h-4 w-1/2" />
+        </footer>
+      </div>
     </article>
   );
 }
