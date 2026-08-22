@@ -13,7 +13,7 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({ links }: BottomNavigationProps) {
   return (
-    <nav className="grid w-full grid-cols-4 border-t fixed bottom-0 inset-x-0 bg-white md:max-w-md md:mx-auto md:rounded-full md:overflow-hidden md:border md:mb-4">
+    <nav className="grid w-full grid-cols-4 border-t fixed bottom-0 inset-x-0 bg-white md:max-w-md md:mx-auto md:rounded-full md:overflow-hidden md:border md:mb-4 z-40">
       {links.map(({ to, label, icon: Icon, exact }) => (
         <Link
           to={to}

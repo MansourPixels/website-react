@@ -1,15 +1,23 @@
 import { Button, cn, Spinner } from "@heroui/react";
+import { useNavigate } from "@tanstack/react-router";
 import { CameraOff, Images, Zap, ZapOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCamera } from "../hooks/useCamera";
+import { defaultFolders } from "../mocks/folders";
+import {
+  DialogCategorizeImage,
+  type ImageCategorization,
+} from "./DialogCategorizeImage";
 import { NavMenu } from "./NavMenu";
+import { PhotoReview } from "./PhotoReview";
 
 interface CameraProps {
   title?: string;
   footerClass?: string;
+  onSelectImage?: (image: string) => void;
 }
 
-export function Camera({ title, footerClass }: CameraProps) {
+export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
   const {
     videoRef,
     status,
@@ -21,9 +29,13 @@ export function Camera({ title, footerClass }: CameraProps) {
     retry,
   } = useCamera();
 
+  const navigate = useNavigate();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [reviewImage, setReviewImage] = useState<string | null>(null);
+  const [isCategorizeOpen, setIsCategorizeOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -37,6 +49,28 @@ export function Camera({ title, footerClass }: CameraProps) {
     const url = URL.createObjectURL(blob);
     previewUrlRef.current = url;
     setPreview(url);
+    setReviewImage(url);
+  }
+
+  function handleSelectImage() {
+    if (!reviewImage) return;
+
+    if (onSelectImage) {
+      onSelectImage(reviewImage);
+      setReviewImage(null);
+      return;
+    }
+
+    setIsCategorizeOpen(true);
+  }
+
+  function handleCategorize({ folder, subjectName }: ImageCategorization) {
+    setReviewImage(null);
+
+    navigate({
+      to: "/pastas/$pastaId/assuntos/$assuntoId",
+      params: { pastaId: folder.id, assuntoId: subjectName },
+    });
   }
 
   async function handleCapture() {
@@ -52,7 +86,12 @@ export function Camera({ title, footerClass }: CameraProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div
+      className={cn(
+        "fixed inset-0 bg-black overflow-hidden",
+        reviewImage && "z-50",
+      )}
+    >
       {title ? (
         <div className="absolute p-6">
           <NavMenu title={title} hasBackButton variant="white" />
@@ -64,7 +103,10 @@ export function Camera({ title, footerClass }: CameraProps) {
         muted
         playsInline
         aria-label="Visualização da câmera"
-        className={cn("size-full object-cover transition-opacity", status === "ready" ? "opacity-100" : "opacity-0")}
+        className={cn(
+          "size-full object-cover transition-opacity",
+          status === "ready" ? "opacity-100" : "opacity-0",
+        )}
       />
 
       {status === "loading" ? (
@@ -137,6 +179,23 @@ export function Camera({ title, footerClass }: CameraProps) {
           {isFlashOn ? <Zap /> : <ZapOff />}
         </Button>
       </footer>
+
+      {reviewImage ? (
+        <PhotoReview
+          image={reviewImage}
+          onBack={() => setReviewImage(null)}
+          onSelect={handleSelectImage}
+        />
+      ) : null}
+
+      {!onSelectImage ? (
+        <DialogCategorizeImage
+          isOpen={isCategorizeOpen}
+          onOpenChange={setIsCategorizeOpen}
+          folders={defaultFolders}
+          onSubmit={handleCategorize}
+        />
+      ) : null}
     </div>
   );
 }

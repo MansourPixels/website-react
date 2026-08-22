@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
+import { defaultFolders } from "@/mocks/folders";
 import type { Folder as FolderType } from "@/types/Folder";
 import { normalizeText } from "@/utils/text";
 import { DialogFormFolder } from "./-components/DialogFormFolder";
@@ -11,39 +12,6 @@ import { FolderCard } from "./-components/FolderCard";
 export const Route = createFileRoute("/pastas/")({
   component: FolderListPage,
 });
-
-const defaultFolders: FolderType[] = [
-  {
-    id: "1",
-    name: "Português",
-    color: "#F53153",
-    amount: 2,
-  },
-  {
-    id: "2",
-    name: "Matemática",
-    color: "#388cf9",
-    amount: 8,
-  },
-  {
-    id: "3",
-    name: "Geografia",
-    color: "#f98838",
-    amount: 3,
-  },
-  {
-    id: "4",
-    name: "Sociologia",
-    color: "#44af69",
-    amount: 3,
-  },
-  {
-    id: "5",
-    name: "História",
-    color: "#2b193d",
-    amount: 3,
-  },
-];
 
 function FolderListPage() {
   const [folders, setFolders] = useState<FolderType[]>(defaultFolders);

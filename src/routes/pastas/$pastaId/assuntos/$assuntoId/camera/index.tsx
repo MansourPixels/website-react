@@ -1,5 +1,5 @@
 import { Camera } from "@/components/Camera";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
   "/pastas/$pastaId/assuntos/$assuntoId/camera/",
@@ -8,5 +8,12 @@ export const Route = createFileRoute(
 });
 
 function SubjectCameraPage() {
-  return <Camera title="Equação de terceiro grau" />;
+  const router = useRouter();
+
+  return (
+    <Camera
+      title="Equação de terceiro grau"
+      onSelectImage={() => router.history.back()}
+    />
+  );
 }
