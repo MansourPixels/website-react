@@ -35,7 +35,7 @@ function SubjectDetailsPage() {
           name="Flash Cards"
           description="Cartões de memorização que utilizam aprendizagem ativa e a repetição espaçada."
           icon={Zap}
-          iconClass="bg-cyan-700"
+          iconClass="bg-emerald-500"
         />
         <StudyTypeCard
           id="resumo"

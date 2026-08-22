@@ -9,6 +9,7 @@ interface NavMenuProps {
   hasSearch?: boolean;
   onSearch?: (term: string) => void;
   variant?: "black" | "white";
+  className?: string;
 }
 
 export function NavMenu({
@@ -17,6 +18,7 @@ export function NavMenu({
   hasSearch = false,
   onSearch = () => {},
   variant = "black",
+  className,
 }: NavMenuProps) {
   const router = useRouter();
   const canGoBack = useCanGoBack();
@@ -29,7 +31,9 @@ export function NavMenu({
   }
 
   return (
-    <header className="flex items-center justify-between gap-2">
+    <header
+      className={cn("flex items-center justify-between gap-2", className)}
+    >
       <div className={cn("flex-1", hasSearch && "max-w-[75vw]")}>
         {isSearchVisible ? (
           <SearchField

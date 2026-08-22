@@ -1,8 +1,10 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --default-font-family: "Poppins", sans-serif;
+  --font-math: serif;
 }
 
 @layer base {
@@ -13,7 +15,7 @@
   html,
   body,
   #root {
-    @apply min-h-full min-w-full;
+    @apply h-full min-h-full min-w-full;
   }
 }
 @layer utilities {
@@ -60,4 +62,14 @@
       width: 60%;
     }
   }
+}
+
+@utility content-bg-* {
+  background:
+    radial-gradient(
+      100% 100% at 50% 0%,
+      --value(--color-*) 0%,
+      rgba(242, 242, 244, 0.2) 100%
+    ),
+    #f4f4f5;
 }

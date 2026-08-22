@@ -88,7 +88,7 @@ export function SubjectCard(props: SubjectCardProps) {
                 to="/pastas/$pastaId/assuntos/$assuntoId/flash-cards"
                 params={linkParams}
                 className={buttonVariants({
-                  className: "w-full justify-start border-b text-cyan-700",
+                  className: "w-full justify-start border-b text-emerald-500",
                   variant: "ghost",
                 })}
               >
