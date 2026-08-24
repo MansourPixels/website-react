@@ -9,7 +9,7 @@ export function MonthlyAscension({ months }: MonthlyAscensionProps) {
   const best = Math.max(...months.map((month) => month.days));
 
   return (
-    <section className="bg-white rounded-3xl p-4 flex flex-col gap-3">
+    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <header>
         <h2 className="font-semibold">Dias estudados por mês</h2>
         <p className="text-sm text-muted">

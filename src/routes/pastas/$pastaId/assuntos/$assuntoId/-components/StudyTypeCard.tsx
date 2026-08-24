@@ -25,7 +25,7 @@ export function StudyTypeCard({
       params={params}
       className={buttonVariants({
         className:
-          "bg-white rounded-xl px-5 py-4 flex items-center gap-4 h-auto w-full",
+          "bg-white rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
         variant: "ghost",
       })}
     >

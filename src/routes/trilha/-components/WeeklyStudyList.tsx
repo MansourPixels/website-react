@@ -11,7 +11,7 @@ export function WeeklyStudyList({ week }: WeeklyStudyListProps) {
   const total = week.reduce((sum, day) => sum + day.minutes, 0);
 
   return (
-    <section className="bg-white rounded-3xl p-4 flex flex-col gap-3">
+    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <header>
         <h2 className="font-semibold">Tempo de estudo na semana</h2>
         <p className="text-sm text-muted">

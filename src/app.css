@@ -4,7 +4,15 @@
 
 @theme {
   --default-font-family: "Poppins", sans-serif;
-  --font-math: serif;
+  --font-math: "Libertinus Math", serif;
+}
+
+/* Telas baixas: celular deitado, ou janela curta no desktop. Breakpoint guiado
+   pelo conteúdo — aqui é a altura que quebra o layout, não a largura. */
+@custom-variant short {
+  @media (max-height: 500px) {
+    @slot;
+  }
 }
 
 @layer base {
@@ -24,6 +32,16 @@
     --accent: oklch(42.9% 0.2973 264.05);
     --accent-foreground: oklch(99.11% 0 0);
     --focus: oklch(42.9% 0.2973 264.05);
+
+    /*
+     * O padrão do HeroUI, oklch(55.17% ...), rende 4.83:1 sobre cartão branco
+     * mas só 4.39:1 sobre a mesa cinza — reprovado no piso de 4.5:1, e a mesa é
+     * onde ficam os estados vazios. Escurecer o token resolve nos dois fundos de
+     * uma vez, em vez de caçar cada uso; a mesa não pode clarear porque o
+     * recorte de aba do detalhe-pasta.svg é pintado exatamente nela.
+     * Agora: 4.90:1 sobre a mesa, 5.39:1 sobre branco. Matiz e croma mantidos.
+     */
+    --muted: oklch(52.5% 0.0138 285.94);
   }
 
   .dark,
@@ -35,6 +53,22 @@
     --focus: oklch(42.9% 0.2973 264.05);
   }
 
+  :root {
+    /* Espaço ocupado pela navegação inferior, já somando a área segura do
+       aparelho (o indicador de home do iPhone). No celular a navegação é uma
+       barra colada no rodapé; a partir de md ela descola e vira pílula
+       flutuante, que precisa de mais folga. */
+    --nav-inset: calc(4rem + env(safe-area-inset-bottom, 0px));
+
+    caret-color: var(--accent);
+  }
+
+  @media (min-width: 48rem) {
+    :root {
+      --nav-inset: calc(6rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
   html {
     @apply bg-zinc-100;
   }
@@ -43,6 +77,41 @@
   body,
   #root {
     @apply h-full min-h-full min-w-full;
+  }
+
+  /* Superfícies que o navegador desenha por nós e que, sem tratamento, chegam
+     no azul padrão do sistema operacional em vez do azul da marca. */
+  ::selection {
+    background-color: color-mix(in oklab, var(--accent) 22%, transparent);
+    color: var(--foreground);
+  }
+
+  @media (pointer: fine) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in oklab, var(--foreground) 20%, transparent)
+        transparent;
+    }
+  }
+
+  /* Sem o flash cinza do navegador ao tocar. O HeroUI já resolve nos botões
+     dele; isto cobre links, rótulos e o resto. */
+  a,
+  label,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Piso de alvo de toque: em ponteiro grosso nenhum controle desce de 44px,
+     mesmo onde a escala do HeroUI é menor (ícone md nasce com 40px). */
+  @media (pointer: coarse) {
+    .button {
+      min-height: 44px;
+    }
+
+    .button--icon-only {
+      min-width: 44px;
+    }
   }
 }
 
@@ -74,7 +143,7 @@
       display: block;
       margin-bottom: 6px;
       background-color: #e3e3e3;
-      border-radius: 14px;
+      border-radius: calc(infinity * 1px);
       height: 0.5rem;
     }
 

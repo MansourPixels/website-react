@@ -40,7 +40,7 @@ function FolderListPage() {
   }
 
   return (
-    <main className="p-6 gap-8 flex flex-col">
+    <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu title="Pastas" hasSearch onSearch={setSearch} />
       {filteredFolders.length > 0 ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -61,7 +61,10 @@ function FolderListPage() {
         </p>
       )}
 
-      <FABButton onPress={() => setIsAddOpen(true)} className="bottom-20" />
+      <FABButton
+        onPress={() => setIsAddOpen(true)}
+        className="bottom-[calc(var(--nav-inset)+1rem)]"
+      />
       <DialogFormFolder
         variant="add"
         isOpen={isAddOpen}

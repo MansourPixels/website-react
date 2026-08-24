@@ -20,19 +20,21 @@ export function FlashCard({
   ).padStart(2, "0")}`;
 
   return (
-    <div className="flex-1 min-h-96 relative perspective-distant">
+    // O piso de 24rem afunda o rodapé para fora da tela num celular deitado
+    // (390px de altura). Trava também em metade da viewport.
+    <div className="flex-1 min-h-[min(24rem,50vh)] relative perspective-distant">
       <div
         className={`absolute inset-0 transform-3d transition-transform duration-500 ease-in-out ${
           isAnswerRevealed ? "rotate-y-180" : ""
         }`}
       >
-        <div className="absolute inset-0 backface-hidden bg-emerald-500 rounded-2xl text-white text-center px-4 py-8 flex flex-col justify-between">
+        <div className="absolute inset-0 backface-hidden bg-emerald-500 rounded-2xl shadow-surface text-white text-center px-4 py-8 flex flex-col justify-between">
           <span></span>
           <h2 className="text-2xl font-semibold align-middle">{question}</h2>
           <p className="opacity-90">{counter}</p>
         </div>
 
-        <div className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl text-center px-4 py-8 flex flex-col justify-between bg-white">
+        <div className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl shadow-surface text-center px-4 py-8 flex flex-col justify-between bg-white">
           <h2>{question}</h2>
           <h3 className="text-2xl font-semibold">{answer}</h3>
           <p className="opacity-90">{counter}</p>

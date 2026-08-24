@@ -27,7 +27,7 @@ export function StatTile({
 
   return (
     <article
-      className={cn("bg-white rounded-2xl p-4 flex flex-col gap-1", className)}
+      className={cn("bg-white rounded-2xl shadow-surface p-4 flex flex-col gap-1", className)}
     >
       <header className="flex items-center gap-2 text-muted text-sm">
         {Icon ? <Icon className="size-4 shrink-0" /> : null}

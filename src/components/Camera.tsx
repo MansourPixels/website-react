@@ -1,9 +1,11 @@
 import { Button, cn, Spinner } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { CameraOff, Images, Zap, ZapOff } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCamera } from "../hooks/useCamera";
+import { useTouchPrimary } from "../hooks/useMediaQuery";
 import { defaultFolders } from "../mocks/folders";
+import { CaptureDesk } from "./CaptureDesk";
 import {
   DialogCategorizeImage,
   type ImageCategorization,
@@ -18,6 +20,12 @@ interface CameraProps {
 }
 
 export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
+  // O contexto de captura é decidido pelo método de entrada, não pela largura
+  // da janela: quem tem dedo tem câmera traseira apontável para o caderno; quem
+  // tem mouse tem webcam frontal, arquivos e Ctrl+V.
+  const isTouchPrimary = useTouchPrimary();
+
+  const camera = useCamera({ autoStart: isTouchPrimary });
   const {
     videoRef,
     status,
@@ -27,7 +35,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     toggleFlash,
     capturePhoto,
     retry,
-  } = useCamera();
+  } = camera;
 
   const navigate = useNavigate();
 
@@ -43,14 +51,14 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     };
   }, []);
 
-  function showPreview(blob: Blob) {
+  const showPreview = useCallback((blob: Blob) => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
 
     const url = URL.createObjectURL(blob);
     previewUrlRef.current = url;
     setPreview(url);
     setReviewImage(url);
-  }
+  }, []);
 
   function handleSelectImage() {
     if (!reviewImage) return;
@@ -85,6 +93,54 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     event.target.value = "";
   }
 
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={handleSelectFile}
+    />
+  );
+
+  const overlays = (
+    <>
+      {reviewImage ? (
+        <PhotoReview
+          image={reviewImage}
+          onBack={() => setReviewImage(null)}
+          onSelect={handleSelectImage}
+        />
+      ) : null}
+
+      {!onSelectImage ? (
+        <DialogCategorizeImage
+          isOpen={isCategorizeOpen}
+          onOpenChange={setIsCategorizeOpen}
+          folders={defaultFolders}
+          onSubmit={handleCategorize}
+        />
+      ) : null}
+    </>
+  );
+
+  if (!isTouchPrimary) {
+    return (
+      <>
+        {fileInput}
+        <CaptureDesk
+          title={title}
+          camera={camera}
+          onPickFile={() => fileInputRef.current?.click()}
+          onReceiveFile={showPreview}
+          onCapture={handleCapture}
+          isPasteEnabled={!reviewImage && !isCategorizeOpen}
+        />
+        {overlays}
+      </>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -96,7 +152,9 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
         <div className="absolute p-6">
           <NavMenu title={title} hasBackButton variant="white" />
         </div>
-      ) : null}
+      ) : (
+        <h1 className="sr-only">Nova captura</h1>
+      )}
       <video
         ref={videoRef}
         autoPlay
@@ -128,17 +186,14 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
 
       <footer
         className={cn(
-          "p-10 flex items-center justify-between fixed bottom-0 inset-x-0",
+          // Breakpoint por altura, não por largura: celular deitado tem ~390px
+          // de altura e o rodapé de 40px de padding come um terço da tela.
+          "px-6 py-8 short:py-4 flex items-center justify-between gap-4 fixed bottom-0 inset-x-0",
+          "pb-[max(2rem,env(safe-area-inset-bottom))] short:pb-[max(1rem,env(safe-area-inset-bottom))]",
           footerClass,
         )}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleSelectFile}
-        />
+        {fileInput}
         <Button
           id="galeria"
           aria-label="Escolher imagem da galeria"
@@ -180,22 +235,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
         </Button>
       </footer>
 
-      {reviewImage ? (
-        <PhotoReview
-          image={reviewImage}
-          onBack={() => setReviewImage(null)}
-          onSelect={handleSelectImage}
-        />
-      ) : null}
-
-      {!onSelectImage ? (
-        <DialogCategorizeImage
-          isOpen={isCategorizeOpen}
-          onOpenChange={setIsCategorizeOpen}
-          folders={defaultFolders}
-          onSubmit={handleCategorize}
-        />
-      ) : null}
+      {overlays}
     </div>
   );
 }

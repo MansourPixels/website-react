@@ -19,11 +19,13 @@ export function DifficultyButton({
       })}
       onClick={onClick}
     >
-      <div className="size-16 rounded-full bg-white flex items-center justify-center group-hover:border-emerald-500 border-2 border-transparent transition-all">
+      {/* No dedo não existe hover: sem o par `group-active`, o único gesto
+          desta tela (que é exclusiva de celular) não devolve nada. */}
+      <div className="size-16 rounded-full bg-white shadow-surface flex items-center justify-center group-hover:border-emerald-500 group-active:border-emerald-500 border-2 border-transparent transition-all">
         <img
           src={image}
           alt=""
-          className="group-hover:scale-110 transition-all duration-300"
+          className="group-hover:scale-110 group-active:scale-110 transition-all duration-300"
         />
       </div>
       <span className="font-medium">{label}</span>

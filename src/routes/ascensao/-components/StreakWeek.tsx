@@ -29,7 +29,7 @@ interface StreakWeekProps {
 
 export function StreakWeek({ week }: StreakWeekProps) {
   return (
-    <section className="bg-white rounded-3xl p-4 flex flex-col gap-3">
+    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <h2 className="font-semibold">Semana atual</h2>
       <ul className="flex items-center justify-between gap-1">
         {week.map(({ label, state }) => {

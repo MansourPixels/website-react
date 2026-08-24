@@ -42,7 +42,7 @@ export function SubjectCard(props: SubjectCardProps) {
   };
 
   return (
-    <article className="relative bg-white rounded-xl hover:brightness-105">
+    <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
       <Link
         to="/pastas/$pastaId/assuntos/$assuntoId"
         params={linkParams}
@@ -151,7 +151,7 @@ export function SubjectCard(props: SubjectCardProps) {
 
 export function LoadingSubjectCard() {
   return (
-    <article className="relative bg-white rounded-xl">
+    <article className="relative bg-white rounded-xl shadow-surface">
       <div className="px-3 pt-4 pb-2 flex flex-col gap-4 h-full justify-between">
         <header className="h-10 flex flex-col justify-between">
           <Skeleton className="rounded-full h-4 w-3/4" />

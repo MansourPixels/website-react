@@ -16,7 +16,7 @@ export function DisciplinePerformanceList({
   disciplines,
 }: DisciplinePerformanceListProps) {
   return (
-    <section className="bg-white rounded-3xl p-4 flex flex-col gap-4">
+    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-4">
       <header>
         <h2 className="font-semibold">Aproveitamento por disciplina</h2>
         <p className="text-sm text-muted">

@@ -57,7 +57,7 @@ function SubjectListPage() {
   }
 
   return (
-    <main className="p-6 gap-8 flex flex-col">
+    <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu
         title="Matemática"
         hasBackButton

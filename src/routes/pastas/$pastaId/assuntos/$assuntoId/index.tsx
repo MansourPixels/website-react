@@ -26,7 +26,7 @@ function SubjectDetailsPage() {
   });
 
   return (
-    <main className="p-6 gap-8 flex flex-col">
+    <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu
         title="Equação de terceiro grau"
         hasBackButton
@@ -71,7 +71,7 @@ function SubjectDetailsPage() {
             aria-label={`Abrir imagem ${index + 1}`}
             onPress={() => setSelectedImage(image)}
           >
-            <img src={image} alt="" className="size-full" />
+            <img src={image} alt="" className="size-full object-cover" />
           </Button>
         ))}
       </section>

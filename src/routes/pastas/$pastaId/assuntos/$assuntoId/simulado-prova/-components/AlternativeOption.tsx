@@ -18,6 +18,9 @@ export function AlternativeOption({
     <label
       className={cn(
         "flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border-2 cursor-pointer transition-colors",
+        // O rádio real é sr-only, então sem isto a navegação por teclado
+        // percorre as alternativas sem nenhum indicador visível.
+        "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
         isSelected
           ? "border-orange-600 bg-orange-50"
           : "border-transparent hover:border-orange-300",

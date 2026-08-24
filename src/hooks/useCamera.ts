@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type CameraStatus = "loading" | "ready" | "error";
+type CameraStatus = "idle" | "loading" | "ready" | "error";
+
+interface UseCameraOptions {
+  /**
+   * Quando falso, a câmera não é ligada e nenhuma permissão é pedida — o status
+   * fica em "idle" até alguém chamar `start()`. É o que a mesa de captura do
+   * desktop usa: pedir a webcam de cara para quem veio soltar um arquivo é
+   * hostil, e o navegador lembra da negativa.
+   */
+  autoStart?: boolean;
+}
 
 const ERROR_MESSAGES: Record<string, string> = {
   NotAllowedError:
@@ -26,17 +36,21 @@ function stopStream(stream: MediaStream | null) {
   }
 }
 
-export function useCamera() {
+export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [status, setStatus] = useState<CameraStatus>("loading");
+  const [status, setStatus] = useState<CameraStatus>(
+    autoStart ? "loading" : "idle",
+  );
   const [error, setError] = useState<string | null>(null);
   const [isFlashSupported, setIsFlashSupported] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const [attempt, setAttempt] = useState(autoStart ? 1 : 0);
 
   useEffect(() => {
+    if (attempt === 0) return;
+
     let isCancelled = false;
 
     async function startCamera() {
@@ -85,6 +99,18 @@ export function useCamera() {
     };
   }, [attempt]);
 
+  /**
+   * O elemento de vídeo pode montar depois de o stream chegar — na mesa de
+   * captura ele só existe a partir do momento em que a câmera é ligada. Sem
+   * isto, o stream fica preso no ref e o quadro nunca aparece.
+   */
+  useEffect(() => {
+    if (status !== "ready") return;
+    if (videoRef.current && !videoRef.current.srcObject) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [status]);
+
   const toggleFlash = useCallback(async () => {
     const [track] = streamRef.current?.getVideoTracks() ?? [];
     if (!track) return;
@@ -118,6 +144,20 @@ export function useCamera() {
   }, []);
 
   const retry = useCallback(() => setAttempt((current) => current + 1), []);
+  const start = retry;
+
+  const stop = useCallback(() => {
+    stopStream(streamRef.current);
+    streamRef.current = null;
+
+    if (videoRef.current) videoRef.current.srcObject = null;
+
+    setAttempt(0);
+    setStatus("idle");
+    setError(null);
+    setIsFlashOn(false);
+    setIsFlashSupported(false);
+  }, []);
 
   return {
     videoRef,
@@ -128,5 +168,7 @@ export function useCamera() {
     toggleFlash,
     capturePhoto,
     retry,
+    start,
+    stop,
   };
 }

@@ -37,7 +37,10 @@ export function FolderCard({
         <div className="relative flex overflow-hidden h-20">
           {Array.from({ length: Math.min(folder.amount, 4) }).map(
             (_, index) => (
-              <div className="preview" key={`${folder.id}-preview-${index}`}>
+              <div
+                className="preview md:nth-of-type-[4]:hidden"
+                key={`${folder.id}-preview-${index}`}
+              >
                 <span></span>
                 <span></span>
                 <span></span>

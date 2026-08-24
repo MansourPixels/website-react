@@ -10,7 +10,7 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
   const { discipline, focus, description } = plan;
 
   return (
-    <article className="bg-white rounded-3xl p-4 flex flex-col gap-3">
+    <article className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <header className="flex flex-col gap-1">
         <h3 className="text-xl font-semibold">{discipline}</h3>
         <p className="flex items-center gap-2 text-sm text-accent">
