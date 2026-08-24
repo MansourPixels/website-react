@@ -61,8 +61,6 @@ function FlashCardsPage() {
   }
 
   return (
-    // O banho de cor sangra na largura inteira; a sessão de estudo, não. Um
-    // cartão de pergunta esticado em 1920px vira letterbox e some.
     <main className="content-bg-emerald-200 flex-1 flex flex-col">
       <div className="p-6 md:p-8 gap-8 flex flex-col flex-1 justify-between w-full max-w-2xl mx-auto">
         <div>

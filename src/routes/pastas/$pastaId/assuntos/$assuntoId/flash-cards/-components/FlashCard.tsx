@@ -20,8 +20,6 @@ export function FlashCard({
   ).padStart(2, "0")}`;
 
   return (
-    // O piso de 24rem afunda o rodapé para fora da tela num celular deitado
-    // (390px de altura). Trava também em metade da viewport.
     <div className="flex-1 min-h-[min(24rem,50vh)] relative perspective-distant">
       <div
         className={`absolute inset-0 transform-3d transition-transform duration-500 ease-in-out ${

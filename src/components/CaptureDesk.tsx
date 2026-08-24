@@ -11,22 +11,9 @@ interface CaptureDeskProps {
   onPickFile: () => void;
   onReceiveFile: (file: Blob) => void;
   onCapture: () => void;
-  /**
-   * Falso enquanto a revisão da foto ou o diálogo de categorização estiverem
-   * abertos: sem isto, colar uma imagem por cima do fluxo já em andamento
-   * trocaria a foto que o usuário está revisando, atrás do próprio diálogo.
-   */
   isPasteEnabled: boolean;
 }
 
-/**
- * A superfície de captura para quem tem mouse.
- *
- * No celular a câmera é a porta do produto e ocupa a tela inteira. No desktop
- * essa mesma tela seria uma webcam frontal esticada em 1920px, apontada para um
- * caderno que ela não consegue ler. Então aqui o arquivo lidera: arrastar,
- * colar ou escolher; e a webcam fica ao lado, desligada até alguém pedir.
- */
 export function CaptureDesk({
   title,
   camera,
@@ -50,8 +37,6 @@ export function CaptureDesk({
   const [isDragging, setIsDragging] = useState(false);
   const dragDepth = useRef(0);
 
-  // Ctrl+V com uma imagem na área de transferência: quem está no computador
-  // acabou de recortar a foto em algum lugar, e essa é a rota mais curta.
   useEffect(() => {
     if (!isPasteEnabled) return;
 
@@ -157,7 +142,7 @@ export function CaptureDesk({
             </p>
           </header>
 
-          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-background flex items-center justify-center">
+          <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-background flex items-center justify-center">
             <video
               ref={videoRef}
               autoPlay

@@ -19,8 +19,6 @@ export function DifficultyButton({
       })}
       onClick={onClick}
     >
-      {/* No dedo não existe hover: sem o par `group-active`, o único gesto
-          desta tela (que é exclusiva de celular) não devolve nada. */}
       <div className="size-16 rounded-full bg-white shadow-surface flex items-center justify-center group-hover:border-emerald-500 group-active:border-emerald-500 border-2 border-transparent transition-all">
         <img
           src={image}

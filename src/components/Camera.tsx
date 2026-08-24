@@ -20,9 +20,6 @@ interface CameraProps {
 }
 
 export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
-  // O contexto de captura é decidido pelo método de entrada, não pela largura
-  // da janela: quem tem dedo tem câmera traseira apontável para o caderno; quem
-  // tem mouse tem webcam frontal, arquivos e Ctrl+V.
   const isTouchPrimary = useTouchPrimary();
 
   const camera = useCamera({ autoStart: isTouchPrimary });
@@ -186,8 +183,6 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
 
       <footer
         className={cn(
-          // Breakpoint por altura, não por largura: celular deitado tem ~390px
-          // de altura e o rodapé de 40px de padding come um terço da tela.
           "px-6 py-8 short:py-4 flex items-center justify-between gap-4 fixed bottom-0 inset-x-0",
           "pb-[max(2rem,env(safe-area-inset-bottom))] short:pb-[max(1rem,env(safe-area-inset-bottom))]",
           footerClass,

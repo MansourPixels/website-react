@@ -43,8 +43,6 @@ const RootLayout = () => {
       <div
         className={cn(
           "flex flex-col min-h-full relative",
-          // A navegação é barra colada no celular e pílula flutuante no
-          // desktop: alturas diferentes, mais a área segura do aparelho.
           showBottomNavigation && "pb-[var(--nav-inset)]",
         )}
       >

@@ -11,7 +11,6 @@ export const Route = createFileRoute(
 function SummaryPage() {
   return (
     <main className="content-bg-purple-200 flex-1 flex flex-col">
-      {/* Leitura longa: a coluna trava em ~70ch em vez de correr a tela toda. */}
       <div className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-3xl mx-auto">
         <NavMenu title="Resumo" hasBackButton className="text-center pr-12" />
         <div className="bg-white p-4 md:p-8 rounded-2xl shadow-surface prose-sm md:prose-base [&_math]:mx-auto prose-headings:font-semibold grid prose-zinc prose-ul:list-disc prose-ol:list-decimal prose-strong:font-semibold prose-h2:mt-4 prose-h2:mb-2">

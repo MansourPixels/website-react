@@ -3,12 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type CameraStatus = "idle" | "loading" | "ready" | "error";
 
 interface UseCameraOptions {
-  /**
-   * Quando falso, a câmera não é ligada e nenhuma permissão é pedida — o status
-   * fica em "idle" até alguém chamar `start()`. É o que a mesa de captura do
-   * desktop usa: pedir a webcam de cara para quem veio soltar um arquivo é
-   * hostil, e o navegador lembra da negativa.
-   */
   autoStart?: boolean;
 }
 
@@ -99,11 +93,6 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     };
   }, [attempt]);
 
-  /**
-   * O elemento de vídeo pode montar depois de o stream chegar — na mesa de
-   * captura ele só existe a partir do momento em que a câmera é ligada. Sem
-   * isto, o stream fica preso no ref e o quadro nunca aparece.
-   */
   useEffect(() => {
     if (status !== "ready") return;
     if (videoRef.current && !videoRef.current.srcObject) {
