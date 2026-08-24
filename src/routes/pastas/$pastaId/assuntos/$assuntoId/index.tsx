@@ -18,6 +18,7 @@ export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
 });
 
 function SubjectDetailsPage() {
+  // @ts-ignore
   const [search, setSearch] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
