@@ -31,20 +31,23 @@ export function StreakWeek({ week }: StreakWeekProps) {
   return (
     <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <h2 className="font-semibold">Semana atual</h2>
-      <ul className="flex items-center justify-between gap-1">
+      <ul className="grid grid-cols-7 gap-1">
         {week.map(({ label, state }) => {
           const Icon = dayIcons[state];
 
           return (
-            <li key={label} className="flex flex-col items-center gap-2">
+            <li
+              key={label}
+              className="flex flex-col items-center gap-2 min-w-0"
+            >
               <span
                 aria-hidden
                 className={cn(
-                  "size-10 md:size-12 rounded-full flex items-center justify-center",
+                  "w-full max-w-10 md:max-w-12 aspect-square rounded-full flex items-center justify-center",
                   dayStyles[state],
                 )}
               >
-                <Icon className="size-5" />
+                <Icon className="size-4 sm:size-5" />
               </span>
               <span className="text-xs text-muted">
                 {label}

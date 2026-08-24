@@ -27,31 +27,36 @@ export function StatTile({
 
   return (
     <article
-      className={cn("bg-white rounded-2xl shadow-surface p-4 flex flex-col gap-1", className)}
+      className={cn(
+        "bg-white rounded-2xl shadow-surface p-4 flex flex-col gap-1",
+        className,
+      )}
     >
-      <header className="flex items-center gap-2 text-muted text-sm">
-        {Icon ? <Icon className="size-4 shrink-0" /> : null}
-        <h3 className="line-clamp-1">{label}</h3>
+      <header className="flex items-start gap-2 text-muted text-sm min-h-10 sm:min-h-0">
+        {Icon ? <Icon className="size-4 shrink-0 mt-0.5" /> : null}
+        <h3 className="line-clamp-2 text-pretty">{label}</h3>
       </header>
 
-      <strong className="text-3xl font-semibold">{value}</strong>
+      <strong className="text-2xl sm:text-3xl font-semibold tabular-nums">
+        {value}
+      </strong>
 
       {delta !== undefined ? (
         <p
           className={cn(
-            "flex items-center gap-1 text-sm",
+            "flex items-start gap-1 text-sm text-pretty",
             isPositive ? "text-success" : "text-danger",
           )}
         >
-          <DeltaIcon className="size-4 shrink-0" />
-          <span>
+          <DeltaIcon className="size-4 shrink-0 mt-0.5" />
+          <span className="tabular-nums">
             {isPositive ? "+" : "−"}
             {Math.abs(delta)}
             {deltaSuffix} {deltaLabel}
           </span>
         </p>
       ) : hint ? (
-        <p className="text-muted text-sm">{hint}</p>
+        <p className="text-muted text-sm text-pretty">{hint}</p>
       ) : null}
     </article>
   );

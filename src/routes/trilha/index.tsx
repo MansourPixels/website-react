@@ -37,12 +37,12 @@ function PathPage() {
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu title="Trilha" hasSearch />
 
-      <div className="grid grid-cols-2 bg-accent-soft p-4 rounded-3xl items-center gap-4">
-        <h2 className="grid">
-          <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)]">
+      <div className="grid bg-accent-soft p-4 rounded-3xl items-center gap-4 sm:grid-cols-2">
+        <h2 className="grid min-w-0">
+          <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
             {overallAccuracy}%
           </span>
-          <span className="text-2xl text-accent font-semibold">
+          <span className="text-2xl text-accent font-semibold text-balance">
             de aproveitamento geral
           </span>
         </h2>

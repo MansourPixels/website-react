@@ -32,18 +32,20 @@ function Ascensao() {
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <div className="flex flex-col gap-8">
-          <div className="grid grid-cols-2 bg-accent-soft p-4 rounded-3xl">
-            <h2 className="grid">
-              <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)]">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-4 bg-accent-soft p-4 rounded-3xl">
+            <h2 className="grid min-w-0">
+              <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
                 {currentStreak}
               </span>
-              <span className="text-3xl text-accent font-semibold">
+              <span className="text-3xl text-accent font-semibold text-balance">
                 Dias em ascensão
               </span>
             </h2>
-            <div className="flex items-center justify-end">
-              <img src="/icone-ascensao.svg" alt="Ícone de ascensão" />
-            </div>
+            <img
+              src="/icone-ascensao.svg"
+              alt="Ícone de ascensão"
+              className="w-20 sm:w-24 h-auto shrink-0"
+            />
           </div>
 
           <p className="text-center text-balance lg:text-left">
