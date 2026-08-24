@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cloudflare/vite-plugin": "^1.53.1",
     "@heroui/react": "^3.2.4",
     "@heroui/styles": "^3.2.4",
     "@tanstack/react-router": "^1.170.27",

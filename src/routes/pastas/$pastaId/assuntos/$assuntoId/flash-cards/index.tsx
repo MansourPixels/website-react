@@ -3,9 +3,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Zap } from "lucide-react";
 import { useState } from "react";
 
+import { DifficultyButton } from "@/components/DifficultyButton";
+import { FlashCard } from "@/components/FlashCard";
 import { NavMenu } from "@/components/NavMenu";
-import { DifficultyButton } from "./-components/DificultyButton";
-import { FlashCard } from "./-components/FlashCard";
 import { SessionSummary } from "./-components/SessionSummary";
 
 import { flashCards } from "@/mocks/flashCards";

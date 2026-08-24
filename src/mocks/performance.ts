@@ -1,3 +1,5 @@
+import { studyPlans } from "@/mocks/studyPlans";
+
 export interface DisciplinePerformance {
   name: string;
   accuracy: number;
@@ -8,12 +10,6 @@ export interface DisciplinePerformance {
 export interface StudyDay {
   label: string;
   minutes: number;
-}
-
-export interface StudyPlan {
-  discipline: string;
-  focus: string;
-  description: string;
 }
 
 export const performance = {
@@ -42,24 +38,5 @@ export const performance = {
     { label: "Sáb", minutes: 30 },
     { label: "Dom", minutes: 30 },
   ] satisfies StudyDay[],
-  plans: [
-    {
-      discipline: "Português",
-      focus: "Produção textual de redações",
-      description:
-        "Percebemos que a produção textual de redações precisa de um pouco mais de atenção. Com treino e dedicação, você pode evoluir bastante nessa habilidade!",
-    },
-    {
-      discipline: "Geografia",
-      focus: "Climatologia e biomas brasileiros",
-      description:
-        "As questões de climatologia foram as que geraram mais dúvidas. Revisar os biomas junto com os tipos de clima ajuda a fixar os dois assuntos de uma vez.",
-    },
-    {
-      discipline: "Matemática",
-      focus: "Equações do terceiro grau",
-      description:
-        "Você vai bem em matemática, mas as equações do terceiro grau ainda custam tempo. Um simulado curto por dia deve resolver.",
-    },
-  ] satisfies StudyPlan[],
+  plans: studyPlans,
 };

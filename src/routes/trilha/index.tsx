@@ -3,6 +3,7 @@ import { Clock, FileStack, ListCheck, NotebookPen } from "lucide-react";
 
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
+import { useStudyPlans } from "@/contexts/StudyPlanContext";
 import { performance } from "@/mocks/performance";
 import { formatDuration } from "@/utils/time";
 import { DisciplinePerformanceList } from "./-components/DisciplinePerformanceList";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/trilha/")({
 });
 
 function PathPage() {
+  const { activePlanId } = useStudyPlans();
   const {
     overallAccuracy,
     accuracyDelta,
@@ -32,6 +34,12 @@ function PathPage() {
   const attentionPoints = disciplines
     .filter((discipline) => discipline.accuracy < 60)
     .map((discipline) => discipline.name);
+
+  const orderedPlans = [...plans].sort((first, second) => {
+    if (first.id === activePlanId) return -1;
+    if (second.id === activePlanId) return 1;
+    return 0;
+  });
 
   return (
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
@@ -116,8 +124,8 @@ function PathPage() {
           </header>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-            {plans.map((plan) => (
-              <StudyPlanCard key={plan.discipline} plan={plan} />
+            {orderedPlans.map((plan) => (
+              <StudyPlanCard key={plan.id} plan={plan} />
             ))}
           </div>
         </section>

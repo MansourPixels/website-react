@@ -7,6 +7,7 @@ import { CalendarCheck, Folders, Home, Route as Path } from "lucide-react";
 
 import { cn } from "@heroui/styles";
 import { BottomNavigation } from "../components/BottomNavigation";
+import { StudyPlanProvider } from "../contexts/StudyPlanContext";
 
 const links = [
   {
@@ -39,7 +40,7 @@ const RootLayout = () => {
   );
 
   return (
-    <>
+    <StudyPlanProvider>
       <div
         className={cn(
           "flex flex-col min-h-full relative",
@@ -49,7 +50,7 @@ const RootLayout = () => {
         <Outlet />
       </div>
       {showBottomNavigation ? <BottomNavigation links={links} /> : null}
-    </>
+    </StudyPlanProvider>
   );
 };
 

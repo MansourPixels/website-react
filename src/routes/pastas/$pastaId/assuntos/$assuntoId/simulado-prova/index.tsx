@@ -3,8 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, ListCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import { AlternativeOption } from "@/components/AlternativeOption";
 import { NavMenu } from "@/components/NavMenu";
-import { AlternativeOption } from "./-components/AlternativeOption";
 import { TestSummary } from "./-components/TestSummary";
 
 import { practiceTest } from "@/mocks/practiceTest";
