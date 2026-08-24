@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarCheck, Clock, Snowflake, Trophy } from "lucide-react";
 
-import iconeAscensao from "@/assets/icone-ascensao.svg";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { ascension } from "@/mocks/ascension";
@@ -43,7 +42,7 @@ function Ascensao() {
               </span>
             </h2>
             <div className="flex items-center justify-end">
-              <img src={iconeAscensao} alt="Ícone de ascensão" />
+              <img src="/icone-ascensao.svg" alt="Ícone de ascensão" />
             </div>
           </div>
 
@@ -94,7 +93,10 @@ function Ascensao() {
             <AscentionCalendar />
           </section>
 
-          <MilestoneList milestones={milestones} currentStreak={currentStreak} />
+          <MilestoneList
+            milestones={milestones}
+            currentStreak={currentStreak}
+          />
         </aside>
       </div>
     </main>

@@ -8,6 +8,33 @@
 }
 
 @layer base {
+  /*
+     * HeroUI Theme Customization
+     * Add this to your global.css after importing @heroui/styles
+     * Only includes variables users need to customize
+     * @see https://heroui.com/docs/react/getting-started/theming
+     */
+
+  :root,
+  .light,
+  .default,
+  [data-theme="light"],
+  [data-theme="default"] {
+    /* Theme Colors (Light Mode) */
+    --accent: oklch(42.9% 0.2973 264.05);
+    --accent-foreground: oklch(99.11% 0 0);
+    --focus: oklch(42.9% 0.2973 264.05);
+  }
+
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
+    /* Theme Colors (Dark Mode) */
+    --accent: oklch(42.9% 0.2973 264.05);
+    --accent-foreground: oklch(99.11% 0 0);
+    --focus: oklch(42.9% 0.2973 264.05);
+  }
+
   html {
     @apply bg-zinc-100;
   }
@@ -18,6 +45,7 @@
     @apply h-full min-h-full min-w-full;
   }
 }
+
 @layer utilities {
   .preview {
     @apply absolute top-1/2 rounded-lg p-2 bg-white max-w-1/3;
