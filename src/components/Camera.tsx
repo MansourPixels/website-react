@@ -1,6 +1,12 @@
+import type { Material } from "@/types/Material";
+import {
+  ACCEPTED_MATERIAL_TYPES,
+  isAcceptedMaterial,
+  materialKindOf,
+} from "@/utils/materials";
 import { Button, cn, Spinner } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import { CameraOff, Images, Zap, ZapOff } from "lucide-react";
+import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
@@ -16,10 +22,10 @@ import { PhotoReview } from "./PhotoReview";
 interface CameraProps {
   title?: string;
   footerClass?: string;
-  onSelectImage?: (image: string) => void;
+  onSelectMaterial?: (material: Material) => void;
 }
 
-export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
+export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   const isTouchPrimary = useTouchPrimary();
 
   const camera = useCamera({ autoStart: isTouchPrimary });
@@ -38,8 +44,8 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [reviewImage, setReviewImage] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Material | null>(null);
+  const [reviewMaterial, setReviewMaterial] = useState<Material | null>(null);
   const [isCategorizeOpen, setIsCategorizeOpen] = useState(false);
 
   useEffect(() => {
@@ -48,21 +54,31 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     };
   }, []);
 
-  const showPreview = useCallback((blob: Blob) => {
+  const showPreview = useCallback((file: Blob) => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
 
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(file);
     previewUrlRef.current = url;
-    setPreview(url);
-    setReviewImage(url);
+
+    const material: Material = {
+      id: url,
+      kind: materialKindOf(file),
+      url,
+      name: file instanceof File ? file.name : "Captura da câmera",
+      size: file.size,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    setPreview(material);
+    setReviewMaterial(material);
   }, []);
 
-  function handleSelectImage() {
-    if (!reviewImage) return;
+  function handleSelectMaterial() {
+    if (!reviewMaterial) return;
 
-    if (onSelectImage) {
-      onSelectImage(reviewImage);
-      setReviewImage(null);
+    if (onSelectMaterial) {
+      onSelectMaterial(reviewMaterial);
+      setReviewMaterial(null);
       return;
     }
 
@@ -70,7 +86,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
   }
 
   function handleCategorize({ folder, subjectName }: ImageCategorization) {
-    setReviewImage(null);
+    setReviewMaterial(null);
 
     navigate({
       to: "/pastas/$pastaId/assuntos/$assuntoId",
@@ -85,7 +101,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
 
   function handleSelectFile(event: React.ChangeEvent<HTMLInputElement>) {
     const [file] = event.target.files ?? [];
-    if (file) showPreview(file);
+    if (file && isAcceptedMaterial(file)) showPreview(file);
 
     event.target.value = "";
   }
@@ -94,7 +110,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     <input
       ref={fileInputRef}
       type="file"
-      accept="image/*"
+      accept={ACCEPTED_MATERIAL_TYPES}
       className="hidden"
       onChange={handleSelectFile}
     />
@@ -102,19 +118,20 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
 
   const overlays = (
     <>
-      {reviewImage ? (
+      {reviewMaterial ? (
         <PhotoReview
-          image={reviewImage}
-          onBack={() => setReviewImage(null)}
-          onSelect={handleSelectImage}
+          material={reviewMaterial}
+          onBack={() => setReviewMaterial(null)}
+          onSelect={handleSelectMaterial}
         />
       ) : null}
 
-      {!onSelectImage ? (
+      {!onSelectMaterial ? (
         <DialogCategorizeImage
           isOpen={isCategorizeOpen}
           onOpenChange={setIsCategorizeOpen}
           folders={defaultFolders}
+          materialKind={reviewMaterial?.kind ?? "image"}
           onSubmit={handleCategorize}
         />
       ) : null}
@@ -131,7 +148,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
           onPickFile={() => fileInputRef.current?.click()}
           onReceiveFile={showPreview}
           onCapture={handleCapture}
-          isPasteEnabled={!reviewImage && !isCategorizeOpen}
+          isPasteEnabled={!reviewMaterial && !isCategorizeOpen}
         />
         {overlays}
       </>
@@ -142,7 +159,7 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
     <div
       className={cn(
         "fixed inset-0 bg-black overflow-hidden",
-        reviewImage && "z-50",
+        reviewMaterial && "z-50",
       )}
     >
       {title ? (
@@ -191,19 +208,24 @@ export function Camera({ title, footerClass, onSelectImage }: CameraProps) {
         {fileInput}
         <Button
           id="galeria"
-          aria-label="Escolher imagem da galeria"
-          className="size-13 rounded-lg p-0 overflow-hidden bg-black/35"
+          aria-label="Escolher imagem ou PDF do dispositivo"
+          className="size-13 rounded-lg p-0 overflow-hidden bg-black/35 text-white"
           onPress={() => fileInputRef.current?.click()}
         >
-          {preview ? (
+          {preview === null ? (
+            <Images />
+          ) : preview.kind === "pdf" ? (
+            <span className="size-full flex items-center justify-center bg-white text-foreground">
+              <FileText className="size-6" />
+              <span className="sr-only">Último PDF selecionado</span>
+            </span>
+          ) : (
             <img
               id="galeria-thumb"
-              src={preview}
+              src={preview.url}
               alt="Última imagem selecionada"
               className="size-full object-cover"
             />
-          ) : (
-            <Images />
           )}
         </Button>
 

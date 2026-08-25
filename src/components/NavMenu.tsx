@@ -1,11 +1,12 @@
 import { Button, cn, SearchField } from "@heroui/react";
-import { useCanGoBack, useRouter } from "@tanstack/react-router";
+import { useCanGoBack, useParams, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import { useState } from "react";
 
 interface NavMenuProps {
   title: string;
   hasBackButton?: boolean;
+  backHref?: string;
   hasSearch?: boolean;
   onSearch?: (term: string) => void;
   variant?: "black" | "white";
@@ -15,6 +16,7 @@ interface NavMenuProps {
 export function NavMenu({
   title,
   hasBackButton = false,
+  backHref = undefined,
   hasSearch = false,
   onSearch = () => {},
   variant = "black",
@@ -22,6 +24,7 @@ export function NavMenu({
 }: NavMenuProps) {
   const router = useRouter();
   const canGoBack = useCanGoBack();
+  const params = useParams({ strict: false });
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
@@ -57,7 +60,16 @@ export function NavMenu({
               <Button
                 isIconOnly
                 variant="ghost"
-                onClick={() => router.history.back()}
+                onClick={() => {
+                  if (backHref) {
+                    router.navigate({
+                      to: backHref,
+                      params,
+                    });
+                  } else {
+                    router.history.back();
+                  }
+                }}
                 size="lg"
                 className={variant === "white" ? "not-active:text-white" : ""}
               >

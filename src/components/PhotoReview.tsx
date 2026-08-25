@@ -1,23 +1,26 @@
+import type { Material } from "@/types/Material";
 import { Button } from "@heroui/react";
-import { ImagePlus } from "lucide-react";
+import { FilePlus, ImagePlus } from "lucide-react";
 
-import { ImageViewer } from "./ImageViewer";
+import { MaterialViewer } from "./MaterialViewer";
 
 interface PhotoReviewProps {
-  image: string;
+  material: Material;
   onBack: () => void;
   onSelect: () => void;
 }
 
-export function PhotoReview({ image, onBack, onSelect }: PhotoReviewProps) {
+export function PhotoReview({ material, onBack, onSelect }: PhotoReviewProps) {
+  const isPdf = material.kind === "pdf";
+
   return (
-    <ImageViewer
-      image={image}
+    <MaterialViewer
+      material={material}
       onClose={onBack}
       footer={
         <Button fullWidth size="lg" onPress={onSelect}>
-          <ImagePlus />
-          Selecionar imagem
+          {isPdf ? <FilePlus /> : <ImagePlus />}
+          {isPdf ? "Selecionar PDF" : "Selecionar imagem"}
         </Button>
       }
     />

@@ -1,5 +1,14 @@
+import { isAcceptedMaterial } from "@/utils/materials";
 import { Button, Spinner, cn } from "@heroui/react";
-import { Camera, CameraOff, ImagePlus, X, Zap, ZapOff } from "lucide-react";
+import {
+  Camera,
+  CameraOff,
+  FilePlus2,
+  TriangleAlert,
+  X,
+  Zap,
+  ZapOff,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { NavMenu } from "./NavMenu";
@@ -35,20 +44,27 @@ export function CaptureDesk({
   } = camera;
 
   const [isDragging, setIsDragging] = useState(false);
+  const [rejectedFile, setRejectedFile] = useState<string | null>(null);
   const dragDepth = useRef(0);
 
   useEffect(() => {
     if (!isPasteEnabled) return;
 
     function handlePaste(event: ClipboardEvent) {
-      const [file] = Array.from(event.clipboardData?.files ?? []).filter(
-        (candidate) => candidate.type.startsWith("image/"),
-      );
+      const files = Array.from(event.clipboardData?.files ?? []);
+      if (files.length === 0) return;
+
+      const file = files.find(isAcceptedMaterial);
+
+      event.preventDefault();
 
       if (file) {
-        event.preventDefault();
+        setRejectedFile(null);
         onReceiveFile(file);
+        return;
       }
+
+      setRejectedFile(files[0].name);
     }
 
     window.addEventListener("paste", handlePaste);
@@ -75,11 +91,18 @@ export function CaptureDesk({
     dragDepth.current = 0;
     setIsDragging(false);
 
-    const [file] = Array.from(event.dataTransfer.files).filter((candidate) =>
-      candidate.type.startsWith("image/"),
-    );
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length === 0) return;
 
-    if (file) onReceiveFile(file);
+    const file = files.find(isAcceptedMaterial);
+
+    if (file) {
+      setRejectedFile(null);
+      onReceiveFile(file);
+      return;
+    }
+
+    setRejectedFile(files[0].name);
   }
 
   return (
@@ -87,7 +110,7 @@ export function CaptureDesk({
       <NavMenu title={title ?? "Nova captura"} hasBackButton={Boolean(title)} />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-        <section className="bg-white rounded-3xl shadow-surface p-4 md:p-6">
+        <section className="bg-white rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-3">
           <button
             type="button"
             onClick={onPickFile}
@@ -95,7 +118,7 @@ export function CaptureDesk({
             onDragOver={(event) => event.preventDefault()}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            aria-label="Escolher uma imagem do seu material para enviar"
+            aria-label="Escolher uma imagem ou um PDF do seu material para enviar"
             className={cn(
               "w-full min-h-80 px-6 py-12 rounded-2xl border-2 border-dashed",
               "flex flex-col items-center justify-center gap-5 text-center",
@@ -114,17 +137,18 @@ export function CaptureDesk({
                   : "bg-accent-soft text-accent",
               )}
             >
-              <ImagePlus className="size-7" />
+              <FilePlus2 className="size-7" />
             </span>
 
             <span className="flex flex-col gap-1">
               <span className="text-2xl font-semibold text-balance">
                 {isDragging
                   ? "Solte para enviar"
-                  : "Arraste uma foto do seu material"}
+                  : "Arraste uma foto ou um PDF do seu material"}
               </span>
               <span className="text-sm text-muted text-balance">
-                Caderno, lousa ou apostila. Você também pode colar com Ctrl+V.
+                Caderno, lousa, apostila ou slide em PDF. Você também pode colar
+                com Ctrl+V.
               </span>
             </span>
 
@@ -132,6 +156,20 @@ export function CaptureDesk({
               Escolher arquivo
             </span>
           </button>
+
+          {rejectedFile ? (
+            <p
+              role="alert"
+              className="flex items-start gap-2 text-sm text-danger"
+            >
+              <TriangleAlert className="size-4 shrink-0 mt-0.5" />
+              <span className="text-pretty">
+                O Revi só analisa imagem e PDF, então{" "}
+                <strong className="font-semibold">{rejectedFile}</strong> não
+                pode ser enviado. Tente uma foto do material ou o PDF do slide.
+              </span>
+            </p>
+          ) : null}
         </section>
 
         <section className="bg-white rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-4">

@@ -13,7 +13,7 @@ function SubjectCameraPage() {
   return (
     <Camera
       title="Equação de terceiro grau"
-      onSelectImage={() => router.history.back()}
+      onSelectMaterial={() => router.history.back()}
     />
   );
 }

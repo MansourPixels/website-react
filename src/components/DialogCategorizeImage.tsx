@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { ColorPicker } from "@/components/ColorPicker";
 import { categorizeImage } from "@/mocks/categorization";
 import type { Folder } from "@/types/Folder";
+import type { MaterialKind } from "@/types/Material";
 import { getRandomColor } from "@/utils/color";
 import { normalizeText } from "@/utils/text";
 
@@ -29,6 +30,7 @@ interface DialogCategorizeImageProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   folders: Folder[];
+  materialKind?: MaterialKind;
   onSubmit: (categorization: ImageCategorization) => void;
 }
 
@@ -36,8 +38,10 @@ export function DialogCategorizeImage({
   isOpen,
   onOpenChange,
   folders,
+  materialKind = "image",
   onSubmit,
 }: DialogCategorizeImageProps) {
+  const isPdf = materialKind === "pdf";
   const [isCategorizing, setIsCategorizing] = useState(true);
   const [folderKey, setFolderKey] = useState<string>(NEW_FOLDER_KEY);
   const [newFolderName, setNewFolderName] = useState("");
@@ -113,15 +117,16 @@ export function DialogCategorizeImage({
               <Modal.Body className="flex flex-col items-center gap-3 py-8 text-center">
                 <Spinner size="lg" />
                 <p className="text-muted text-sm">
-                  O Revi IA está categorizando a disciplina e o assunto desta
-                  imagem.
+                  O Revi IA está categorizando a disciplina e o assunto{" "}
+                  {isPdf ? "deste PDF" : "desta imagem"}.
                 </p>
               </Modal.Body>
             ) : (
               <Modal.Body className="grid gap-4">
                 <p className="text-muted text-sm">
-                  Encontramos esta categorização para a imagem. Ajuste os campos
-                  caso algo não esteja correto.
+                  Encontramos esta categorização para{" "}
+                  {isPdf ? "o PDF" : "a imagem"}. Ajuste os campos caso algo não
+                  esteja correto.
                 </p>
 
                 <Select
@@ -187,7 +192,7 @@ export function DialogCategorizeImage({
                 onPress={handleSubmit}
                 isDisabled={isCategorizing || !isValid}
               >
-                Salvar imagem
+                {isPdf ? "Salvar PDF" : "Salvar imagem"}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

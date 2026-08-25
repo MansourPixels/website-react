@@ -2,16 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { FABButton } from "@/components/FABButton";
-import { ImageViewer } from "@/components/ImageViewer";
+import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
-import { Button } from "@heroui/react";
+import { subjectMaterials } from "@/mocks/materials";
+import type { Material } from "@/types/Material";
 import { Camera, FileText, ListCheck, Zap } from "lucide-react";
+import { MaterialTile } from "./-components/MaterialTile";
 import { StudyTypeCard } from "./-components/StudyTypeCard";
-
-const images = Array.from(
-  { length: 8 },
-  (_, index) => `https://picsum.photos/300/300?random=${index}`,
-);
 
 export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
   component: SubjectDetailsPage,
@@ -20,7 +17,9 @@ export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
 function SubjectDetailsPage() {
   // @ts-ignore
   const [search, setSearch] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
+    null,
+  );
 
   const navigate = useNavigate({
     from: "/pastas/$pastaId/assuntos/$assuntoId/",
@@ -64,22 +63,18 @@ function SubjectDetailsPage() {
         id="imagens"
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 h-full"
       >
-        {images.map((image, index) => (
-          <Button
-            key={image}
-            className="aspect-square h-auto p-0 rounded-xl overflow-hidden"
-            fullWidth
-            aria-label={`Abrir imagem ${index + 1}`}
-            onPress={() => setSelectedImage(image)}
-          >
-            <img src={image} alt="" className="size-full object-cover" />
-          </Button>
+        {subjectMaterials.map((material) => (
+          <MaterialTile
+            key={material.id}
+            material={material}
+            onOpen={() => setSelectedMaterial(material)}
+          />
         ))}
       </section>
       <FABButton icon={Camera} onClick={() => navigate({ to: "camera" })} />
-      <ImageViewer
-        image={selectedImage}
-        onClose={() => setSelectedImage(null)}
+      <MaterialViewer
+        material={selectedMaterial}
+        onClose={() => setSelectedMaterial(null)}
       />
     </main>
   );
