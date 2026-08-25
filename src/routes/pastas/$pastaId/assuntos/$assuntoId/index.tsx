@@ -4,20 +4,22 @@ import { useState } from "react";
 import { FABButton } from "@/components/FABButton";
 import { ImageViewer } from "@/components/ImageViewer";
 import { NavMenu } from "@/components/NavMenu";
+import { getSubjectsByFolder } from "@/mocks/subjects";
 import { Button } from "@heroui/react";
 import { Camera, FileText, ListCheck, Zap } from "lucide-react";
 import { StudyTypeCard } from "./-components/StudyTypeCard";
-
-const images = Array.from(
-  { length: 8 },
-  (_, index) => `https://picsum.photos/300/300?random=${index}`,
-);
 
 export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
   component: SubjectDetailsPage,
 });
 
 function SubjectDetailsPage() {
+  const { pastaId, assuntoId } = Route.useParams();
+  const subject = getSubjectsByFolder(pastaId).find(
+    (item) => item.id === assuntoId,
+  );
+  const images = subject?.images ?? [];
+
   const [search, setSearch] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ function SubjectDetailsPage() {
   return (
     <main className="p-6 gap-8 flex flex-col">
       <NavMenu
-        title="Equação de terceiro grau"
+        title={subject?.name ?? "Assunto"}
         hasBackButton
         hasSearch
         onSearch={setSearch}

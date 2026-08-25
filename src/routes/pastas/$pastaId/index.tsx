@@ -1,5 +1,7 @@
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
+import { defaultFolders } from "@/mocks/folders";
+import { getSubjectsByFolder } from "@/mocks/subjects";
 import type { Subject } from "@/types/Subject";
 import { normalizeText } from "@/utils/text";
 import { createFileRoute } from "@tanstack/react-router";
@@ -8,30 +10,21 @@ import { DialogFormSubject } from "./-components/DialogFormSubject";
 import { LoadingSubjectCard, SubjectCard } from "./-components/SubjectCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/")({
-  component: SubjectListPage,
+  component: SubjectListRoute,
 });
 
-const defaultSubjects: Subject[] = [
-  {
-    id: "1",
-    name: "Equação de terceiro grau",
-    images: Array.from(
-      { length: 4 },
-      (_, index) => `https://picsum.photos/300/300?random=${index}`,
-    ),
-  },
-  {
-    id: "2",
-    name: "Trigonometria no triângulo retângulo",
-    images: Array.from(
-      { length: 4 },
-      (_, index) => `https://picsum.photos/300/300?random=${index + 4}`,
-    ),
-  },
-];
+function SubjectListRoute() {
+  const { pastaId } = Route.useParams();
 
-function SubjectListPage() {
-  const [subjects, setSubjects] = useState<Subject[]>(defaultSubjects);
+  // A rota é reaproveitada ao trocar de pasta, então a key reinicia o estado.
+  return <SubjectListPage key={pastaId} folderId={pastaId} />;
+}
+
+function SubjectListPage({ folderId }: { folderId: string }) {
+  const folder = defaultFolders.find((item) => item.id === folderId);
+  const [subjects, setSubjects] = useState<Subject[]>(() =>
+    getSubjectsByFolder(folderId),
+  );
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -59,7 +52,7 @@ function SubjectListPage() {
   return (
     <main className="p-6 gap-8 flex flex-col">
       <NavMenu
-        title="Matemática"
+        title={folder?.name ?? "Pasta"}
         hasBackButton
         hasSearch
         onSearch={setSearch}
