@@ -7,7 +7,7 @@ import { normalizeText } from "@/utils/text";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { DialogFormSubject } from "./-components/DialogFormSubject";
-import { LoadingSubjectCard, SubjectCard } from "./-components/SubjectCard";
+import { SubjectCard } from "./-components/SubjectCard";
 
 export const Route = createFileRoute("/pastas/$pastaId/")({
   component: SubjectListRoute,
@@ -71,7 +71,6 @@ function SubjectListPage({ folderId }: { folderId: string }) {
               onDeleteSubject={handleDeleteSubject}
             />
           ))}
-          <LoadingSubjectCard />
         </section>
       ) : (
         <p className="text-muted text-center py-8">
