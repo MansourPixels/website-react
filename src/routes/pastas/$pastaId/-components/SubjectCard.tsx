@@ -40,6 +40,9 @@ export function SubjectCard(props: SubjectCardProps) {
     pastaId,
     assuntoId: subject.id,
   };
+  const previewImages = subject.materials
+    .filter((material) => material.kind === "image")
+    .slice(0, 4);
 
   return (
     <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
@@ -53,10 +56,10 @@ export function SubjectCard(props: SubjectCardProps) {
             {subject.name}
           </h2>
           <div className="grid grid-cols-2 gap-2">
-            {subject.images.map((image) => (
+            {previewImages.map((material) => (
               <img
-                key={image}
-                src={image}
+                key={material.id}
+                src={material.url}
                 alt=""
                 className="rounded-lg aspect-video w-full object-cover"
               />

@@ -1,5 +1,7 @@
+import type { Material } from "@/types/Material";
+
 export interface Subject {
   id: string;
   name: string;
-  images: string[];
+  materials: Material[];
 }

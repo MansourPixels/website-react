@@ -1,4 +1,6 @@
 import { Camera } from "@/components/Camera";
+import { addSubjectMaterial, getSubject } from "@/mocks/subjects";
+import type { Material } from "@/types/Material";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
@@ -9,11 +11,18 @@ export const Route = createFileRoute(
 
 function SubjectCameraPage() {
   const router = useRouter();
+  const { pastaId, assuntoId } = Route.useParams();
+  const subject = getSubject(pastaId, assuntoId);
+
+  function handleSelectMaterial(material: Material) {
+    addSubjectMaterial(pastaId, assuntoId, material);
+    router.history.back();
+  }
 
   return (
     <Camera
-      title="Equação de terceiro grau"
-      onSelectMaterial={() => router.history.back()}
+      title={subject?.name ?? "Assunto"}
+      onSelectMaterial={handleSelectMaterial}
     />
   );
 }

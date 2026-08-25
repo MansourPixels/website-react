@@ -77,6 +77,9 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     if (!reviewMaterial) return;
 
     if (onSelectMaterial) {
+      // A object URL passa a pertencer ao material salvo, então não pode ser
+      // revogada quando a câmera desmontar.
+      previewUrlRef.current = null;
       onSelectMaterial(reviewMaterial);
       setReviewMaterial(null);
       return;

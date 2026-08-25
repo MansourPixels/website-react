@@ -4,8 +4,9 @@ import { useState } from "react";
 import { FABButton } from "@/components/FABButton";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
-import { subjectMaterials } from "@/mocks/materials";
+import { getSubject } from "@/mocks/subjects";
 import type { Material } from "@/types/Material";
+import { normalizeText } from "@/utils/text";
 import { Camera, FileText, ListCheck, Zap } from "lucide-react";
 import { MaterialTile } from "./-components/MaterialTile";
 import { StudyTypeCard } from "./-components/StudyTypeCard";
@@ -15,11 +16,21 @@ export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
 });
 
 function SubjectDetailsPage() {
-  // @ts-ignore
+  const { pastaId, assuntoId } = Route.useParams();
+  const subject = getSubject(pastaId, assuntoId);
+
   const [search, setSearch] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
     null,
   );
+
+  const normalizedSearch = normalizeText(search);
+  const materials = subject?.materials ?? [];
+  const filteredMaterials = normalizedSearch
+    ? materials.filter((material) =>
+        normalizeText(material.name).includes(normalizedSearch),
+      )
+    : materials;
 
   const navigate = useNavigate({
     from: "/pastas/$pastaId/assuntos/$assuntoId/",
@@ -28,7 +39,7 @@ function SubjectDetailsPage() {
   return (
     <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu
-        title="Equação de terceiro grau"
+        title={subject?.name ?? "Assunto"}
         hasBackButton
         hasSearch
         onSearch={setSearch}
@@ -59,18 +70,26 @@ function SubjectDetailsPage() {
           iconClass="bg-orange-600"
         />
       </section>
-      <section
-        id="imagens"
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 h-full"
-      >
-        {subjectMaterials.map((material) => (
-          <MaterialTile
-            key={material.id}
-            material={material}
-            onOpen={() => setSelectedMaterial(material)}
-          />
-        ))}
-      </section>
+      {filteredMaterials.length > 0 ? (
+        <section
+          id="materiais"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 h-full"
+        >
+          {filteredMaterials.map((material) => (
+            <MaterialTile
+              key={material.id}
+              material={material}
+              onOpen={() => setSelectedMaterial(material)}
+            />
+          ))}
+        </section>
+      ) : (
+        <p className="text-muted text-center py-8">
+          {normalizedSearch
+            ? `Nenhum material encontrado para "${search.trim()}".`
+            : "Este assunto ainda não tem materiais. Adicione o primeiro pela câmera."}
+        </p>
+      )}
       <FABButton icon={Camera} onClick={() => navigate({ to: "camera" })} />
       <MaterialViewer
         material={selectedMaterial}

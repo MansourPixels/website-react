@@ -15,7 +15,7 @@ function createEmptySubject(): Subject {
   return {
     id: crypto.randomUUID(),
     name: "",
-    images: [],
+    materials: [],
   };
 }
 
