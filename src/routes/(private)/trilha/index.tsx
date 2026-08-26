@@ -1,10 +1,9 @@
-import { Clock, FileStack, ListCheck, NotebookPen } from "lucide-react";
+import { FileStack, ListCheck, NotebookPen } from "lucide-react";
 
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { useStudyPlans } from "@/contexts/StudyPlanContext";
 import { performance } from "@/mocks/performance";
-import { formatDuration } from "@/utils/time";
 import { DisciplinePerformanceList } from "./components/DisciplinePerformanceList";
 import { StudyPlanCard } from "./components/StudyPlanCard";
 import { WeeklyStudyList } from "./components/WeeklyStudyList";
@@ -17,10 +16,8 @@ export default function PathPage() {
     studiedSubjects,
     reviewedCards,
     practiceTests,
-    minutesThisWeek,
     cardsDelta,
     testsDelta,
-    minutesDelta,
     disciplines,
     week,
     plans,
@@ -57,7 +54,7 @@ export default function PathPage() {
 
       <section
         id="indicadores-gerais"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3"
       >
         <StatTile
           label="Assuntos estudados"
@@ -76,13 +73,6 @@ export default function PathPage() {
           value={`${practiceTests}`}
           delta={testsDelta}
           icon={ListCheck}
-        />
-        <StatTile
-          label="Tempo de estudo"
-          value={formatDuration(minutesThisWeek)}
-          delta={minutesDelta}
-          deltaSuffix="min"
-          icon={Clock}
         />
       </section>
 
