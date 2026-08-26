@@ -5,9 +5,9 @@ import {
   materialKindOf,
 } from "@/utils/materials";
 import { Button, cn, Spinner } from "@heroui/react";
-import { useNavigate } from "@tanstack/react-router";
 import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
 import { defaultFolders } from "../mocks/folders";
@@ -77,8 +77,6 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     if (!reviewMaterial) return;
 
     if (onSelectMaterial) {
-      // A object URL passa a pertencer ao material salvo, então não pode ser
-      // revogada quando a câmera desmontar.
       previewUrlRef.current = null;
       onSelectMaterial(reviewMaterial);
       setReviewMaterial(null);
@@ -91,10 +89,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   function handleCategorize({ folder, subjectName }: ImageCategorization) {
     setReviewMaterial(null);
 
-    navigate({
-      to: "/pastas/$pastaId/assuntos/$assuntoId",
-      params: { pastaId: folder.id, assuntoId: subjectName },
-    });
+    navigate(`/pastas/${folder.id}/assuntos/${encodeURIComponent(subjectName)}`);
   }
 
   async function handleCapture() {

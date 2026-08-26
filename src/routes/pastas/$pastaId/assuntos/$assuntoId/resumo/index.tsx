@@ -1,14 +1,7 @@
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
-import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute(
-  "/pastas/$pastaId/assuntos/$assuntoId/resumo/",
-)({
-  component: SummaryPage,
-});
-
-function SummaryPage() {
+export default function SummaryPage() {
   return (
     <main className="content-bg-purple-200 flex-1 flex flex-col">
       <div className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-3xl mx-auto">

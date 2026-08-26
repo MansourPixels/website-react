@@ -1,7 +1,7 @@
 import { FolderCover } from "@/components/FolderCover";
 import { defaultFolders } from "@/mocks/folders";
 import { buttonVariants } from "@heroui/styles";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router";
 
 const byName = (name: string) =>
   defaultFolders.find((folder) => folder.name === name);

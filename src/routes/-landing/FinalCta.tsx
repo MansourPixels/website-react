@@ -1,5 +1,5 @@
 import { buttonVariants } from "@heroui/styles";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router";
 
 export function FinalCta() {
   return (

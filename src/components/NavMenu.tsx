@@ -1,7 +1,8 @@
 import { Button, cn, SearchField } from "@heroui/react";
-import { useCanGoBack, useParams, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useCanGoBack } from "@/hooks/useCanGoBack";
 
 interface NavMenuProps {
   title: string;
@@ -22,9 +23,8 @@ export function NavMenu({
   variant = "black",
   className,
 }: NavMenuProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const canGoBack = useCanGoBack();
-  const params = useParams({ strict: false });
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
@@ -62,12 +62,9 @@ export function NavMenu({
                 variant="ghost"
                 onClick={() => {
                   if (backHref) {
-                    router.navigate({
-                      to: backHref,
-                      params,
-                    });
+                    navigate(backHref);
                   } else {
-                    router.history.back();
+                    navigate(-1);
                   }
                 }}
                 size="lg"

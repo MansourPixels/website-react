@@ -6,7 +6,7 @@ import {
   Popover,
   Skeleton,
 } from "@heroui/react";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useParams } from "react-router";
 import {
   Ellipsis,
   FileText,
@@ -29,28 +29,21 @@ export function SubjectCard(props: SubjectCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const { pastaId } = useParams({ from: "/pastas/$pastaId/" });
+  const { pastaId } = useParams<"pastaId">() as { pastaId: string };
 
   function openDialog(open: (isOpen: boolean) => void) {
     setIsMenuOpen(false);
     open(true);
   }
   const { subject, onChangeSubject, onDeleteSubject } = props;
-  const linkParams = {
-    pastaId,
-    assuntoId: subject.id,
-  };
+  const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
   const previewImages = subject.materials
     .filter((material) => material.kind === "image")
     .slice(0, 4);
 
   return (
     <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
-      <Link
-        to="/pastas/$pastaId/assuntos/$assuntoId"
-        params={linkParams}
-        className="px-3 block h-full"
-      >
+      <Link to={basePath} className="px-3 block h-full">
         <div className="pt-3 pb-2 flex flex-col gap-4 h-full justify-between">
           <h2 className="leading-tight font-semibold line-clamp-2 h-10">
             {subject.name}
@@ -88,8 +81,7 @@ export function SubjectCard(props: SubjectCardProps) {
           <Popover.Dialog className="p-2">
             <ButtonGroup orientation="vertical">
               <Link
-                to="/pastas/$pastaId/assuntos/$assuntoId/flash-cards"
-                params={linkParams}
+                to={`${basePath}/flash-cards`}
                 className={buttonVariants({
                   className: "w-full justify-start border-b text-emerald-500",
                   variant: "ghost",
@@ -98,8 +90,7 @@ export function SubjectCard(props: SubjectCardProps) {
                 <Zap /> Flash Cards
               </Link>
               <Link
-                to="/pastas/$pastaId/assuntos/$assuntoId/resumo"
-                params={linkParams}
+                to={`${basePath}/resumo`}
                 className={buttonVariants({
                   className: "w-full justify-start border-b text-purple-700",
                   variant: "ghost",
@@ -108,8 +99,7 @@ export function SubjectCard(props: SubjectCardProps) {
                 <FileText /> Resumo
               </Link>
               <Link
-                to="/pastas/$pastaId/assuntos/$assuntoId/simulado-prova"
-                params={linkParams}
+                to={`${basePath}/simulado-prova`}
                 className={buttonVariants({
                   className: "w-full justify-start border-b text-orange-600",
                   variant: "ghost",

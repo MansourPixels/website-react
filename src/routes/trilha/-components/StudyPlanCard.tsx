@@ -3,7 +3,7 @@ import type { StudyPlan } from "@/mocks/studyPlans";
 import { planStepKinds } from "@/utils/planSteps";
 import { Button, Meter } from "@heroui/react";
 import { buttonVariants, cn } from "@heroui/styles";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router";
 import { CircleStar, Flame, ListChecks, Target } from "lucide-react";
 
 interface StudyPlanCardProps {
@@ -26,10 +26,7 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
     if (firstStep === undefined) return;
 
     followPlan(plan.id);
-    navigate({
-      to: "/trilha/plano/$planoId/etapa/$etapaId",
-      params: { planoId: plan.id, etapaId: firstStep.id },
-    });
+    navigate(`/trilha/plano/${plan.id}/etapa/${firstStep.id}`);
   }
 
   return (
@@ -89,8 +86,7 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
       <div className="flex flex-col gap-2">
         {isComplete || !isStarted ? null : nextStep ? (
           <Link
-            to="/trilha/plano/$planoId/etapa/$etapaId"
-            params={{ planoId: plan.id, etapaId: nextStep.id }}
+            to={`/trilha/plano/${plan.id}/etapa/${nextStep.id}`}
             className={buttonVariants({ variant: "primary", fullWidth: true })}
           >
             <CircleStar />
@@ -106,8 +102,7 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
         ) : null}
 
         <Link
-          to="/trilha/plano/$planoId"
-          params={{ planoId: plan.id }}
+          to={`/trilha/plano/${plan.id}`}
           className={buttonVariants({
             variant: isComplete || !isStarted ? "tertiary" : "ghost",
             fullWidth: true,

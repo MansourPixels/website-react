@@ -1,7 +1,7 @@
 import { Button, ProgressBar } from "@heroui/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Zap } from "lucide-react";
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router";
 
 import { DifficultyButton } from "@/components/DifficultyButton";
 import { FlashCard } from "@/components/FlashCard";
@@ -11,14 +11,11 @@ import { SessionSummary } from "./-components/SessionSummary";
 import { flashCards } from "@/mocks/flashCards";
 import { difficulties, type Difficulty } from "@/utils/difficulties";
 
-export const Route = createFileRoute(
-  "/pastas/$pastaId/assuntos/$assuntoId/flash-cards/",
-)({
-  component: FlashCardsPage,
-});
-
-function FlashCardsPage() {
-  const { pastaId, assuntoId } = Route.useParams();
+export default function FlashCardsPage() {
+  const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
+    pastaId: string;
+    assuntoId: string;
+  };
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -86,10 +83,7 @@ function FlashCardsPage() {
             counts={counts}
             onRestart={restartSession}
             onFinish={() =>
-              navigate({
-                to: "/pastas/$pastaId/assuntos/$assuntoId",
-                params: { pastaId, assuntoId },
-              })
+              navigate(`/pastas/${pastaId}/assuntos/${assuntoId}`)
             }
           />
         ) : (

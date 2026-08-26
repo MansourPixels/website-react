@@ -3,17 +3,13 @@ import { useStudyPlans } from "@/contexts/StudyPlanContext";
 import { findStudyPlan } from "@/mocks/studyPlans";
 import { Button, Meter } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CircleStar, Flame, RotateCcw } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router";
 
 import { PlanStepRow } from "./-components/PlanStepRow";
 
-export const Route = createFileRoute("/trilha/plano/$planoId/")({
-  component: StudyPlanPage,
-});
-
-function StudyPlanPage() {
-  const { planoId } = Route.useParams();
+export default function StudyPlanPage() {
+  const { planoId } = useParams<"planoId">() as { planoId: string };
   const navigate = useNavigate();
   const { getProgress, restartPlan, leavePlan, activePlanId } = useStudyPlans();
 
@@ -43,7 +39,7 @@ function StudyPlanPage() {
 
   function stopFollowing() {
     leavePlan();
-    navigate({ to: "/trilha" });
+    navigate("/trilha");
   }
 
   return (
@@ -148,8 +144,7 @@ function StudyPlanPage() {
           </p>
           {nextStep ? (
             <Link
-              to="/trilha/plano/$planoId/etapa/$etapaId"
-              params={{ planoId: plan.id, etapaId: nextStep.id }}
+              to={`/trilha/plano/${plan.id}/etapa/${nextStep.id}`}
               className={buttonVariants({
                 variant: "primary",
                 fullWidth: true,

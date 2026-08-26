@@ -2,8 +2,8 @@ import type { PlanStep } from "@/mocks/studyPlans";
 import { planStepKinds } from "@/utils/planSteps";
 import { formatDuration } from "@/utils/time";
 import { buttonVariants, cn } from "@heroui/styles";
-import { Link } from "@tanstack/react-router";
 import { Check, ChevronRight, RotateCcw } from "lucide-react";
+import { Link } from "react-router";
 
 interface PlanStepRowProps {
   planId: string;
@@ -61,8 +61,7 @@ export function PlanStepRow({
       </div>
 
       <Link
-        to="/trilha/plano/$planoId/etapa/$etapaId"
-        params={{ planoId: planId, etapaId: step.id }}
+        to={`/trilha/plano/${planId}/etapa/${step.id}`}
         className={buttonVariants({
           variant: isNext ? "primary" : "tertiary",
           fullWidth: true,

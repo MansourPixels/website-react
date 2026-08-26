@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Clock, FileStack, ListCheck, NotebookPen } from "lucide-react";
 
 import { NavMenu } from "@/components/NavMenu";
@@ -10,11 +9,7 @@ import { DisciplinePerformanceList } from "./-components/DisciplinePerformanceLi
 import { StudyPlanCard } from "./-components/StudyPlanCard";
 import { WeeklyStudyList } from "./-components/WeeklyStudyList";
 
-export const Route = createFileRoute("/trilha/")({
-  component: PathPage,
-});
-
-function PathPage() {
+export default function PathPage() {
   const { activePlanId } = useStudyPlans();
   const {
     overallAccuracy,

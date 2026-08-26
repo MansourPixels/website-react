@@ -3,22 +3,19 @@ import { useStudyPlans } from "@/contexts/StudyPlanContext";
 import { findStudyPlan } from "@/mocks/studyPlans";
 import { planStepKinds } from "@/utils/planSteps";
 import { buttonVariants, cn } from "@heroui/styles";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Link, useParams } from "react-router";
 
 import { FlashCardsStepRunner } from "./-components/FlashCardsStepRunner";
 import { PlanSpine } from "./-components/PlanSpine";
 import { PracticeStepRunner } from "./-components/PracticeStepRunner";
 import { SummaryStepRunner } from "./-components/SummaryStepRunner";
 
-export const Route = createFileRoute(
-  "/trilha/plano/$planoId/etapa/$etapaId",
-)({
-  component: PlanStepPage,
-});
-
-function PlanStepPage() {
-  const { planoId, etapaId } = Route.useParams();
+export default function PlanStepPage() {
+  const { planoId, etapaId } = useParams<"planoId" | "etapaId">() as {
+    planoId: string;
+    etapaId: string;
+  };
   const { getProgress, completeStep, resumePlan } = useStudyPlans();
 
   const plan = findStudyPlan(planoId);

@@ -1,22 +1,19 @@
 import { Camera } from "@/components/Camera";
 import { addSubjectMaterial, getSubject } from "@/mocks/subjects";
 import type { Material } from "@/types/Material";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useNavigate, useParams } from "react-router";
 
-export const Route = createFileRoute(
-  "/pastas/$pastaId/assuntos/$assuntoId/camera/",
-)({
-  component: SubjectCameraPage,
-});
-
-function SubjectCameraPage() {
-  const router = useRouter();
-  const { pastaId, assuntoId } = Route.useParams();
+export default function SubjectCameraPage() {
+  const navigate = useNavigate();
+  const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
+    pastaId: string;
+    assuntoId: string;
+  };
   const subject = getSubject(pastaId, assuntoId);
 
   function handleSelectMaterial(material: Material) {
     addSubjectMaterial(pastaId, assuntoId, material);
-    router.history.back();
+    navigate(-1);
   }
 
   return (

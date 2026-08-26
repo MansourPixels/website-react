@@ -1,5 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
-
 import { useState } from "react";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
@@ -9,11 +7,7 @@ import { normalizeText } from "@/utils/text";
 import { DialogFormFolder } from "./-components/DialogFormFolder";
 import { FolderCard } from "./-components/FolderCard";
 
-export const Route = createFileRoute("/pastas/")({
-  component: FolderListPage,
-});
-
-function FolderListPage() {
+export default function FolderListPage() {
   const [folders, setFolders] = useState<FolderType[]>(defaultFolders);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");

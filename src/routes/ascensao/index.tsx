@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { CalendarCheck, Clock, Snowflake, Trophy } from "lucide-react";
 
 import { NavMenu } from "@/components/NavMenu";
@@ -10,11 +9,7 @@ import { MilestoneList } from "./-components/MilestoneList";
 import { MonthlyAscension } from "./-components/MonthlyAscension";
 import { StreakWeek } from "./-components/StreakWeek";
 
-export const Route = createFileRoute("/ascensao/")({
-  component: Ascensao,
-});
-
-function Ascensao() {
+export default function Ascensao() {
   const {
     currentStreak,
     recordStreak,

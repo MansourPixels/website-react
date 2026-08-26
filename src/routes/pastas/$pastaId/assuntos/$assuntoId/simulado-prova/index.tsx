@@ -1,7 +1,7 @@
 import { Button, ProgressBar } from "@heroui/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, ListCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { useNavigate, useParams } from "react-router";
 
 import { AlternativeOption } from "@/components/AlternativeOption";
 import { NavMenu } from "@/components/NavMenu";
@@ -10,14 +10,11 @@ import { TestSummary } from "./-components/TestSummary";
 import { practiceTest } from "@/mocks/practiceTest";
 import { alternativeLetter } from "@/utils/alternatives";
 
-export const Route = createFileRoute(
-  "/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/",
-)({
-  component: PracticeTestPage,
-});
-
-function PracticeTestPage() {
-  const { pastaId, assuntoId } = Route.useParams();
+export default function PracticeTestPage() {
+  const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
+    pastaId: string;
+    assuntoId: string;
+  };
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,10 +76,7 @@ function PracticeTestPage() {
             answers={answers}
             onRestart={restartTest}
             onFinish={() =>
-              navigate({
-                to: "/pastas/$pastaId/assuntos/$assuntoId",
-                params: { pastaId, assuntoId },
-              })
+              navigate(`/pastas/${pastaId}/assuntos/${assuntoId}`)
             }
           />
         ) : (

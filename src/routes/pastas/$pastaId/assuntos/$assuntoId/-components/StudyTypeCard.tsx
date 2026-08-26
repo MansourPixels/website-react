@@ -1,6 +1,6 @@
 import { buttonVariants, cn } from "@heroui/styles";
-import { Link, useParams } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
+import { Link, useParams } from "react-router";
 
 interface StudyTypeCard {
   id: "flash-cards" | "resumo" | "simulado-prova";
@@ -17,12 +17,14 @@ export function StudyTypeCard({
   icon: Icon,
   iconClass,
 }: StudyTypeCard) {
-  const params = useParams({ from: "/pastas/$pastaId/assuntos/$assuntoId/" });
+  const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
+    pastaId: string;
+    assuntoId: string;
+  };
 
   return (
     <Link
-      to={`/pastas/$pastaId/assuntos/$assuntoId/${id}`}
-      params={params}
+      to={`/pastas/${pastaId}/assuntos/${assuntoId}/${id}`}
       className={buttonVariants({
         className:
           "bg-white rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",

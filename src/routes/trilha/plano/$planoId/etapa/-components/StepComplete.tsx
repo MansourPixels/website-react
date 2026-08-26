@@ -2,8 +2,8 @@ import type { PlanStep } from "@/mocks/studyPlans";
 import { planStepKinds } from "@/utils/planSteps";
 import { Button } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { Link } from "@tanstack/react-router";
 import { Check, ChevronRight, Flame, ListChecks, RotateCcw } from "lucide-react";
+import { Link } from "react-router";
 import type { ReactNode } from "react";
 
 interface StepCompleteProps {
@@ -74,8 +74,7 @@ export function StepComplete({
               Voltar à Trilha
             </Link>
             <Link
-              to="/trilha/plano/$planoId"
-              params={{ planoId: planId }}
+              to={`/trilha/plano/${planId}`}
               className={buttonVariants({
                 variant: "tertiary",
                 fullWidth: true,
@@ -89,8 +88,7 @@ export function StepComplete({
         ) : nextStep ? (
           <>
             <Link
-              to="/trilha/plano/$planoId/etapa/$etapaId"
-              params={{ planoId: planId, etapaId: nextStep.id }}
+              to={`/trilha/plano/${planId}/etapa/${nextStep.id}`}
               className={buttonVariants({
                 variant: "primary",
                 fullWidth: true,
@@ -101,8 +99,7 @@ export function StepComplete({
               {planStepKinds[nextStep.kind].action}
             </Link>
             <Link
-              to="/trilha/plano/$planoId"
-              params={{ planoId: planId }}
+              to={`/trilha/plano/${planId}`}
               className={buttonVariants({
                 variant: "tertiary",
                 fullWidth: true,
@@ -115,8 +112,7 @@ export function StepComplete({
           </>
         ) : (
           <Link
-            to="/trilha/plano/$planoId"
-            params={{ planoId: planId }}
+            to={`/trilha/plano/${planId}`}
             className={buttonVariants({
               variant: "primary",
               fullWidth: true,

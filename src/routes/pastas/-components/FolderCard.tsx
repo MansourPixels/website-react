@@ -1,7 +1,7 @@
 import { FolderCover } from "@/components/FolderCover";
 import type { Folder } from "@/types/Folder";
 import { Button, ButtonGroup, Popover } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router";
 import { Ellipsis, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
 import { DialogFolderExclusion } from "./DialogFolderExclusion";
@@ -30,8 +30,7 @@ export function FolderCard({
   return (
     <article className="relative group hover:brightness-105">
       <Link
-        to="/pastas/$pastaId"
-        params={{ pastaId: folder.id }}
+        to={`/pastas/${folder.id}`}
         className="block rounded-3xl active:scale-98 transition-all"
       >
         <FolderCover folder={folder} />

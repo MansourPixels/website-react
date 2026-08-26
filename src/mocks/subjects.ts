@@ -24,8 +24,6 @@ function createSubject(
   };
 }
 
-// Store em memória: enquanto não há backend, as capturas da câmera são
-// gravadas aqui para continuarem visíveis ao voltar para o assunto.
 const subjectsByFolder: Record<string, Subject[]> = {
   // Português
   "1": [

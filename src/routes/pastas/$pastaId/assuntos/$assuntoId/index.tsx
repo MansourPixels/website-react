@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router";
 
 import { FABButton } from "@/components/FABButton";
 import { MaterialViewer } from "@/components/MaterialViewer";
@@ -11,12 +11,11 @@ import { Camera, FileText, ListCheck, Zap } from "lucide-react";
 import { MaterialTile } from "./-components/MaterialTile";
 import { StudyTypeCard } from "./-components/StudyTypeCard";
 
-export const Route = createFileRoute("/pastas/$pastaId/assuntos/$assuntoId/")({
-  component: SubjectDetailsPage,
-});
-
-function SubjectDetailsPage() {
-  const { pastaId, assuntoId } = Route.useParams();
+export default function SubjectDetailsPage() {
+  const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
+    pastaId: string;
+    assuntoId: string;
+  };
   const subject = getSubject(pastaId, assuntoId);
 
   const [search, setSearch] = useState("");
@@ -32,9 +31,7 @@ function SubjectDetailsPage() {
       )
     : materials;
 
-  const navigate = useNavigate({
-    from: "/pastas/$pastaId/assuntos/$assuntoId/",
-  });
+  const navigate = useNavigate();
 
   return (
     <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
@@ -90,7 +87,7 @@ function SubjectDetailsPage() {
             : "Este assunto ainda não tem materiais. Adicione o primeiro pela câmera."}
         </p>
       )}
-      <FABButton icon={Camera} onClick={() => navigate({ to: "camera" })} />
+      <FABButton icon={Camera} onClick={() => navigate("camera")} />
       <MaterialViewer
         material={selectedMaterial}
         onClose={() => setSelectedMaterial(null)}

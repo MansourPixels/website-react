@@ -4,19 +4,14 @@ import { defaultFolders } from "@/mocks/folders";
 import { getSubjectsByFolder } from "@/mocks/subjects";
 import type { Subject } from "@/types/Subject";
 import { normalizeText } from "@/utils/text";
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useParams } from "react-router";
 import { DialogFormSubject } from "./-components/DialogFormSubject";
 import { SubjectCard } from "./-components/SubjectCard";
 
-export const Route = createFileRoute("/pastas/$pastaId/")({
-  component: SubjectListRoute,
-});
+export default function SubjectListRoute() {
+  const { pastaId } = useParams<"pastaId">() as { pastaId: string };
 
-function SubjectListRoute() {
-  const { pastaId } = Route.useParams();
-
-  // A rota é reaproveitada ao trocar de pasta, então a key reinicia o estado.
   return <SubjectListPage key={pastaId} folderId={pastaId} />;
 }
 
