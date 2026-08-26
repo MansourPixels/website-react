@@ -5,9 +5,9 @@ const DEFAULT_ROUTE = "/capturar";
 export function buildSignInPath(pathname: string, search: string) {
   const target = `${pathname}${search}`;
 
-  if (target === "/" || target.length === 0) return "/entrar";
+  if (target === "/" || target.length === 0) return "/auth/entrar";
 
-  return `/entrar?${NEXT_ROUTE_PARAM}=${encodeURIComponent(target)}`;
+  return `/auth/entrar?${NEXT_ROUTE_PARAM}=${encodeURIComponent(target)}`;
 }
 
 // Só aceita caminhos internos: "//outro.site" e URLs absolutas viram o destino
