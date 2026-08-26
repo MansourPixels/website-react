@@ -32,7 +32,7 @@ export function Hero() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              to="/capturar"
+              to="/cadastro"
               className={buttonVariants({ variant: "primary", size: "lg" })}
             >
               Começar a estudar

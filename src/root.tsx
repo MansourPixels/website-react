@@ -1,8 +1,15 @@
-import { CalendarCheck, Camera, Folders, Route as PathIcon } from "lucide-react";
+import {
+  CalendarCheck,
+  Camera,
+  Folders,
+  Route as PathIcon,
+  User,
+} from "lucide-react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "react-router";
 
 import { cn } from "@heroui/styles";
 import { BottomNavigation } from "./components/BottomNavigation";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { StudyPlanProvider } from "./contexts/StudyPlanContext";
 import "./app.css";
 
@@ -26,6 +33,11 @@ const links = [
     to: "/trilha",
     label: "Trilha",
     icon: PathIcon,
+  },
+  {
+    to: "/perfil",
+    label: "Perfil",
+    icon: User,
   },
 ];
 
@@ -67,11 +79,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <StudyPlanProvider>
+        <AppShell />
+      </StudyPlanProvider>
+    </AuthProvider>
+  );
+}
+
+function AppShell() {
   const { pathname } = useLocation();
-  const showBottomNavigation = links.some(({ to }) => pathname === to);
+  const { status } = useAuth();
+
+  const showBottomNavigation =
+    status === "authenticated" && links.some(({ to }) => pathname === to);
 
   return (
-    <StudyPlanProvider>
+    <>
       <div
         className={cn(
           "flex flex-col min-h-full relative",
@@ -81,6 +106,6 @@ export default function App() {
         <Outlet />
       </div>
       {showBottomNavigation ? <BottomNavigation links={links} /> : null}
-    </StudyPlanProvider>
+    </>
   );
 }

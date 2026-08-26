@@ -12,7 +12,7 @@ export function FinalCta() {
           Abra a câmera, fotografe a página e deixe o resto com o Revi.
         </p>
         <Link
-          to="/capturar"
+          to="/cadastro"
           className={buttonVariants({ variant: "primary", size: "lg" })}
         >
           Começar a estudar

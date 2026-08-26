@@ -39,15 +39,18 @@ export function LandingNav() {
           ))}
         </ul>
 
-        <Link
-          to="/capturar"
-          className={buttonVariants({
-            variant: "primary",
-            className: "ml-auto shrink-0 lg:ml-0",
-          })}
-        >
-          Começar a estudar
-        </Link>
+        <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-0 sm:gap-2">
+          <Link to="/entrar" className={buttonVariants({ variant: "ghost" })}>
+            Entrar
+          </Link>
+          <Link
+            to="/cadastro"
+            className={buttonVariants({ variant: "primary" })}
+          >
+            <span className="sm:hidden">Começar</span>
+            <span className="hidden sm:inline">Começar a estudar</span>
+          </Link>
+        </div>
       </nav>
     </header>
   );
