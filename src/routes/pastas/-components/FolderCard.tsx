@@ -1,3 +1,4 @@
+import { FolderCover } from "@/components/FolderCover";
 import type { Folder } from "@/types/Folder";
 import { Button, ButtonGroup, Popover } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
@@ -31,27 +32,9 @@ export function FolderCard({
       <Link
         to="/pastas/$pastaId"
         params={{ pastaId: folder.id }}
-        className="block active:scale-98 transition-all bg-(--folder-color) relative w-full rounded-3xl after:content-[''] after:bg-[url('/detalhe-pasta.svg')] after:bg-no-repeat after:bg-top-right after:w-full after:h-full after:inset-0 after:flex after:absolute group-hover:after:brightness-95"
-        style={{ "--folder-color": folder.color } as React.CSSProperties}
+        className="block rounded-3xl active:scale-98 transition-all"
       >
-        <div className="relative flex overflow-hidden h-20">
-          {Array.from({ length: Math.min(folder.amount, 4) }).map(
-            (_, index) => (
-              <div
-                className="preview md:nth-of-type-[4]:hidden"
-                key={`${folder.id}-preview-${index}`}
-              >
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            ),
-          )}
-        </div>
-        <div className="relative flex flex-col justify-center h-20 bg-black/15 px-4 py-1 rounded-b-3xl text-white">
-          <h2 className="text-2xl font-semibold">{folder.name}</h2>
-          <span className="opacity-75">{folder.amount || 0}</span>
-        </div>
+        <FolderCover folder={folder} />
       </Link>
 
       <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>

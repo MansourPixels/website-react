@@ -22,7 +22,7 @@ export function FlashCard({
   return (
     <div className="flex-1 min-h-[min(24rem,50vh)] relative perspective-distant">
       <div
-        className={`absolute inset-0 transform-3d transition-transform duration-500 ease-in-out ${
+        className={`absolute inset-0 transform-3d transition-transform duration-500 ease-in-out motion-reduce:transition-none ${
           isAnswerRevealed ? "rotate-y-180" : ""
         }`}
       >

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscensaoIndexRouteImport } from './routes/ascensao/index'
+import { Route as CapturarIndexRouteImport } from './routes/capturar/index'
 import { Route as PastasIndexRouteImport } from './routes/pastas/index'
 import { Route as TrilhaIndexRouteImport } from './routes/trilha/index'
 import { Route as PastasPastaIdIndexRouteImport } from './routes/pastas/$pastaId/index'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AscensaoIndexRoute = AscensaoIndexRouteImport.update({
   id: '/ascensao/',
   path: '/ascensao/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CapturarIndexRoute = CapturarIndexRouteImport.update({
+  id: '/capturar/',
+  path: '/capturar/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PastasIndexRoute = PastasIndexRouteImport.update({
@@ -92,6 +98,7 @@ const PastasPastaIdAssuntosAssuntoIdSimuladoProvaIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ascensao/': typeof AscensaoIndexRoute
+  '/capturar/': typeof CapturarIndexRoute
   '/pastas/': typeof PastasIndexRoute
   '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascensao': typeof AscensaoIndexRoute
+  '/capturar': typeof CapturarIndexRoute
   '/pastas': typeof PastasIndexRoute
   '/trilha': typeof TrilhaIndexRoute
   '/pastas/$pastaId': typeof PastasPastaIdIndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ascensao/': typeof AscensaoIndexRoute
+  '/capturar/': typeof CapturarIndexRoute
   '/pastas/': typeof PastasIndexRoute
   '/trilha/': typeof TrilhaIndexRoute
   '/pastas/$pastaId/': typeof PastasPastaIdIndexRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/ascensao/'
+    | '/capturar/'
     | '/pastas/'
     | '/trilha/'
     | '/pastas/$pastaId/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/ascensao'
+    | '/capturar'
     | '/pastas'
     | '/trilha'
     | '/pastas/$pastaId'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/ascensao/'
+    | '/capturar/'
     | '/pastas/'
     | '/trilha/'
     | '/pastas/$pastaId/'
@@ -180,6 +192,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AscensaoIndexRoute: typeof AscensaoIndexRoute
+  CapturarIndexRoute: typeof CapturarIndexRoute
   PastasIndexRoute: typeof PastasIndexRoute
   TrilhaIndexRoute: typeof TrilhaIndexRoute
   PastasPastaIdIndexRoute: typeof PastasPastaIdIndexRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/ascensao'
       fullPath: '/ascensao/'
       preLoaderRoute: typeof AscensaoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/capturar/': {
+      id: '/capturar/'
+      path: '/capturar'
+      fullPath: '/capturar/'
+      preLoaderRoute: typeof CapturarIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pastas/': {
@@ -284,6 +304,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AscensaoIndexRoute: AscensaoIndexRoute,
+  CapturarIndexRoute: CapturarIndexRoute,
   PastasIndexRoute: PastasIndexRoute,
   TrilhaIndexRoute: TrilhaIndexRoute,
   PastasPastaIdIndexRoute: PastasPastaIdIndexRoute,

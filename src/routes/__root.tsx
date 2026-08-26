@@ -3,7 +3,7 @@ import {
   Outlet,
   useRouterState,
 } from "@tanstack/react-router";
-import { CalendarCheck, Folders, Home, Route as Path } from "lucide-react";
+import { CalendarCheck, Camera, Folders, Route as Path } from "lucide-react";
 
 import { cn } from "@heroui/styles";
 import { BottomNavigation } from "../components/BottomNavigation";
@@ -11,10 +11,9 @@ import { StudyPlanProvider } from "../contexts/StudyPlanContext";
 
 const links = [
   {
-    to: "/",
-    exact: true,
-    label: "Início",
-    icon: Home,
+    to: "/capturar",
+    label: "Capturar",
+    icon: Camera,
   },
   {
     to: "/pastas",
