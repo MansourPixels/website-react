@@ -72,7 +72,10 @@ function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
         onClick={() => toggle(id)}
         aria-expanded={hasChildren ? isExpanded : undefined}
         className={cn(
-          "mind-map-node size-full text-left rounded-xl shadow-surface px-3.5 py-3 overflow-hidden flex flex-col gap-1",
+          // O React Flow marca .react-flow__node com pointer-events:none
+          // (nodesFocusable/elementsSelectable estão off); sem isso o clique
+          // atravessa o card e cai no pane.
+          "mind-map-node pointer-events-auto size-full text-left rounded-xl shadow-surface px-3.5 py-3 overflow-hidden flex flex-col gap-1",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           isRoot ? "bg-cyan-600 text-white" : "bg-white border border-cyan-200",
           hasChildren && "cursor-pointer hover:brightness-105",
