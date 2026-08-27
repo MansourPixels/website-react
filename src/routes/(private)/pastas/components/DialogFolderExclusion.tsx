@@ -1,12 +1,16 @@
 import { Button, Modal } from "@heroui/react";
 import { Trash } from "lucide-react";
-import type { Folder } from "@/types/Folder";
+import { useEffect, useState } from "react";
+
+import { deleteMotherFolder } from "@/api/folders";
+import { ApiError } from "@/api/client";
+import type { MotherFolder } from "@/types/api/folder";
 
 interface DialogFolderExclusionProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirm: (folder: Folder) => void;
-  folder: Folder;
+  onConfirm: (folder: MotherFolder) => void;
+  folder: MotherFolder;
 }
 
 export function DialogFolderExclusion({
@@ -15,9 +19,42 @@ export function DialogFolderExclusion({
   onConfirm,
   folder,
 }: DialogFolderExclusionProps) {
-  function handleConfirm() {
-    onConfirm(folder);
-    onOpenChange(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // O diálogo fica montado entre aberturas (só isOpen muda) — reseta o erro
+  // de uma tentativa anterior sempre que reabre, não só ao fechar.
+  useEffect(() => {
+    if (isOpen) setError(null);
+  }, [isOpen]);
+
+  async function handleConfirm() {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      await deleteMotherFolder(folder.id);
+      onConfirm(folder);
+      onOpenChange(false);
+    } catch (apiError) {
+      // 404: a pasta já não existe (excluída em outra sessão) — remove da
+      // lista local em vez de travar a UI numa pasta fantasma.
+      if (apiError instanceof ApiError && apiError.status === 404) {
+        onConfirm(folder);
+        onOpenChange(false);
+        return;
+      }
+
+      setError(
+        apiError instanceof ApiError
+          ? apiError.detail
+          : "Não foi possível excluir a pasta. Tente novamente.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -32,13 +69,18 @@ export function DialogFolderExclusion({
               </Modal.Icon>
               <Modal.Heading>Excluir pasta {folder.name}</Modal.Heading>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
                 {folder.amount > 0
                   ? `Esta pasta possui ${folder.amount} ${folder.amount === 1 ? "item" : "itens"} que também serão excluídos. `
                   : ""}
                 Esta ação não pode ser desfeita.
               </p>
+              {error !== null ? (
+                <p role="alert" className="text-danger text-sm text-pretty">
+                  {error}
+                </p>
+              ) : null}
             </Modal.Body>
             <Modal.Footer className="grid grid-cols-2 gap-2">
               <Button
@@ -52,6 +94,7 @@ export function DialogFolderExclusion({
                 variant="danger"
                 className="w-full"
                 onPress={handleConfirm}
+                isDisabled={isDeleting}
               >
                 Excluir pasta
               </Button>
