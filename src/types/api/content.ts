@@ -15,3 +15,7 @@ export interface FolderSuggestion {
   suggestedMotherFolderName: string | null;
   suggestedChildFolderName: string | null;
 }
+
+export interface DownloadUrlResponse {
+  url: string;
+}

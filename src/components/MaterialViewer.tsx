@@ -1,10 +1,10 @@
-import type { Material } from "@/types/Material";
+import type { ViewableFile } from "@/types/capture";
 import { Button, Modal } from "@heroui/react";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface MaterialViewerProps {
-  material: Material | null;
+  material: ViewableFile | null;
   onClose: () => void;
   footer?: ReactNode;
 }
@@ -14,7 +14,7 @@ export function MaterialViewer({
   onClose,
   footer,
 }: MaterialViewerProps) {
-  const isPdf = material?.kind === "pdf";
+  const isPdf = material?.contentType === "PDF";
 
   return (
     <Modal
