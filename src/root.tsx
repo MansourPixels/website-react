@@ -1,8 +1,8 @@
 import {
-  CalendarCheck,
   Camera,
   Folders,
   Route as PathIcon,
+  Timer,
   User,
 } from "lucide-react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "react-router";
@@ -10,23 +10,24 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "re
 import { cn } from "@heroui/styles";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SpotifyProvider } from "./contexts/SpotifyContext";
 import "./app.css";
 
 const links = [
-  {
-    to: "/capturar",
-    label: "Capturar",
-    icon: Camera,
-  },
   {
     to: "/pastas",
     label: "Pastas",
     icon: Folders,
   },
   {
-    to: "/ascensao",
-    label: "Ascensão",
-    icon: CalendarCheck,
+    to: "/sessao",
+    label: "Sessão",
+    icon: Timer,
+  },
+  {
+    to: "/capturar",
+    label: "Capturar",
+    icon: Camera,
   },
   {
     to: "/trilha",
@@ -80,7 +81,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <AppShell />
+      <SpotifyProvider>
+        <AppShell />
+      </SpotifyProvider>
     </AuthProvider>
   );
 }
