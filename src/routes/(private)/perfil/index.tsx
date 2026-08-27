@@ -1,20 +1,40 @@
 import { Avatar, Button } from "@heroui/react";
 import { Flame, LogOut, Mail, Trophy } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { resendVerificationEmail } from "@/api/auth";
+import { getStreak } from "@/api/streak";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/contexts/AuthContext";
-import { ascension } from "@/mocks/ascension";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const { currentStreak, recordStreak } = ascension;
+  const [streak, setStreak] = useState<{
+    currentStreak: number;
+    recordStreak: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getStreak()
+      .then((result) => {
+        if (!cancelled) setStreak(result);
+      })
+      .catch(() => {
+        // Estatísticas secundárias nesta tela — uma falha aqui não deve
+        // travar o resto do perfil.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [verificationState, setVerificationState] = useState<
@@ -60,13 +80,13 @@ export default function PerfilPage() {
       <section className="grid grid-cols-2 gap-3">
         <StatTile
           label="Dias em ascensão"
-          value={`${currentStreak}`}
+          value={streak !== null ? `${streak.currentStreak}` : "–"}
           hint="Sua sequência atual"
           icon={Flame}
         />
         <StatTile
           label="Recorde"
-          value={`${recordStreak} dias`}
+          value={streak !== null ? `${streak.recordStreak} dias` : "–"}
           hint="Sua maior sequência"
           icon={Trophy}
         />
