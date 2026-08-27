@@ -1,11 +1,13 @@
+import { Spinner } from "@heroui/react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router";
+
+import { listChildFolders, listMotherFolders } from "@/api/folders";
+import { ApiError } from "@/api/client";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
-import { defaultFolders } from "@/mocks/folders";
-import { getSubjectsByFolder } from "@/mocks/subjects";
-import type { Subject } from "@/types/Subject";
+import type { ChildFolder } from "@/types/api/folder";
 import { normalizeText } from "@/utils/text";
-import { useState } from "react";
-import { useParams } from "react-router";
 import { DialogFormSubject } from "./components/DialogFormSubject";
 import { SubjectCard } from "./components/SubjectCard";
 
@@ -16,44 +18,84 @@ export default function SubjectListRoute() {
 }
 
 function SubjectListPage({ folderId }: { folderId: string }) {
-  const folder = defaultFolders.find((item) => item.id === folderId);
-  const [subjects, setSubjects] = useState<Subject[]>(() =>
-    getSubjectsByFolder(folderId),
-  );
+  const [folderName, setFolderName] = useState<string | null>(null);
+  const [subjects, setSubjects] = useState<ChildFolder[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const normalizedSearch = normalizeText(search);
-  const filteredSubjects = normalizedSearch
-    ? subjects.filter((subject) =>
-        normalizeText(subject.name).includes(normalizedSearch),
-      )
-    : subjects;
+  useEffect(() => {
+    let cancelled = false;
 
-  function handleAddSubject(subject: Subject) {
-    setSubjects((current) => [...current, subject]);
+    Promise.all([listMotherFolders(), listChildFolders(folderId)])
+      .then(([motherFolders, childFolders]) => {
+        if (cancelled) return;
+
+        setFolderName(
+          motherFolders.find((item) => item.id === folderId)?.name ?? null,
+        );
+        setSubjects(childFolders);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+
+        setLoadError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar os assuntos desta pasta. Tente novamente.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [folderId]);
+
+  const normalizedSearch = normalizeText(search);
+  const filteredSubjects =
+    subjects === null
+      ? []
+      : normalizedSearch
+        ? subjects.filter((subject) =>
+            normalizeText(subject.name).includes(normalizedSearch),
+          )
+        : subjects;
+
+  function handleAddSubject(subject: ChildFolder) {
+    setSubjects((current) => [...(current ?? []), subject]);
   }
 
-  function handleChangeSubject(subject: Subject) {
-    setSubjects((current) =>
-      current.map((item) => (item.id === subject.id ? subject : item)),
+  function handleChangeSubject(subject: ChildFolder) {
+    setSubjects(
+      (current) =>
+        current?.map((item) => (item.id === subject.id ? subject : item)) ??
+        null,
     );
   }
 
-  function handleDeleteSubject(subject: Subject) {
-    setSubjects((current) => current.filter((item) => item.id !== subject.id));
+  function handleDeleteSubject(subject: ChildFolder) {
+    setSubjects(
+      (current) => current?.filter((item) => item.id !== subject.id) ?? null,
+    );
   }
 
   return (
     <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu
-        title={folder?.name ?? "Pasta"}
+        title={folderName ?? "Pasta"}
         hasBackButton
         hasSearch
         onSearch={setSearch}
       />
 
-      {filteredSubjects.length > 0 ? (
+      {subjects === null && loadError === null ? (
+        <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
+          <Spinner size="lg" />
+          <span className="sr-only">Carregando assuntos</span>
+        </div>
+      ) : loadError !== null ? (
+        <p className="text-danger text-center py-8">{loadError}</p>
+      ) : filteredSubjects.length > 0 ? (
         <section
           id="subjects"
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5"
@@ -78,6 +120,7 @@ function SubjectListPage({ folderId }: { folderId: string }) {
       <FABButton onPress={() => setIsAddOpen(true)} />
       <DialogFormSubject
         variant="add"
+        motherFolderId={folderId}
         isOpen={isAddOpen}
         onOpenChange={setIsAddOpen}
         onSubmit={handleAddSubject}
