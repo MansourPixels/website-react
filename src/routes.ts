@@ -12,9 +12,13 @@ export default [
     route("auth/cadastro", "routes/(auth)/cadastro/index.tsx"),
     route("auth/esqueci-senha", "routes/(auth)/esqueci-senha/index.tsx"),
   ]),
+  // Fora do grupo (private): o RequireAuth redirecionaria para o login e
+  // descartaria o ?code= se a sessão local tivesse expirado.
+  route("spotify/callback", "routes/(spotify)/callback/index.tsx"),
   layout("routes/(private)/layout.tsx", [
     route("perfil", "routes/(private)/perfil/index.tsx"),
     route("ascensao", "routes/(private)/ascensao/index.tsx"),
+    route("sessao", "routes/(private)/sessao/index.tsx"),
     route("capturar", "routes/(private)/capturar/index.tsx"),
     route("pastas", "routes/(private)/pastas/index.tsx"),
     route("pastas/:pastaId", "routes/(private)/pastas/$pastaId/index.tsx"),
