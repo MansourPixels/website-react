@@ -10,7 +10,6 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "re
 import { cn } from "@heroui/styles";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { StudyPlanProvider } from "./contexts/StudyPlanContext";
 import "./app.css";
 
 const links = [
@@ -81,9 +80,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <StudyPlanProvider>
-        <AppShell />
-      </StudyPlanProvider>
+      <AppShell />
     </AuthProvider>
   );
 }
