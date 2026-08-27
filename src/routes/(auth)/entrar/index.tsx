@@ -29,14 +29,19 @@ export default function EntrarPage() {
     setForm((previous) => ({ ...previous, ...changes }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
 
-    const result = signIn(form.email, form.password);
+    setIsSubmitting(true);
+
+    const result = await signIn(form.email, form.password);
 
     if (!result.ok) setError(result.error);
+    setIsSubmitting(false);
   }
 
   return (
@@ -73,10 +78,27 @@ export default function EntrarPage() {
           </p>
         ) : null}
 
-        <Button type="submit" className="w-full" isDisabled={!isValid}>
+        <Button
+          type="submit"
+          className="w-full"
+          isDisabled={!isValid || isSubmitting}
+        >
           Entrar
         </Button>
       </form>
+
+      <p className="text-muted text-center text-sm">
+        <Link
+          to="/auth/esqueci-senha"
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "text-accent",
+          })}
+        >
+          Esqueci minha senha
+        </Link>
+      </p>
 
       <p className="text-muted text-center text-sm">
         Ainda não tem conta?{" "}

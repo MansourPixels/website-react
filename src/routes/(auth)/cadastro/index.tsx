@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
 import {
   isValidEmail,
-  MIN_NAME_LENGTH,
+  isValidUsername,
   MIN_PASSWORD_LENGTH,
 } from "@/utils/validation";
 import { PasswordField } from "../components/PasswordField";
@@ -16,8 +16,9 @@ export default function CadastroPage() {
   const { signUp } = useAuth();
   const [searchParams] = useSearchParams();
 
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextRoute = searchParams.get(NEXT_ROUTE_PARAM);
   const signInHref =
@@ -26,7 +27,7 @@ export default function CadastroPage() {
       : `/auth/entrar?${NEXT_ROUTE_PARAM}=${encodeURIComponent(nextRoute)}`;
 
   const isValid =
-    form.name.trim().length >= MIN_NAME_LENGTH &&
+    isValidUsername(form.username) &&
     isValidEmail(form.email) &&
     form.password.length >= MIN_PASSWORD_LENGTH;
 
@@ -35,14 +36,17 @@ export default function CadastroPage() {
     setForm((previous) => ({ ...previous, ...changes }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
 
-    const result = signUp(form.name, form.email, form.password);
+    setIsSubmitting(true);
+
+    const result = await signUp(form.username, form.email, form.password);
 
     if (!result.ok) setError(result.error);
+    setIsSubmitting(false);
   }
 
   return (
@@ -56,13 +60,13 @@ export default function CadastroPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         <TextField className="w-full">
-          <Label htmlFor="nome-cadastro">Nome</Label>
+          <Label htmlFor="username-cadastro">Nome de usuário</Label>
           <Input
-            id="nome-cadastro"
-            value={form.name}
-            autoComplete="name"
+            id="username-cadastro"
+            value={form.username}
+            autoComplete="username"
             placeholder="Como podemos te chamar?"
-            onChange={(event) => updateForm({ name: event.target.value })}
+            onChange={(event) => updateForm({ username: event.target.value })}
           />
         </TextField>
 
@@ -92,7 +96,11 @@ export default function CadastroPage() {
           </p>
         ) : null}
 
-        <Button type="submit" className="w-full" isDisabled={!isValid}>
+        <Button
+          type="submit"
+          className="w-full"
+          isDisabled={!isValid || isSubmitting}
+        >
           Criar conta
         </Button>
       </form>
