@@ -1,4 +1,4 @@
-import { Button, Input, Label, TextField } from "@heroui/react";
+import { Button, ErrorMessage, Input, Label, TextField } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -6,6 +6,9 @@ import { Link, useSearchParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
 import {
+  getEmailError,
+  getPasswordError,
+  getUsernameError,
   isValidEmail,
   isValidUsername,
   MIN_PASSWORD_LENGTH,
@@ -19,6 +22,12 @@ export default function CadastroPage() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touched, setTouched] = useState({
+    username: false,
+    email: false,
+    password: false,
+  });
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const nextRoute = searchParams.get(NEXT_ROUTE_PARAM);
   const signInHref =
@@ -31,6 +40,17 @@ export default function CadastroPage() {
     isValidEmail(form.email) &&
     form.password.length >= MIN_PASSWORD_LENGTH;
 
+  const usernameError =
+    touched.username || submitAttempted
+      ? getUsernameError(form.username)
+      : null;
+  const emailError =
+    touched.email || submitAttempted ? getEmailError(form.email) : null;
+  const passwordError =
+    touched.password || submitAttempted
+      ? getPasswordError(form.password)
+      : null;
+
   function updateForm(changes: Partial<typeof form>) {
     setError(null);
     setForm((previous) => ({ ...previous, ...changes }));
@@ -38,6 +58,8 @@ export default function CadastroPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    setSubmitAttempted(true);
 
     if (!isValid || isSubmitting) return;
 
@@ -59,7 +81,7 @@ export default function CadastroPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <TextField className="w-full">
+        <TextField className="w-full" isInvalid={usernameError !== null}>
           <Label htmlFor="username-cadastro">Nome de usuário</Label>
           <Input
             id="username-cadastro"
@@ -67,10 +89,18 @@ export default function CadastroPage() {
             autoComplete="username"
             placeholder="Como podemos te chamar?"
             onChange={(event) => updateForm({ username: event.target.value })}
+            onBlur={() =>
+              setTouched((previous) => ({ ...previous, username: true }))
+            }
           />
+          {usernameError ? <ErrorMessage>{usernameError}</ErrorMessage> : null}
         </TextField>
 
-        <TextField className="w-full" type="email">
+        <TextField
+          className="w-full"
+          type="email"
+          isInvalid={emailError !== null}
+        >
           <Label htmlFor="email-cadastro">E-mail</Label>
           <Input
             id="email-cadastro"
@@ -78,7 +108,9 @@ export default function CadastroPage() {
             autoComplete="email"
             placeholder="voce@email.com"
             onChange={(event) => updateForm({ email: event.target.value })}
+            onBlur={() => setTouched((previous) => ({ ...previous, email: true }))}
           />
+          {emailError ? <ErrorMessage>{emailError}</ErrorMessage> : null}
         </TextField>
 
         <PasswordField
@@ -87,6 +119,10 @@ export default function CadastroPage() {
           value={form.password}
           autoComplete="new-password"
           onChange={(password) => updateForm({ password })}
+          onBlur={() =>
+            setTouched((previous) => ({ ...previous, password: true }))
+          }
+          errorMessage={passwordError}
           hint={`No mínimo ${MIN_PASSWORD_LENGTH} caracteres.`}
         />
 

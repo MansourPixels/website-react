@@ -1,4 +1,4 @@
-import { Button, InputGroup, Label, TextField } from "@heroui/react";
+import { Button, ErrorMessage, InputGroup, Label, TextField } from "@heroui/react";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
@@ -9,6 +9,8 @@ interface PasswordFieldProps {
   onChange: (value: string) => void;
   autoComplete?: string;
   hint?: string;
+  errorMessage?: string | null;
+  onBlur?: () => void;
 }
 
 export function PasswordField({
@@ -18,11 +20,17 @@ export function PasswordField({
   onChange,
   autoComplete = "current-password",
   hint,
+  errorMessage,
+  onBlur,
 }: PasswordFieldProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <TextField className="w-full" type={isVisible ? "text" : "password"}>
+    <TextField
+      className="w-full"
+      type={isVisible ? "text" : "password"}
+      isInvalid={Boolean(errorMessage)}
+    >
       <Label htmlFor={id}>{label}</Label>
       <InputGroup fullWidth>
         <InputGroup.Input
@@ -31,6 +39,7 @@ export function PasswordField({
           autoComplete={autoComplete}
           placeholder="••••••••"
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
         />
         <InputGroup.Suffix>
           <Button
@@ -49,7 +58,11 @@ export function PasswordField({
           </Button>
         </InputGroup.Suffix>
       </InputGroup>
-      {hint ? <p className="text-muted text-sm">{hint}</p> : null}
+      {errorMessage ? (
+        <ErrorMessage>{errorMessage}</ErrorMessage>
+      ) : hint ? (
+        <p className="text-muted text-sm">{hint}</p>
+      ) : null}
     </TextField>
   );
 }

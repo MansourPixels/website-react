@@ -1,11 +1,16 @@
-import { Button, Input, Label, TextField } from "@heroui/react";
+import { Button, ErrorMessage, Input, Label, TextField } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
-import { isValidEmail, MIN_PASSWORD_LENGTH } from "../../../utils/validation";
+import {
+  getEmailError,
+  getPasswordError,
+  isValidEmail,
+  MIN_PASSWORD_LENGTH,
+} from "../../../utils/validation";
 import { PasswordField } from "../components/PasswordField";
 
 export default function EntrarPage() {
@@ -14,6 +19,8 @@ export default function EntrarPage() {
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const nextRoute = searchParams.get(NEXT_ROUTE_PARAM);
   const signUpHref =
@@ -24,6 +31,13 @@ export default function EntrarPage() {
   const isValid =
     isValidEmail(form.email) && form.password.length >= MIN_PASSWORD_LENGTH;
 
+  const emailError =
+    touched.email || submitAttempted ? getEmailError(form.email) : null;
+  const passwordError =
+    touched.password || submitAttempted
+      ? getPasswordError(form.password)
+      : null;
+
   function updateForm(changes: Partial<typeof form>) {
     setError(null);
     setForm((previous) => ({ ...previous, ...changes }));
@@ -33,6 +47,8 @@ export default function EntrarPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    setSubmitAttempted(true);
 
     if (!isValid || isSubmitting) return;
 
@@ -54,7 +70,11 @@ export default function EntrarPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <TextField className="w-full" type="email">
+        <TextField
+          className="w-full"
+          type="email"
+          isInvalid={emailError !== null}
+        >
           <Label htmlFor="email-login">E-mail</Label>
           <Input
             id="email-login"
@@ -62,7 +82,9 @@ export default function EntrarPage() {
             autoComplete="email"
             placeholder="voce@email.com"
             onChange={(event) => updateForm({ email: event.target.value })}
+            onBlur={() => setTouched((previous) => ({ ...previous, email: true }))}
           />
+          {emailError ? <ErrorMessage>{emailError}</ErrorMessage> : null}
         </TextField>
 
         <PasswordField
@@ -70,6 +92,10 @@ export default function EntrarPage() {
           label="Senha"
           value={form.password}
           onChange={(password) => updateForm({ password })}
+          onBlur={() =>
+            setTouched((previous) => ({ ...previous, password: true }))
+          }
+          errorMessage={passwordError}
         />
 
         {error !== null ? (
