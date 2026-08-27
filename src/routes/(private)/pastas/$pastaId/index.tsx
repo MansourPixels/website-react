@@ -7,6 +7,7 @@ import { listChildFolders, listMotherFolders } from "@/api/folders";
 import { ApiError } from "@/api/client";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
+import type { Content } from "@/types/api/content";
 import type { ChildFolder } from "@/types/api/folder";
 import { normalizeText } from "@/utils/text";
 import { DialogFormSubject } from "./components/DialogFormSubject";
@@ -21,7 +22,9 @@ export default function SubjectListRoute() {
 function SubjectListPage({ folderId }: { folderId: string }) {
   const [folderName, setFolderName] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<ChildFolder[] | null>(null);
-  const [contentCounts, setContentCounts] = useState<Record<string, number>>({});
+  const [subjectContents, setSubjectContents] = useState<
+    Record<string, Content[]>
+  >({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -64,11 +67,11 @@ function SubjectListPage({ folderId }: { folderId: string }) {
     Promise.allSettled(ids.map((id) => listContent(id))).then((results) => {
       if (cancelled) return;
 
-      setContentCounts((current) => {
+      setSubjectContents((current) => {
         const next = { ...current };
 
         results.forEach((result, index) => {
-          if (result.status === "fulfilled") next[ids[index]] = result.value.length;
+          if (result.status === "fulfilled") next[ids[index]] = result.value;
         });
 
         return next;
@@ -133,7 +136,7 @@ function SubjectListPage({ folderId }: { folderId: string }) {
             <SubjectCard
               key={subject.id}
               subject={subject}
-              contentCount={contentCounts[subject.id]}
+              contents={subjectContents[subject.id]}
               onChangeSubject={handleChangeSubject}
               onDeleteSubject={handleDeleteSubject}
             />

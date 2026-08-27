@@ -1,10 +1,8 @@
-import { getDownloadUrl } from "@/api/content";
 import type { Content } from "@/types/api/content";
-import { pickImageForSeed } from "@/utils/imageFallback";
+import { useContentThumbnail } from "@/hooks/useContentThumbnail";
 import { Button } from "@heroui/react";
 import { cn } from "@heroui/styles";
 import { FileText, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 interface MaterialTileProps {
   content: Content;
@@ -12,30 +10,8 @@ interface MaterialTileProps {
 }
 
 export function MaterialTile({ content, onOpen }: MaterialTileProps) {
-  const { id, name, contentType, hasSummary } = content;
-  const isPdf = contentType === "PDF";
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    if (isPdf) return;
-
-    let cancelled = false;
-
-    getDownloadUrl(id)
-      .then(({ url }) => {
-        if (!cancelled) setThumbnailUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setImageFailed(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id, isPdf]);
-
-  const imageSrc = imageFailed ? pickImageForSeed(id) : thumbnailUrl;
+  const { name, hasSummary } = content;
+  const { isPdf, imageSrc, markImageFailed } = useContentThumbnail(content);
 
   return (
     <Button
@@ -59,7 +35,7 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
             alt=""
             aria-hidden
             className="absolute inset-0 size-full object-cover"
-            onError={() => setImageFailed(true)}
+            onError={markImageFailed}
           />
           <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4 text-left text-xs font-medium leading-snug text-white line-clamp-2 whitespace-normal break-all">
             {name}

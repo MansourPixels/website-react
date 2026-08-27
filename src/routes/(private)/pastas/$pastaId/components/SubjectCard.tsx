@@ -1,4 +1,5 @@
 import type { ChildFolder } from "@/types/api/folder";
+import type { Content } from "@/types/api/content";
 import {
   Button,
   ButtonGroup,
@@ -10,7 +11,6 @@ import { Link, useParams } from "react-router";
 import {
   Ellipsis,
   FileText,
-  Files,
   Inbox,
   ListCheck,
   Network,
@@ -19,12 +19,15 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { ContentPreviewThumb } from "./ContentPreviewThumb";
 import { DialogFormSubject } from "./DialogFormSubject";
 import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
+const MAX_CONTENT_PREVIEWS = 4;
+
 interface SubjectCardProps {
   subject: ChildFolder;
-  contentCount?: number;
+  contents?: Content[];
   onChangeSubject: (subject: ChildFolder) => void;
   onDeleteSubject: (subject: ChildFolder) => void;
 }
@@ -39,7 +42,7 @@ export function SubjectCard(props: SubjectCardProps) {
     setIsMenuOpen(false);
     open(true);
   }
-  const { subject, contentCount, onChangeSubject, onDeleteSubject } = props;
+  const { subject, contents, onChangeSubject, onDeleteSubject } = props;
   const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
 
   return (
@@ -50,21 +53,24 @@ export function SubjectCard(props: SubjectCardProps) {
             {subject.name}
           </h2>
 
-          <footer className="flex items-center gap-1.5 pr-9 pb-1 text-xs text-muted">
-            {contentCount === undefined ? (
-              <Skeleton className="rounded-full h-3 w-24" />
-            ) : contentCount === 0 ? (
-              <>
+          <footer className="pb-1 pr-9">
+            {contents === undefined ? (
+              <div className="grid grid-cols-2 gap-1">
+                {Array.from({ length: MAX_CONTENT_PREVIEWS }).map((_, index) => (
+                  <Skeleton key={index} className="rounded-md aspect-video" />
+                ))}
+              </div>
+            ) : contents.length === 0 ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted">
                 <Inbox className="size-3.5 shrink-0" />
-                <span>Sem conteúdo</span>
-              </>
+                Sem conteúdo
+              </span>
             ) : (
-              <>
-                <Files className="size-3.5 shrink-0" />
-                <span>
-                  {contentCount} {contentCount === 1 ? "material" : "materiais"}
-                </span>
-              </>
+              <div className="grid grid-cols-2 gap-1">
+                {contents.slice(0, MAX_CONTENT_PREVIEWS).map((content) => (
+                  <ContentPreviewThumb key={content.id} content={content} />
+                ))}
+              </div>
             )}
           </footer>
         </div>
@@ -165,7 +171,11 @@ export function LoadingSubjectCard() {
           <Skeleton className="rounded-full h-4 w-3/4" />
           <Skeleton className="rounded-full h-4 w-11/12" />
         </header>
-        <Skeleton className="rounded-full h-3 w-24 mb-1" />
+        <div className="grid grid-cols-2 gap-1 pb-1 pr-9">
+          {Array.from({ length: MAX_CONTENT_PREVIEWS }).map((_, index) => (
+            <Skeleton key={index} className="rounded-md aspect-video" />
+          ))}
+        </div>
       </div>
     </article>
   );
