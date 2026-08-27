@@ -88,12 +88,18 @@ export default function App() {
   );
 }
 
+// Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
+// de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
+const extraBottomNavigationRoutes = ["/ascensao"];
+
 function AppShell() {
   const { pathname } = useLocation();
   const { status } = useAuth();
 
   const showBottomNavigation =
-    status === "authenticated" && links.some(({ to }) => pathname === to);
+    status === "authenticated" &&
+    (links.some(({ to }) => pathname === to) ||
+      extraBottomNavigationRoutes.includes(pathname));
 
   return (
     <>

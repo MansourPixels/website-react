@@ -56,16 +56,18 @@ export function NavMenu({
           </SearchField>
         ) : (
           <div className="flex items-center">
-            {hasBackButton && canGoBack ? (
+            {hasBackButton && (canGoBack || backHref !== undefined) ? (
               <Button
                 isIconOnly
                 variant="ghost"
-                onClick={() => {
-                  if (backHref) {
-                    navigate(backHref);
-                  } else {
+                aria-label="Voltar"
+                onPress={() => {
+                  if (canGoBack) {
                     navigate(-1);
+                    return;
                   }
+
+                  if (backHref) navigate(backHref, { replace: true });
                 }}
                 size="lg"
                 className={variant === "white" ? "not-active:text-white" : ""}

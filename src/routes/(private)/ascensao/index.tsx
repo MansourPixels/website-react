@@ -39,7 +39,7 @@ export default function Ascensao() {
 
   return (
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
-      <NavMenu title="Ascensão" />
+      <NavMenu title="Ascensão" hasBackButton backHref="/perfil" />
 
       {loadError !== null ? (
         <p className="text-danger text-center py-8">{loadError}</p>
