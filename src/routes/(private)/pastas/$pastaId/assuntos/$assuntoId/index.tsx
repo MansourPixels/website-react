@@ -1,5 +1,5 @@
 import { Spinner } from "@heroui/react";
-import { Camera, FileText, ListCheck, Zap } from "lucide-react";
+import { Camera, FileText, ListCheck, Network, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
@@ -156,6 +156,13 @@ export default function SubjectDetailsPage() {
           description="Reprodução simulada no formato de uma prova com o objetivo de preparar o aluno."
           icon={ListCheck}
           iconClass="bg-orange-600"
+        />
+        <StudyTypeCard
+          id="mapa-mental"
+          name="Mapa mental"
+          description="Explore os conceitos do assunto em ramos, expandindo o que quiser aprofundar."
+          icon={Network}
+          iconClass="bg-cyan-600"
         />
       </section>
 
