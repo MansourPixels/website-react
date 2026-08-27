@@ -4,6 +4,7 @@ import { Link } from "react-router";
 const sections = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#modos", label: "Modos de estudo" },
+  { href: "#sessao", label: "Sessão de estudos" },
   { href: "#acompanhamento", label: "Acompanhamento" },
 ];
 

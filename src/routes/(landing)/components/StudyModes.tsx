@@ -5,43 +5,13 @@ import { flashCards } from "@/mocks/flashCards";
 import { practiceTest } from "@/mocks/practiceTest";
 import { alternativeLetter } from "@/utils/alternatives";
 import { difficulties } from "@/utils/difficulties";
-import { Button, cn } from "@heroui/react";
-import { FileText, ListCheck, Zap, type LucideIcon } from "lucide-react";
+import { Button } from "@heroui/react";
+import { FileText, ListCheck, Zap } from "lucide-react";
 import { useState } from "react";
+import { ModeHeader } from "./ModeHeader";
 
 const sampleCard = flashCards[0];
 const sampleQuestion = practiceTest[2];
-
-interface ModeHeaderProps {
-  icon: LucideIcon;
-  iconClass: string;
-  name: string;
-  description: string;
-}
-
-function ModeHeader({
-  icon: Icon,
-  iconClass,
-  name,
-  description,
-}: ModeHeaderProps) {
-  return (
-    <header className="flex items-center gap-4">
-      <div
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-xl text-white",
-          iconClass,
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-      <div>
-        <h3 className="font-semibold">{name}</h3>
-        <p className="text-xs text-muted">{description}</p>
-      </div>
-    </header>
-  );
-}
 
 export function StudyModes() {
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);

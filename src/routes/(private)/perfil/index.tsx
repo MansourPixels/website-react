@@ -1,15 +1,18 @@
-import { Avatar, Button } from "@heroui/react";
-import { Flame, LogOut, Trophy } from "lucide-react";
+import { Avatar, Button, Spinner } from "@heroui/react";
+import { Flame, LogOut, Trophy, Unplug } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import { NavMenu } from "@/components/NavMenu";
+import { SpotifyMark } from "@/components/SpotifyMark";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSpotify } from "@/contexts/SpotifyContext";
 import { ascension } from "@/mocks/ascension";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
   const { user, signOut } = useAuth();
+  const spotify = useSpotify();
   const navigate = useNavigate();
 
   const { currentStreak, recordStreak } = ascension;
@@ -50,6 +53,71 @@ export default function PerfilPage() {
           hint="Sua maior sequência"
           icon={Trophy}
         />
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-surface">
+        <header className="flex items-center gap-3">
+          <SpotifyMark />
+          <div className="flex min-w-0 flex-col">
+            <h2 className="font-semibold">Spotify</h2>
+            <p className="text-muted text-sm text-pretty">
+              Toca a sua música durante o foco e para nas pausas da sessão de
+              estudos.
+            </p>
+          </div>
+        </header>
+
+        {spotify.status === "loading" ? (
+          <p className="flex items-center gap-2 text-sm text-muted">
+            <Spinner size="sm" />
+            Verificando a conexão…
+          </p>
+        ) : null}
+
+        {spotify.status === "connected" ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">
+              Conectado como{" "}
+              <strong className="font-medium">
+                {spotify.profile?.displayName}
+              </strong>
+              .
+            </p>
+
+            {spotify.profile?.isPremium === false ? (
+              <p className="text-muted text-sm text-pretty">
+                O controle de reprodução é um recurso do Spotify Premium. A
+                conta está conectada, mas o Revi não consegue dar play.
+              </p>
+            ) : null}
+
+            <Button
+              variant="secondary"
+              className="w-full sm:w-fit"
+              onPress={spotify.disconnect}
+            >
+              <Unplug className="size-4" />
+              Desconectar Spotify
+            </Button>
+          </div>
+        ) : null}
+
+        {spotify.status === "disconnected" || spotify.status === "connecting" ? (
+          spotify.isConfigured ? (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-fit"
+              isPending={spotify.status === "connecting"}
+              onPress={() => void spotify.connect("/perfil")}
+            >
+              Conectar Spotify
+            </Button>
+          ) : (
+            <p className="text-muted text-sm">
+              Configuração do Spotify ausente neste ambiente.
+            </p>
+          )
+        ) : null}
       </section>
 
       <Button

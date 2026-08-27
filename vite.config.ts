@@ -7,6 +7,16 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  // A Spotify só aceita redirect URI exato e recusa `localhost`, então o
+  // ambiente de desenvolvimento precisa atender em http://127.0.0.1:5173.
+  // Sem `host`, o Vite sobe só em ::1 e esse endereço não responde; sem
+  // `strictPort`, uma porta ocupada mudaria a origem e o login quebraria com
+  // "Invalid redirect URI".
+  server: {
+    host: "127.0.0.1",
+    port: 5173,
+    strictPort: true,
+  },
   plugins: [
     tailwindcss(),
     reactRouter(),
