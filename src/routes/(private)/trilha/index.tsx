@@ -210,10 +210,22 @@ export default function PathPage() {
                   {isGenerating ? "Gerando trilha..." : "Gerar trilha"}
                 </Button>
               ) : groups.length === 0 ? (
-                <p className="text-muted text-sm">
-                  Nenhuma disciplina elegível ainda — responda ao menos um
-                  simulado para que a Revi IA possa sugerir um plano.
-                </p>
+                <>
+                  <p className="text-muted text-sm">
+                    Nenhuma disciplina elegível ainda — responda ao menos um
+                    simulado para que a Revi IA possa sugerir um plano.
+                  </p>
+
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    onPress={() => setIsSelectDisciplinesOpen(true)}
+                    isDisabled={isGenerating}
+                  >
+                    <CircleStar />
+                    {isGenerating ? "Gerando trilha..." : "Gerar trilha"}
+                  </Button>
+                </>
               ) : (
                 <>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
