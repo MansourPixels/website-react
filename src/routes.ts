@@ -39,6 +39,10 @@ export default [
       "pastas/:pastaId/assuntos/:assuntoId/simulado-prova",
       "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/simulado-prova/index.tsx",
     ),
+    route(
+      "pastas/:pastaId/assuntos/:assuntoId/mapa-mental",
+      "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/mapa-mental/index.tsx",
+    ),
     route("trilha", "routes/(private)/trilha/index.tsx"),
     route(
       "trilha/plano/:planoId",

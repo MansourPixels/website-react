@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { Link, useParams } from "react-router";
 
 interface StudyTypeCard {
-  id: "flash-cards" | "resumo" | "simulado-prova";
+  id: "flash-cards" | "resumo" | "simulado-prova" | "mapa-mental";
   name: string;
   description: string;
   icon: LucideIcon;

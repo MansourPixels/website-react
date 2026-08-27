@@ -1,5 +1,11 @@
 import type { PlanStepKind } from "@/mocks/studyPlans";
-import { FileText, ListCheck, Zap, type LucideIcon } from "lucide-react";
+import {
+  FileText,
+  ListCheck,
+  Network,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
 interface PlanStepKindMeta {
   label: string;
@@ -34,5 +40,13 @@ export const planStepKinds: Record<PlanStepKind, PlanStepKindMeta> = {
     fill: "bg-orange-600",
     tint: "content-bg-orange-200",
     action: "Fazer o simulado",
+  },
+  "mapa-mental": {
+    label: "Mapa Mental",
+    icon: Network,
+    chip: "bg-cyan-600",
+    fill: "bg-cyan-600",
+    tint: "content-bg-cyan-200",
+    action: "Percorrer o mapa",
   },
 };

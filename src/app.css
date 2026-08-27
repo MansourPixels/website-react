@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "@xyflow/react/dist/base.css" layer(base);
 @plugin "@tailwindcss/typography";
 
 @theme {
@@ -139,9 +140,23 @@
     transition-delay: 260ms;
   }
 
+  .mind-map-node {
+    opacity: 1;
+    transform: scale(1);
+    transition:
+      opacity 260ms var(--ease-out-strong),
+      transform 260ms var(--ease-out-strong);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .celebrate,
-    .celebrate-stagger > * {
+    .celebrate-stagger > *,
+    .mind-map-node {
       transition: none;
     }
   }

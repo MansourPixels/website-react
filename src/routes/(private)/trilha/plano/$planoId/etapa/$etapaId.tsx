@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { Link, useParams } from "react-router";
 
 import { FlashCardsStepRunner } from "./components/FlashCardsStepRunner";
+import { MindMapStepRunner } from "./components/MindMapStepRunner";
 import { PlanSpine } from "./components/PlanSpine";
 import { PracticeStepRunner } from "./components/PracticeStepRunner";
 import { SummaryStepRunner } from "./components/SummaryStepRunner";
@@ -72,8 +73,10 @@ export default function PlanStepPage() {
           <SummaryStepRunner {...runnerProps} step={step} />
         ) : step.kind === "flash-cards" ? (
           <FlashCardsStepRunner {...runnerProps} step={step} />
-        ) : (
+        ) : step.kind === "simulado" ? (
           <PracticeStepRunner {...runnerProps} step={step} />
+        ) : (
+          <MindMapStepRunner {...runnerProps} step={step} />
         )}
       </div>
     </main>

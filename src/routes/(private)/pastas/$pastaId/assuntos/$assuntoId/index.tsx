@@ -7,7 +7,7 @@ import { NavMenu } from "@/components/NavMenu";
 import { getSubject } from "@/mocks/subjects";
 import type { Material } from "@/types/Material";
 import { normalizeText } from "@/utils/text";
-import { Camera, FileText, ListCheck, Zap } from "lucide-react";
+import { Camera, FileText, ListCheck, Network, Zap } from "lucide-react";
 import { MaterialTile } from "./components/MaterialTile";
 import { StudyTypeCard } from "./components/StudyTypeCard";
 
@@ -43,7 +43,7 @@ export default function SubjectDetailsPage() {
       />
       <section
         id="tipos-estudo"
-        className="grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+        className="grid md:grid-cols-2 gap-3"
       >
         <StudyTypeCard
           id="flash-cards"
@@ -65,6 +65,13 @@ export default function SubjectDetailsPage() {
           description="Reprodução simulada no formato de uma prova com o objetivo de preparar o aluno."
           icon={ListCheck}
           iconClass="bg-orange-600"
+        />
+        <StudyTypeCard
+          id="mapa-mental"
+          name="Mapa mental"
+          description="Os conceitos do assunto ligados em ramos, revelados um a um conforme você avança."
+          icon={Network}
+          iconClass="bg-cyan-600"
         />
       </section>
       {filteredMaterials.length > 0 ? (

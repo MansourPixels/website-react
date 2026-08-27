@@ -11,6 +11,7 @@ import {
   Ellipsis,
   FileText,
   ListCheck,
+  Network,
   SquarePen,
   Trash,
   Zap,
@@ -106,6 +107,15 @@ export function SubjectCard(props: SubjectCardProps) {
                 })}
               >
                 <ListCheck /> Simulado de prova
+              </Link>
+              <Link
+                to={`${basePath}/mapa-mental`}
+                className={buttonVariants({
+                  className: "w-full justify-start border-b text-cyan-600",
+                  variant: "ghost",
+                })}
+              >
+                <Network /> Mapa mental
               </Link>
               <Button
                 variant="ghost"
