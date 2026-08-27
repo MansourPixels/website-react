@@ -1,32 +1,77 @@
-import { NavMenu } from "@/components/NavMenu";
-import { useStudyPlans } from "@/contexts/StudyPlanContext";
-import { findStudyPlan } from "@/mocks/studyPlans";
-import { planStepKinds } from "@/utils/planSteps";
-import { buttonVariants, cn } from "@heroui/styles";
-import { useEffect } from "react";
+import { Spinner, buttonVariants } from "@heroui/react";
+import { cn } from "@heroui/styles";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
-import { FlashCardsStepRunner } from "./components/FlashCardsStepRunner";
+import { ApiError } from "@/api/client";
+import { completeStep, getStudyPlan } from "@/api/studyPlan";
+import { NavMenu } from "@/components/NavMenu";
+import type { StudyPlan } from "@/types/api/studyPlan";
+import {
+  groupProgress,
+  groupStepsByDiscipline,
+  studyPlanStepKinds,
+} from "@/utils/studyPlan";
+
 import { PlanSpine } from "./components/PlanSpine";
-import { PracticeStepRunner } from "./components/PracticeStepRunner";
-import { SummaryStepRunner } from "./components/SummaryStepRunner";
+import { StepRunner } from "./components/StepRunner";
 
 export default function PlanStepPage() {
   const { planoId, etapaId } = useParams<"planoId" | "etapaId">() as {
     planoId: string;
     etapaId: string;
   };
-  const { getProgress, completeStep, resumePlan } = useStudyPlans();
 
-  const plan = findStudyPlan(planoId);
-  const stepIndex = plan?.steps.findIndex((item) => item.id === etapaId) ?? -1;
-  const step = stepIndex >= 0 ? plan?.steps[stepIndex] : undefined;
+  const [plan, setPlan] = useState<StudyPlan | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (plan !== undefined && step !== undefined) resumePlan(plan.id);
-  }, [plan, step, resumePlan]);
+    let cancelled = false;
 
-  if (plan === undefined || step === undefined) {
+    getStudyPlan()
+      .then((result) => {
+        if (!cancelled) setPlan(result);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+
+        setLoadError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar a trilha. Tente novamente.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loadError !== null) {
+    return (
+      <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-2xl mx-auto">
+        <NavMenu title="Trilha" hasBackButton />
+        <p className="text-danger text-center py-8">{loadError}</p>
+      </main>
+    );
+  }
+
+  if (plan === null) {
+    return (
+      <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-2xl mx-auto flex-1 items-center justify-center">
+        <Spinner size="lg" />
+        <span className="sr-only">Carregando etapa</span>
+      </main>
+    );
+  }
+
+  const group = groupStepsByDiscipline(plan.steps).find(
+    (item) => item.motherFolderId === planoId,
+  );
+  const stepIndex = group?.steps.findIndex((item) => item.id === etapaId) ?? -1;
+  const step = stepIndex >= 0 ? group?.steps[stepIndex] : undefined;
+
+  if (group === undefined || step === undefined) {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-2xl mx-auto">
         <NavMenu title="Etapa não encontrada" hasBackButton />
@@ -44,16 +89,25 @@ export default function PlanStepPage() {
     );
   }
 
-  const { label, tint } = planStepKinds[step.kind];
-  const progress = getProgress(plan.id);
+  const { label, tint } = studyPlanStepKinds[step.stepType];
+  const progress = groupProgress(group.steps);
 
-  const runnerProps = {
-    planId: plan.id,
-    planFocus: plan.focus,
-    nextStep: progress.nextStep,
-    isPlanComplete: progress.isComplete,
-    onComplete: () => completeStep(plan.id, step.id),
-  };
+  async function handleComplete() {
+    await completeStep(etapaId);
+
+    setPlan((current) => {
+      if (current === null) return current;
+
+      return {
+        ...current,
+        steps: current.steps.map((item) =>
+          item.id === etapaId
+            ? { ...item, completed: true, completedAt: new Date().toISOString() }
+            : item,
+        ),
+      };
+    });
+  }
 
   return (
     <main className={cn(tint, "flex-1 flex flex-col")}>
@@ -62,19 +116,20 @@ export default function PlanStepPage() {
           <NavMenu title={label} hasBackButton className="text-center pr-12" />
           <PlanSpine
             position={stepIndex + 1}
-            total={plan.steps.length}
-            focus={plan.focus}
+            total={group.steps.length}
+            disciplineName={group.motherFolderName}
             completedCount={progress.completed}
           />
         </div>
 
-        {step.kind === "resumo" ? (
-          <SummaryStepRunner {...runnerProps} step={step} />
-        ) : step.kind === "flash-cards" ? (
-          <FlashCardsStepRunner {...runnerProps} step={step} />
-        ) : (
-          <PracticeStepRunner {...runnerProps} step={step} />
-        )}
+        <StepRunner
+          planoId={planoId}
+          disciplineName={group.motherFolderName}
+          step={step}
+          nextStep={progress.nextStep}
+          isPlanComplete={progress.isComplete}
+          onComplete={handleComplete}
+        />
       </div>
     </main>
   );

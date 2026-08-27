@@ -1,26 +1,19 @@
-import type { PlanStep } from "@/mocks/studyPlans";
-import { planStepKinds } from "@/utils/planSteps";
-import { formatDuration } from "@/utils/time";
+import type { StudyPlanStep } from "@/types/api/studyPlan";
+import { studyPlanStepKinds } from "@/utils/studyPlan";
 import { buttonVariants, cn } from "@heroui/styles";
 import { Check, ChevronRight, RotateCcw } from "lucide-react";
 import { Link } from "react-router";
 
 interface PlanStepRowProps {
-  planId: string;
-  step: PlanStep;
+  planoId: string;
+  step: StudyPlanStep;
   position: number;
-  isDone: boolean;
   isNext: boolean;
 }
 
-export function PlanStepRow({
-  planId,
-  step,
-  position,
-  isDone,
-  isNext,
-}: PlanStepRowProps) {
-  const { label, icon: Icon, chip, action } = planStepKinds[step.kind];
+export function PlanStepRow({ planoId, step, position, isNext }: PlanStepRowProps) {
+  const { label, goal, icon: Icon, chip, action } = studyPlanStepKinds[step.stepType];
+  const isDone = step.completed;
 
   const state = isDone ? "concluída" : isNext ? "a próxima" : "ainda por fazer";
 
@@ -44,31 +37,27 @@ export function PlanStepRow({
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-pretty">
-            {step.title}
+            {label} de {step.childFolderName}
             <span className="sr-only">: {state}</span>
           </h3>
-          <p className="text-sm text-muted text-pretty">{step.goal}</p>
+          <p className="text-sm text-muted text-pretty">{goal}</p>
           <p className="text-xs text-muted flex flex-wrap items-center gap-x-2 mt-1">
             <span className="tabular-nums">
               Etapa {String(position).padStart(2, "0")}
             </span>
-            <span aria-hidden>·</span>
-            <span>{label}</span>
-            <span aria-hidden>·</span>
-            <span className="tabular-nums">{formatDuration(step.minutes)}</span>
           </p>
         </div>
       </div>
 
       <Link
-        to={`/trilha/plano/${planId}/etapa/${step.id}`}
+        to={`/trilha/plano/${planoId}/etapa/${step.id}`}
         className={buttonVariants({
           variant: isNext ? "primary" : "tertiary",
           fullWidth: true,
         })}
       >
         {isDone ? <RotateCcw /> : <ChevronRight />}
-        {isDone ? "Refazer etapa" : action}
+        {isDone ? "Rever etapa" : action}
       </Link>
     </li>
   );

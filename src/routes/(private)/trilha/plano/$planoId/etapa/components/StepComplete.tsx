@@ -1,5 +1,5 @@
-import type { PlanStep } from "@/mocks/studyPlans";
-import { planStepKinds } from "@/utils/planSteps";
+import type { StudyPlanStep } from "@/types/api/studyPlan";
+import { studyPlanStepKinds } from "@/utils/studyPlan";
 import { Button } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import { Check, ChevronRight, Flame, ListChecks, RotateCcw } from "lucide-react";
@@ -7,19 +7,19 @@ import { Link } from "react-router";
 import type { ReactNode } from "react";
 
 interface StepCompleteProps {
-  planId: string;
-  planFocus: string;
+  planoId: string;
+  disciplineName: string;
   stepTitle: string;
   isPlanComplete: boolean;
-  nextStep: PlanStep | null;
+  nextStep: StudyPlanStep | null;
   onRestart: () => void;
   restartLabel: string;
   children?: ReactNode;
 }
 
 export function StepComplete({
-  planId,
-  planFocus,
+  planoId,
+  disciplineName,
   stepTitle,
   isPlanComplete,
   nextStep,
@@ -48,7 +48,7 @@ export function StepComplete({
             </h2>
             <p className="opacity-70 max-w-sm text-balance mx-auto">
               {isPlanComplete
-                ? `Você fechou todas as etapas de ${planFocus.toLowerCase()}. Refazer o plano em alguns dias é o que fixa o conteúdo.`
+                ? `Você fechou todas as etapas de ${disciplineName}. Refazer o plano em alguns dias é o que fixa o conteúdo.`
                 : stepTitle}
             </p>
           </div>
@@ -74,7 +74,7 @@ export function StepComplete({
               Voltar à Trilha
             </Link>
             <Link
-              to={`/trilha/plano/${planId}`}
+              to={`/trilha/plano/${planoId}`}
               className={buttonVariants({
                 variant: "tertiary",
                 fullWidth: true,
@@ -88,7 +88,7 @@ export function StepComplete({
         ) : nextStep ? (
           <>
             <Link
-              to={`/trilha/plano/${planId}/etapa/${nextStep.id}`}
+              to={`/trilha/plano/${planoId}/etapa/${nextStep.id}`}
               className={buttonVariants({
                 variant: "primary",
                 fullWidth: true,
@@ -96,10 +96,10 @@ export function StepComplete({
               })}
             >
               <ChevronRight />
-              {planStepKinds[nextStep.kind].action}
+              {studyPlanStepKinds[nextStep.stepType].action}
             </Link>
             <Link
-              to={`/trilha/plano/${planId}`}
+              to={`/trilha/plano/${planoId}`}
               className={buttonVariants({
                 variant: "tertiary",
                 fullWidth: true,
@@ -112,7 +112,7 @@ export function StepComplete({
           </>
         ) : (
           <Link
-            to={`/trilha/plano/${planId}`}
+            to={`/trilha/plano/${planoId}`}
             className={buttonVariants({
               variant: "primary",
               fullWidth: true,

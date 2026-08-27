@@ -1,21 +1,66 @@
 import { NavMenu } from "@/components/NavMenu";
-import { useStudyPlans } from "@/contexts/StudyPlanContext";
-import { findStudyPlan } from "@/mocks/studyPlans";
-import { Button, Meter } from "@heroui/react";
+import { ApiError } from "@/api/client";
+import { getStudyPlan } from "@/api/studyPlan";
+import { groupProgress, groupStepsByDiscipline } from "@/utils/studyPlan";
+import { Spinner, Meter } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { CircleStar, Flame, RotateCcw } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router";
+import { CircleStar, Flame } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
 
 import { PlanStepRow } from "./components/PlanStepRow";
 
 export default function StudyPlanPage() {
   const { planoId } = useParams<"planoId">() as { planoId: string };
-  const navigate = useNavigate();
-  const { getProgress, restartPlan, leavePlan, activePlanId } = useStudyPlans();
 
-  const plan = findStudyPlan(planoId);
+  const [groups, setGroups] = useState<
+    ReturnType<typeof groupStepsByDiscipline> | null
+  >(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  if (plan === undefined) {
+  useEffect(() => {
+    let cancelled = false;
+
+    getStudyPlan()
+      .then((result) => {
+        if (!cancelled) setGroups(groupStepsByDiscipline(result.steps));
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+
+        setLoadError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar a trilha. Tente novamente.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loadError !== null) {
+    return (
+      <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto">
+        <NavMenu title="Plano de estudos" hasBackButton />
+        <p className="text-danger text-center py-8">{loadError}</p>
+      </main>
+    );
+  }
+
+  if (groups === null) {
+    return (
+      <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto flex-1 items-center justify-center">
+        <Spinner size="lg" />
+        <span className="sr-only">Carregando plano</span>
+      </main>
+    );
+  }
+
+  const group = groups.find((item) => item.motherFolderId === planoId);
+
+  if (group === undefined) {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto">
         <NavMenu title="Plano de estudos" hasBackButton />
@@ -33,14 +78,7 @@ export default function StudyPlanPage() {
     );
   }
 
-  const progress = getProgress(plan.id);
-  const { completedStepIds, completed, total, isComplete, nextStep } = progress;
-  const isFollowing = activePlanId === plan.id;
-
-  function stopFollowing() {
-    leavePlan();
-    navigate("/trilha");
-  }
+  const { completed, total, isComplete, nextStep } = groupProgress(group.steps);
 
   return (
     <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto">
@@ -49,11 +87,10 @@ export default function StudyPlanPage() {
       <section className="bg-accent-soft rounded-3xl p-4 md:p-6 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
           <h2 className="text-2xl md:text-3xl font-semibold text-accent text-balance">
-            {plan.focus}
+            {group.motherFolderName}
           </h2>
           <p className="text-sm text-accent-soft-foreground text-pretty">
-            Plano sugerido pela Revi IA em {plan.discipline}.{" "}
-            {plan.description}
+            Plano sugerido pela Revi IA para reforçar esta disciplina.
           </p>
         </header>
 
@@ -87,73 +124,43 @@ export default function StudyPlanPage() {
           </span>
           <h2 className="text-2xl font-semibold">Plano concluído</h2>
           <p className="text-muted text-balance max-w-md">
-            Você fechou as {total} etapas de {plan.focus.toLowerCase()}. Refazer
-            o plano em alguns dias é o que fixa o conteúdo de verdade.
+            Você fechou as {total} etapas de {group.motherFolderName}. Gerar
+            uma nova trilha na página inicial recalcula suas disciplinas mais
+            fracas.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md pt-1">
-            <Button
-              variant="tertiary"
-              fullWidth
-              onPress={() => restartPlan(plan.id)}
-            >
-              <RotateCcw />
-              Refazer o plano
-            </Button>
-            <Link
-              to="/trilha"
-              className={buttonVariants({
-                variant: "primary",
-                fullWidth: true,
-              })}
-            >
-              Voltar à Trilha
-            </Link>
-          </div>
+          <Link
+            to="/trilha"
+            className={buttonVariants({ variant: "primary", fullWidth: true })}
+          >
+            Voltar à Trilha
+          </Link>
         </section>
       ) : null}
 
       <section id="etapas" className="flex flex-col gap-3">
         <h2 className="font-semibold">Etapas</h2>
         <ol className="flex flex-col gap-3">
-          {plan.steps.map((step, index) => (
+          {group.steps.map((step, index) => (
             <PlanStepRow
               key={step.id}
-              planId={plan.id}
+              planoId={planoId}
               step={step}
               position={index + 1}
-              isDone={completedStepIds.includes(step.id)}
               isNext={nextStep?.id === step.id}
             />
           ))}
         </ol>
       </section>
 
-      {isFollowing && !isComplete ? (
+      {!isComplete && nextStep ? (
         <footer className="flex flex-col gap-3">
-          <Button variant="ghost" fullWidth onPress={stopFollowing}>
-            Deixar de seguir este plano
-          </Button>
-        </footer>
-      ) : null}
-
-      {!isFollowing && !isComplete ? (
-        <footer className="flex flex-col gap-3">
-          <p className="text-sm text-muted text-center text-balance">
-            Você não está seguindo este plano. Começar qualquer etapa retoma o
-            acompanhamento na Trilha.
-          </p>
-          {nextStep ? (
-            <Link
-              to={`/trilha/plano/${plan.id}/etapa/${nextStep.id}`}
-              className={buttonVariants({
-                variant: "primary",
-                fullWidth: true,
-              })}
-            >
-              <CircleStar />
-              Seguir plano de estudos
-            </Link>
-          ) : null}
+          <Link
+            to={`/trilha/plano/${planoId}/etapa/${nextStep.id}`}
+            className={buttonVariants({ variant: "primary", fullWidth: true })}
+          >
+            <CircleStar />
+            Continuar o plano
+          </Link>
         </footer>
       ) : null}
     </main>

@@ -3,14 +3,14 @@ import { cn } from "@heroui/styles";
 interface PlanSpineProps {
   position: number;
   total: number;
-  focus: string;
+  disciplineName: string;
   completedCount: number;
 }
 
 export function PlanSpine({
   position,
   total,
-  focus,
+  disciplineName,
   completedCount,
 }: PlanSpineProps) {
   return (
@@ -21,7 +21,7 @@ export function PlanSpine({
           {String(total).padStart(2, "0")}
         </span>
         <span aria-hidden>·</span>
-        <span className="text-pretty">{focus}</span>
+        <span className="text-pretty">{disciplineName}</span>
       </p>
 
       <p className="sr-only">
