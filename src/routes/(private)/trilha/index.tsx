@@ -13,6 +13,7 @@ import type {
 } from "@/types/api/performance";
 import type { StudyPlan } from "@/types/api/studyPlan";
 import { groupStepsByDiscipline } from "@/utils/studyPlan";
+import { DialogSelecionarDisciplinas } from "./components/DialogSelecionarDisciplinas";
 import { DisciplinePerformanceList } from "./components/DisciplinePerformanceList";
 import { StudyPlanCard } from "./components/StudyPlanCard";
 
@@ -33,6 +34,8 @@ export default function PathPage() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [isSelectDisciplinesOpen, setIsSelectDisciplinesOpen] =
+    useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,14 +63,14 @@ export default function PathPage() {
     };
   }, []);
 
-  async function handleGenerate() {
+  async function handleGenerate(motherFolderIds?: string[]) {
     setIsGenerating(true);
     setGenerateError(null);
 
     const previousGeneratedAt = plan?.generatedAt ?? null;
 
     try {
-      await generateStudyPlan();
+      await generateStudyPlan(motherFolderIds);
 
       const startedAt = Date.now();
 
@@ -200,7 +203,7 @@ export default function PathPage() {
                 <Button
                   variant="primary"
                   fullWidth
-                  onPress={handleGenerate}
+                  onPress={() => setIsSelectDisciplinesOpen(true)}
                   isDisabled={isGenerating}
                 >
                   <CircleStar />
@@ -222,7 +225,7 @@ export default function PathPage() {
                   <Button
                     variant="ghost"
                     fullWidth
-                    onPress={handleGenerate}
+                    onPress={() => setIsSelectDisciplinesOpen(true)}
                     isDisabled={isGenerating}
                   >
                     <CircleStar />
@@ -234,6 +237,15 @@ export default function PathPage() {
           </div>
         </>
       )}
+
+      <DialogSelecionarDisciplinas
+        isOpen={isSelectDisciplinesOpen}
+        onOpenChange={setIsSelectDisciplinesOpen}
+        onGenerateAutomatic={() => handleGenerate()}
+        onGenerateSelected={(motherFolderIds) =>
+          handleGenerate(motherFolderIds)
+        }
+      />
     </main>
   );
 }
