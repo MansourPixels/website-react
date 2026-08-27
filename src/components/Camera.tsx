@@ -1,8 +1,9 @@
-import type { Material } from "@/types/Material";
+import { ApiError } from "@/api/client";
+import type { CapturedFile } from "@/types/capture";
 import {
   ACCEPTED_MATERIAL_TYPES,
+  contentTypeOf,
   isAcceptedMaterial,
-  materialKindOf,
 } from "@/utils/materials";
 import { Button, cn, Spinner } from "@heroui/react";
 import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
@@ -10,11 +11,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
-import { defaultFolders } from "../mocks/folders";
 import { CaptureDesk } from "./CaptureDesk";
 import {
   DialogCategorizeImage,
-  type ImageCategorization,
+  type UploadDestination,
 } from "./DialogCategorizeImage";
 import { NavMenu } from "./NavMenu";
 import { PhotoReview } from "./PhotoReview";
@@ -22,7 +22,7 @@ import { PhotoReview } from "./PhotoReview";
 interface CameraProps {
   title?: string;
   footerClass?: string;
-  onSelectMaterial?: (material: Material) => void;
+  onSelectMaterial?: (file: CapturedFile) => Promise<void>;
 }
 
 export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
@@ -44,9 +44,15 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
-  const [preview, setPreview] = useState<Material | null>(null);
-  const [reviewMaterial, setReviewMaterial] = useState<Material | null>(null);
+  const [preview, setPreview] = useState<CapturedFile | null>(null);
+  const [reviewMaterial, setReviewMaterial] = useState<CapturedFile | null>(
+    null,
+  );
   const [isCategorizeOpen, setIsCategorizeOpen] = useState(false);
+  const [isSubmittingMaterial, setIsSubmittingMaterial] = useState(false);
+  const [submitMaterialError, setSubmitMaterialError] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     return () => {
@@ -60,36 +66,46 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     const url = URL.createObjectURL(file);
     previewUrlRef.current = url;
 
-    const material: Material = {
-      id: url,
-      kind: materialKindOf(file),
+    const captured: CapturedFile = {
+      blob: file,
       url,
+      contentType: contentTypeOf(file),
       name: file instanceof File ? file.name : "Captura da câmera",
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
     };
 
-    setPreview(material);
-    setReviewMaterial(material);
+    setPreview(captured);
+    setReviewMaterial(captured);
   }, []);
 
-  function handleSelectMaterial() {
+  async function handleSelectMaterial() {
     if (!reviewMaterial) return;
 
     if (onSelectMaterial) {
-      previewUrlRef.current = null;
-      onSelectMaterial(reviewMaterial);
-      setReviewMaterial(null);
+      setIsSubmittingMaterial(true);
+      setSubmitMaterialError(null);
+
+      try {
+        await onSelectMaterial(reviewMaterial);
+        previewUrlRef.current = null;
+        setReviewMaterial(null);
+      } catch (error) {
+        setSubmitMaterialError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível enviar o material. Tente novamente.",
+        );
+      } finally {
+        setIsSubmittingMaterial(false);
+      }
       return;
     }
 
     setIsCategorizeOpen(true);
   }
 
-  function handleCategorize({ folder, subjectName }: ImageCategorization) {
+  function handleUploaded({ motherFolderId, childFolderId }: UploadDestination) {
     setReviewMaterial(null);
-
-    navigate(`/pastas/${folder.id}/assuntos/${encodeURIComponent(subjectName)}`);
+    navigate(`/pastas/${motherFolderId}/assuntos/${childFolderId}`);
   }
 
   async function handleCapture() {
@@ -121,6 +137,8 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           material={reviewMaterial}
           onBack={() => setReviewMaterial(null)}
           onSelect={handleSelectMaterial}
+          isSubmitting={isSubmittingMaterial}
+          error={submitMaterialError}
         />
       ) : null}
 
@@ -128,9 +146,8 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         <DialogCategorizeImage
           isOpen={isCategorizeOpen}
           onOpenChange={setIsCategorizeOpen}
-          folders={defaultFolders}
-          materialKind={reviewMaterial?.kind ?? "image"}
-          onSubmit={handleCategorize}
+          file={reviewMaterial}
+          onUploaded={handleUploaded}
         />
       ) : null}
     </>
@@ -212,7 +229,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         >
           {preview === null ? (
             <Images />
-          ) : preview.kind === "pdf" ? (
+          ) : preview.contentType === "PDF" ? (
             <span className="size-full flex items-center justify-center bg-white text-foreground">
               <FileText className="size-6" />
               <span className="sr-only">Último PDF selecionado</span>
