@@ -1,12 +1,7 @@
 import type { StoredSpotifyTokens } from "@/types/Spotify";
 
-// Tokens do Spotify em localStorage: o mesmo compromisso honesto do resto do
-// protótipo (ver authStorage.ts). Não é padrão de produção — em produção os
-// tokens ficariam num cookie httpOnly emitido pelo servidor.
 const TOKENS_KEY = "revi:spotify";
 
-// Segredos efêmeros do PKCE. sessionStorage sobrevive ao redirect de página
-// inteira e morre junto com a aba, que é exatamente o tempo de vida deles.
 const VERIFIER_KEY = "revi:spotify:verificador";
 const STATE_KEY = "revi:spotify:estado";
 const RETURN_KEY = "revi:spotify:retorno";
@@ -47,7 +42,6 @@ export function writeTokens(tokens: StoredSpotifyTokens) {
   try {
     window.localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens));
   } catch {
-    // Armazenamento cheio ou bloqueado: a conexão vale só para esta aba.
   }
 }
 
@@ -57,7 +51,6 @@ export function clearTokens() {
   try {
     window.localStorage.removeItem(TOKENS_KEY);
   } catch {
-    // Sem acesso ao armazenamento: nada a limpar.
   }
 }
 
@@ -69,7 +62,6 @@ export function writeHandshake(verifier: string, state: string, returnTo: string
     window.sessionStorage.setItem(STATE_KEY, state);
     window.sessionStorage.setItem(RETURN_KEY, returnTo);
   } catch {
-    // Sem sessionStorage não há como concluir o PKCE com segurança.
   }
 }
 
@@ -97,6 +89,5 @@ export function clearHandshake() {
     window.sessionStorage.removeItem(STATE_KEY);
     window.sessionStorage.removeItem(RETURN_KEY);
   } catch {
-    // Nada a limpar.
   }
 }

@@ -97,8 +97,6 @@ export function DialogSessionSettings({
 }: DialogSessionSettingsProps) {
   const [form, setForm] = useState<SessionSettings>(settings);
 
-  // Reabrir o diálogo tem que mostrar o que está valendo agora, não o rascunho
-  // abandonado da última vez.
   useEffect(() => {
     if (isOpen) setForm(settings);
   }, [isOpen, settings]);

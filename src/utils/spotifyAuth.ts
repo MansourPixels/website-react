@@ -4,8 +4,6 @@ import { readTokens, writeHandshake, writeTokens } from "@/utils/spotifyStorage"
 const AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 
-// Três escopos e nem um a mais. `user-read-private` existe só para saber se a
-// conta é Premium e avisar antes do primeiro comando falhar.
 const SCOPES = [
   "user-modify-playback-state",
   "user-read-playback-state",
@@ -18,10 +16,6 @@ export function getClientId() {
   return clientId !== undefined && clientId.length > 0 ? clientId : null;
 }
 
-/**
- * Origem + caminho fixo. O `/authorize` e a troca do code precisam mandar
- * exatamente a mesma string, então os dois saem daqui.
- */
 export function getRedirectUri() {
   if (typeof window === "undefined") return "";
 
@@ -49,11 +43,6 @@ async function createChallenge(verifier: string) {
   return base64Url(new Uint8Array(digest));
 }
 
-/**
- * Monta o handshake PKCE e devolve a URL de autorização. `crypto.subtle` exige
- * contexto seguro, o que em desenvolvimento significa http://127.0.0.1 (a
- * Spotify não aceita mais `localhost` mesmo).
- */
 export async function buildAuthorizeUrl(returnTo: string) {
   const clientId = getClientId();
 
@@ -84,8 +73,6 @@ function toStoredTokens(
 ): StoredSpotifyTokens {
   return {
     accessToken: payload.access_token,
-    // A Spotify pode rotacionar o refresh token. Ignorar o novo valor quebraria
-    // o refresh seguinte, silenciosamente, horas depois.
     refreshToken: payload.refresh_token ?? previousRefreshToken,
     expiresAt: Date.now() + payload.expires_in * 1000,
     scope: payload.scope ?? SCOPES,
@@ -130,8 +117,6 @@ export async function exchangeCodeForTokens(code: string, verifier: string) {
   return tokens;
 }
 
-// Um refresh por vez: o polling do player e um comando de play podem pedir
-// renovação ao mesmo tempo, e duas trocas em paralelo invalidam uma à outra.
 let pendingRefresh: Promise<StoredSpotifyTokens | null> | null = null;
 
 export function refreshTokens(): Promise<StoredSpotifyTokens | null> {

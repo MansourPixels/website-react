@@ -1,5 +1,3 @@
-// Fases do Pomodoro. Os identificadores ficam em inglês para acompanhar o
-// restante do código; só o texto de interface é em português.
 export type SessionPhase = "focus" | "shortBreak" | "longBreak";
 
 export type SessionStatus = "idle" | "running" | "paused";
@@ -31,9 +29,6 @@ export const SESSION_LIMITS = {
   cyclesUntilLongBreak: { min: 2, max: 8, step: 1 },
 } as const;
 
-// O cronômetro é guiado por um instante absoluto (`endsAt`), nunca por um
-// contador decrementado a cada tick: é isso que o mantém correto quando a aba
-// fica em segundo plano e o navegador estrangula os timers.
 export interface SessionRunState {
   phase: SessionPhase;
   status: SessionStatus;

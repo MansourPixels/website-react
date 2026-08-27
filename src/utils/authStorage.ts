@@ -1,8 +1,5 @@
 import type { User } from "@/types/User";
 
-// Autenticação simulada: não há backend no projeto, então contas e sessão
-// vivem no localStorage. A senha é guardada em texto puro — isso serve para
-// a demonstração e não deve ser tratado como autenticação real.
 export interface StoredAccount extends User {
   password: string;
 }
@@ -30,7 +27,6 @@ function writeJson(key: string, value: unknown) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Armazenamento cheio ou bloqueado: a sessão segue apenas em memória.
   }
 }
 
@@ -81,6 +77,5 @@ export function clearSession() {
   try {
     window.localStorage.removeItem(SESSION_KEY);
   } catch {
-    // Sem acesso ao armazenamento: nada a limpar.
   }
 }

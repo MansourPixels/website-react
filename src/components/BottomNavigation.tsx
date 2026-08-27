@@ -14,8 +14,6 @@ interface BottomNavigationProps {
 export function BottomNavigation({ links }: BottomNavigationProps) {
   return (
     <nav
-      // O Tailwind não gera classe a partir de variável, então o número de
-      // colunas acompanha os links por estilo inline.
       style={{
         gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`,
       }}

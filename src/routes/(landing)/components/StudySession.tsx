@@ -13,8 +13,6 @@ const cycleChips = [
 ];
 
 export function StudySession() {
-  // `persist: false` mantém a demonstração isolada: quem já ajustou a própria
-  // sessão em /sessao não perde a configuração ao visitar a landing.
   const preview = useStudySession({ persist: false });
 
   return (

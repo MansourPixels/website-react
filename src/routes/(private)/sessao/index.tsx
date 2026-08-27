@@ -26,8 +26,6 @@ export default function SessaoPage() {
     controlsSpotify: session.settings.controlsSpotify,
   });
 
-  // Um Pomodoro vive em aba de fundo: o tempo restante precisa aparecer no
-  // título para ser útil sem trazer a aba para a frente.
   useEffect(() => {
     if (typeof document === "undefined") return;
 

@@ -1,10 +1,5 @@
 import { cn } from "@heroui/styles";
 
-/**
- * Único lugar do produto onde o verde do Spotify pode aparecer. Ele identifica
- * a marca e não assume nenhum trabalho de cor de destaque — a chama azul
- * continua sendo a única do sistema.
- */
 export function SpotifyMark({ className }: { className?: string }) {
   return (
     <svg

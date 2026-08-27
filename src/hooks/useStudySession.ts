@@ -17,11 +17,8 @@ import {
 
 const TICK_MS = 250;
 
-// Voltar para uma sessão abandonada há muito tempo não deve disparar a próxima
-// fase sozinho — nem dar play numa playlist para uma pessoa que já saiu.
 const MAX_AUTO_START_OVERSHOOT_MS = 60_000;
 
-// Cronômetro guardado há mais de duas horas não é mais o cronômetro de ninguém.
 const MAX_RESTORE_AGE_MS = 2 * 60 * 60 * 1000;
 
 export const phaseLabels: Record<SessionPhase, string> = {
@@ -61,10 +58,6 @@ function announce(phase: SessionPhase, settings: SessionSettings) {
 }
 
 interface UseStudySessionOptions {
-  /**
-   * A landing page instancia um cronômetro de verdade para demonstração. Sem
-   * `persist: false` ela sobrescreveria as preferências de quem já usa /sessao.
-   */
   persist?: boolean;
 }
 
@@ -82,8 +75,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
   const [announcement, setAnnouncement] = useState("");
   const [isReady, setIsReady] = useState(false);
 
-  // `nowMs` só é escrito dentro de efeitos: nunca lemos o relógio durante o
-  // render, senão servidor e cliente divergiriam na hidratação.
   const [nowMs, setNowMs] = useState(0);
 
   const handledDeadline = useRef<number | null>(null);
@@ -95,7 +86,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
 
   const totalMs = durationOf(run.phase, settings);
 
-  // Leitura do armazenamento só no cliente, como faz o AuthContext.
   useEffect(() => {
     const stored = readStudySession();
     const now = Date.now();
@@ -121,9 +111,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
     setIsReady(true);
   }, [persist]);
 
-  // O intervalo não conta o tempo: ele só provoca um novo render para que o
-  // restante seja recalculado a partir do instante absoluto guardado em
-  // `endsAt`. Estrangulamento de aba em segundo plano não acumula erro.
   useEffect(() => {
     if (run.status !== "running") return;
 
@@ -134,7 +121,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
     return () => window.clearInterval(id);
   }, [run.status, run.endsAt]);
 
-  // Ao voltar para a aba, recalcula na hora em vez de esperar o próximo tick.
   useEffect(() => {
     if (typeof document === "undefined") return;
 
@@ -148,8 +134,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
       document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // Troca de fase. Roda no efeito, não dentro do intervalo, e é idempotente por
-  // prazo para não creditar o mesmo ciclo duas vezes.
   useEffect(() => {
     if (run.status !== "running" || run.endsAt === null) return;
     if (remainingMs > 0) return;
@@ -175,7 +159,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
           : "shortBreak";
     } else {
       nextPhase = "focus";
-      // A rodada só recomeça depois da pausa longa.
       if (run.phase === "longBreak") nextCycleInRound = 0;
     }
 
@@ -213,8 +196,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
     );
   }, [run, remainingMs, settings]);
 
-  // Mudar as durações com uma fase em andamento só afeta a fase seguinte; com o
-  // cronômetro parado, o valor exibido acompanha na hora.
   useEffect(() => {
     if (!isReady) return;
 
@@ -298,7 +279,6 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
     setAnnouncement(`${phaseLabels[run.phase]} reiniciado.`);
   }, [run.phase, settings]);
 
-  // Pular não conclui um ciclo: avança a fase e sempre aterrissa parado.
   const skip = useCallback(() => {
     handledDeadline.current = null;
 

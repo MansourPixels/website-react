@@ -22,8 +22,6 @@ export default function SpotifyCallbackPage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // O código de autorização é de uso único: um segundo POST devolve
-  // invalid_grant. Este ref cobre StrictMode, Fast Refresh e re-render.
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -67,7 +65,6 @@ export default function SpotifyCallbackPage() {
 
         void navigate(returnTo, { replace: true });
       } finally {
-        // Os segredos do PKCE não servem mais para nada, com sucesso ou sem.
         clearHandshake();
       }
     }

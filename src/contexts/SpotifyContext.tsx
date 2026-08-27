@@ -25,12 +25,8 @@ import {
 import { buildAuthorizeUrl, getClientId } from "@/utils/spotifyAuth";
 import { clearTokens, readTokens } from "@/utils/spotifyStorage";
 
-// Quatro requisições por minuto é irrelevante para os limites da Spotify e já
-// deixa a faixa em exibição praticamente ao vivo.
 const POLL_INTERVAL_MS = 15_000;
 
-// O estado do player é eventualmente consistente: pedir logo depois de um
-// comando devolve o valor antigo.
 const POST_COMMAND_DELAY_MS = 800;
 
 interface SpotifyContextValue {
@@ -41,13 +37,11 @@ interface SpotifyContextValue {
   retryAfter: number | null;
   isConfigured: boolean;
   connect: (returnTo: string) => Promise<void>;
-  /** Chamado pela rota de callback depois que os tokens já foram gravados. */
   completeConnection: () => Promise<boolean>;
   disconnect: () => void;
   play: () => Promise<SpotifyCommandResult>;
   pause: () => Promise<SpotifyCommandResult>;
   refreshNowPlaying: () => Promise<void>;
-  /** Liga o polling enquanto a tela que chamou estiver montada. */
   watchPlayback: () => () => void;
 }
 
@@ -65,8 +59,6 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
   const isConfigured = getClientId() !== null;
 
-  // Como no AuthContext, o armazenamento só é lido no cliente para não divergir
-  // na hidratação.
   useEffect(() => {
     let isActive = true;
 
@@ -128,8 +120,6 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
     if (result.ok) {
       setNowPlaying(result.data);
-      // Nada tocando não é o mesmo que aparelho ausente, mas para o usuário a
-      // instrução é a mesma: abra o Spotify e toque alguma coisa.
       setIssue((current) =>
         current === "rateLimited" || current === "requestFailed" ? null : current,
       );
@@ -141,8 +131,6 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
     applyIssue(result.issue, result.retryAfter);
   }, [applyIssue]);
 
-  // Só faz sentido perguntar o que está tocando com a aba à frente e com alguma
-  // tela realmente exibindo essa informação.
   useEffect(() => {
     if (status !== "connected" || watcherCount === 0) return;
     if (typeof document === "undefined") return;
@@ -203,8 +191,6 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
     window.location.assign(url);
   }, []);
 
-  // O callback do OAuth navega pelo cliente, então o provider não remonta e
-  // precisa ser avisado de que agora existe um token válido.
   const completeConnection = useCallback(async () => {
     const connected = await fetchProfile();
 
@@ -232,8 +218,6 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
     setRetryAfter(null);
   }, []);
 
-  // Contrato: play e pause nunca lançam. Uma falha do Spotify não pode derrubar
-  // o cronômetro.
   const runCommand = useCallback(
     async (
       command: typeof startPlayback | typeof pausePlayback,

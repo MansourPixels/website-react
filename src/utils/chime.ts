@@ -1,6 +1,3 @@
-// Sinal sonoro de fim de fase, sintetizado na hora com a Web Audio API. Um
-// arquivo de áudio traria um binário, uma requisição e uma dúvida de licença
-// para ganhar o mesmo bipe de duas notas.
 let audioContext: AudioContext | null = null;
 
 type AudioContextConstructor = typeof AudioContext;
@@ -20,15 +17,12 @@ function getAudioContext(): AudioContext | null {
   return audioContext;
 }
 
-// O AudioContext nasce suspenso até o primeiro gesto do usuário. Chamamos isto
-// no clique de "Começar" para que o bipe do fim da fase consiga tocar depois.
 export function unlockChime() {
   const context = getAudioContext();
 
   if (context === null) return;
 
   void context.resume().catch(() => {
-    // Sem áudio disponível: a sessão continua funcionando em silêncio.
   });
 }
 
@@ -55,8 +49,6 @@ function playNote(
   oscillator.stop(startAt + duration + 0.02);
 }
 
-// Subindo quando o foco termina, descendo quando a pausa termina: dá para saber
-// que fase começou sem olhar para a tela.
 export function playChime(direction: "up" | "down") {
   const context = getAudioContext();
 
@@ -71,6 +63,5 @@ export function playChime(direction: "up" | "down") {
     playNote(context, notes[0], now, 0.16);
     playNote(context, notes[1], now + 0.16, 0.24);
   } catch {
-    // Áudio bloqueado pelo navegador: nada a fazer, o cronômetro segue.
   }
 }

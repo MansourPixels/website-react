@@ -31,7 +31,6 @@ interface SpotifyStripProps {
   issue: SpotifyIssue;
   retryAfter?: number | null;
   isConfigured: boolean;
-  /** Sem o toggle, a faixa vira só demonstração (landing page). */
   controlsSpotify?: boolean;
   onToggleControl?: (controlsSpotify: boolean) => void;
   onConnect?: () => void;

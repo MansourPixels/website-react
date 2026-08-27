@@ -10,8 +10,6 @@ import { clearTokens, readTokens } from "@/utils/spotifyStorage";
 
 const API_BASE = "https://api.spotify.com/v1";
 
-// Renova um pouco antes de expirar: uma requisição que sai com token vencido
-// por dois segundos volta 401 e custa uma ida e volta a mais.
 const REFRESH_MARGIN_MS = 60_000;
 
 export type SpotifyResult<T> =
@@ -78,7 +76,6 @@ async function request<T>(
     return { ok: false, issue: "requestFailed" };
   }
 
-  // 204: nada tocando, ou nenhum aparelho ativo. Não é erro.
   if (response.status === 204) return { ok: true, data: null };
 
   if (response.ok) {
@@ -113,7 +110,6 @@ async function request<T>(
     const header = response.headers.get("Retry-After");
     const retryAfter = header === null ? 5 : Number.parseInt(header, 10);
 
-    // Nunca retentar em laço aqui: é assim que se ganha um bloqueio temporário.
     return {
       ok: false,
       issue: "rateLimited",
@@ -126,8 +122,6 @@ async function request<T>(
   if (response.status === 403) {
     if (reason === "PREMIUM_REQUIRED") return { ok: false, issue: "notPremium" };
 
-    // "Restriction violated" costuma ser dar play no que já está tocando, ou
-    // pause no que já está pausado. O estado desejado já é o estado atual.
     if (message.includes("Restriction violated")) return { ok: true, data: null };
   }
 
@@ -182,10 +176,6 @@ export async function fetchNowPlaying(): Promise<
   };
 }
 
-/**
- * Sem corpo, `play` apenas retoma o que já está no aparelho ativo. Se o
- * Spotify nunca tocou nada ali, não há o que retomar — daí o 404.
- */
 export function startPlayback() {
   return spotifyFetch<null>("/me/player/play", { method: "PUT" });
 }

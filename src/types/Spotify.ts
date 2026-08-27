@@ -4,10 +4,6 @@ export type SpotifyStatus =
   | "connecting"
   | "connected";
 
-/**
- * O que pode dar errado de um jeito que o usuário precisa saber. `null` é o
- * estado saudável.
- */
 export type SpotifyIssue =
   | "disconnected"
   | "noDevice"
@@ -34,9 +30,6 @@ export type SpotifyCommandResult =
   | { ok: true }
   | { ok: false; issue: Exclude<SpotifyIssue, null>; retryAfter?: number };
 
-// Tokens vivem no localStorage, como o resto do estado deste protótipo. Isso
-// significa que qualquer XSS consegue lê-los — por isso pedimos o mínimo de
-// escopos possível.
 export interface StoredSpotifyTokens {
   accessToken: string;
   refreshToken: string;
@@ -44,7 +37,6 @@ export interface StoredSpotifyTokens {
   scope: string;
 }
 
-/** Só os campos das respostas da API que este projeto realmente usa. */
 export interface SpotifyTokenResponse {
   access_token: string;
   token_type: string;

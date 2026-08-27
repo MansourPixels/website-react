@@ -9,9 +9,6 @@ import {
   type StoredStudySession,
 } from "@/types/StudySession";
 
-// As preferências da sessão de estudos vivem no localStorage, como o resto do
-// projeto. Nada aqui é sensível: são durações, um contador de ciclos do dia e o
-// cronômetro em andamento.
 const SESSION_KEY = "revi:sessao-estudos";
 
 function readJson<T>(key: string): T | null {
@@ -142,7 +139,6 @@ function sanitizeCounter(value: unknown): SessionCounter {
     typeof raw.completedFocus !== "number" ||
     !Number.isFinite(raw.completedFocus)
   ) {
-    // Contador é do dia: virou a data, começa do zero.
     return { date: today, completedFocus: 0 };
   }
 

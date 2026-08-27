@@ -7,8 +7,6 @@ import {
 
 export default [
   index("routes/(landing)/index.tsx"),
-  // Fora do grupo (private) de propósito: o RequireAuth redirecionaria para o
-  // login e descartaria o ?code= se a sessão local tivesse expirado.
   route("spotify/callback", "routes/(spotify)/callback/index.tsx"),
   layout("routes/(auth)/layout.tsx", [
     route("auth/entrar", "routes/(auth)/entrar/index.tsx"),

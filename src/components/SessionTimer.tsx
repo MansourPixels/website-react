@@ -104,8 +104,6 @@ export function SessionTimer({
         {formatCountdown(remainingMs)}
       </p>
 
-      {/* O leitor de tela recebe as trocas de fase pela região abaixo; a barra
-          mudaria de valor quatro vezes por segundo e viraria ruído. */}
       <Meter
         value={totalMs - remainingMs}
         maxValue={totalMs}
