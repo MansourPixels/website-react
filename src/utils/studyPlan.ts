@@ -1,5 +1,5 @@
 import type { StudyPlanStep, StudyPlanStepType } from "@/types/api/studyPlan";
-import { FileText, ListCheck, Zap, type LucideIcon } from "lucide-react";
+import { FileText, ListCheck, Network, Zap, type LucideIcon } from "lucide-react";
 
 interface StudyPlanStepKindMeta {
   label: string;
@@ -38,6 +38,15 @@ export const studyPlanStepKinds: Record<StudyPlanStepType, StudyPlanStepKindMeta
     tint: "content-bg-orange-200",
     action: "Fazer o simulado",
     routeSegment: "simulado-prova",
+  },
+  REVIEW_MIND_MAP: {
+    label: "Mapa Mental",
+    goal: "Explorar os conceitos do assunto em um mapa de ramos.",
+    icon: Network,
+    chip: "bg-cyan-600",
+    tint: "content-bg-cyan-200",
+    action: "Percorrer o mapa",
+    routeSegment: "mapa-mental",
   },
 };
 

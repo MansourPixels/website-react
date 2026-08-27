@@ -1,7 +1,8 @@
 export type StudyPlanStepType =
   | "REVIEW_SUMMARY"
   | "REVIEW_FLASHCARDS"
-  | "RETAKE_QUIZ";
+  | "RETAKE_QUIZ"
+  | "REVIEW_MIND_MAP";
 
 export interface StudyPlanStep {
   id: string;
