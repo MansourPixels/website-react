@@ -129,6 +129,7 @@ export default function SubjectDetailsPage() {
       <NavMenu
         title={subjectName ?? "Assunto"}
         hasBackButton
+        backHref={`/pastas/${pastaId}`}
         hasSearch
         onSearch={setSearch}
       />
