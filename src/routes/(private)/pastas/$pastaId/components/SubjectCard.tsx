@@ -10,6 +10,8 @@ import { Link, useParams } from "react-router";
 import {
   Ellipsis,
   FileText,
+  Files,
+  Inbox,
   ListCheck,
   Network,
   SquarePen,
@@ -22,6 +24,7 @@ import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
 interface SubjectCardProps {
   subject: ChildFolder;
+  contentCount?: number;
   onChangeSubject: (subject: ChildFolder) => void;
   onDeleteSubject: (subject: ChildFolder) => void;
 }
@@ -36,16 +39,34 @@ export function SubjectCard(props: SubjectCardProps) {
     setIsMenuOpen(false);
     open(true);
   }
-  const { subject, onChangeSubject, onDeleteSubject } = props;
+  const { subject, contentCount, onChangeSubject, onDeleteSubject } = props;
   const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
 
   return (
     <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
       <Link to={basePath} className="px-3 block h-full">
-        <div className="pt-3 pb-2 flex flex-col gap-4 h-full justify-between">
+        <div className="pt-3 pb-2 flex flex-col gap-2 h-full justify-between">
           <h2 className="leading-tight font-semibold line-clamp-2 h-10">
             {subject.name}
           </h2>
+
+          <footer className="flex items-center gap-1.5 pr-9 pb-1 text-xs text-muted">
+            {contentCount === undefined ? (
+              <Skeleton className="rounded-full h-3 w-24" />
+            ) : contentCount === 0 ? (
+              <>
+                <Inbox className="size-3.5 shrink-0" />
+                <span>Sem conteúdo</span>
+              </>
+            ) : (
+              <>
+                <Files className="size-3.5 shrink-0" />
+                <span>
+                  {contentCount} {contentCount === 1 ? "material" : "materiais"}
+                </span>
+              </>
+            )}
+          </footer>
         </div>
       </Link>
 
@@ -139,11 +160,12 @@ export function SubjectCard(props: SubjectCardProps) {
 export function LoadingSubjectCard() {
   return (
     <article className="relative bg-white rounded-xl shadow-surface">
-      <div className="px-3 pt-4 pb-2 flex flex-col gap-4 h-full justify-between">
+      <div className="px-3 pt-4 pb-2 flex flex-col gap-2 h-full justify-between">
         <header className="h-10 flex flex-col justify-between">
           <Skeleton className="rounded-full h-4 w-3/4" />
           <Skeleton className="rounded-full h-4 w-11/12" />
         </header>
+        <Skeleton className="rounded-full h-3 w-24 mb-1" />
       </div>
     </article>
   );

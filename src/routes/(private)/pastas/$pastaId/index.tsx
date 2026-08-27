@@ -2,6 +2,7 @@ import { Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 
+import { listContent } from "@/api/content";
 import { listChildFolders, listMotherFolders } from "@/api/folders";
 import { ApiError } from "@/api/client";
 import { FABButton } from "@/components/FABButton";
@@ -20,6 +21,7 @@ export default function SubjectListRoute() {
 function SubjectListPage({ folderId }: { folderId: string }) {
   const [folderName, setFolderName] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<ChildFolder[] | null>(null);
+  const [contentCounts, setContentCounts] = useState<Record<string, number>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -50,6 +52,33 @@ function SubjectListPage({ folderId }: { folderId: string }) {
       cancelled = true;
     };
   }, [folderId]);
+
+  const subjectIds = subjects?.map((subject) => subject.id).join(",") ?? "";
+
+  useEffect(() => {
+    if (!subjectIds) return;
+
+    const ids = subjectIds.split(",");
+    let cancelled = false;
+
+    Promise.allSettled(ids.map((id) => listContent(id))).then((results) => {
+      if (cancelled) return;
+
+      setContentCounts((current) => {
+        const next = { ...current };
+
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled") next[ids[index]] = result.value.length;
+        });
+
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subjectIds]);
 
   const normalizedSearch = normalizeText(search);
   const filteredSubjects =
@@ -104,6 +133,7 @@ function SubjectListPage({ folderId }: { folderId: string }) {
             <SubjectCard
               key={subject.id}
               subject={subject}
+              contentCount={contentCounts[subject.id]}
               onChangeSubject={handleChangeSubject}
               onDeleteSubject={handleDeleteSubject}
             />
