@@ -1,11 +1,16 @@
-import type { PracticeTestQuestion } from "@/mocks/practiceTest";
-import { alternativeLetter } from "@/utils/alternatives";
+import { Math as MathText } from "@/components/Math";
+import type {
+  GradeResponse,
+  QuizOption,
+  QuizQuestion,
+} from "@/types/api/quiz";
 import { Button } from "@heroui/react";
 import { Check, RotateCcw, X } from "lucide-react";
 
 interface TestSummaryProps {
-  questions: PracticeTestQuestion[];
-  answers: number[];
+  questions: QuizQuestion[];
+  answers: Map<string, QuizOption>;
+  result: GradeResponse;
   onRestart: () => void;
   onFinish: () => void;
 }
@@ -13,14 +18,16 @@ interface TestSummaryProps {
 export function TestSummary({
   questions,
   answers,
+  result,
   onRestart,
   onFinish,
 }: TestSummaryProps) {
-  const total = questions.length;
-  const correctCount = questions.filter(
-    (question, index) => question.alternativas[answers[index]]?.correta,
-  ).length;
-  const percentage = Math.round((correctCount / total) * 100);
+  const { correctCount, totalQuestions } = result;
+  const percentage =
+    totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+  const correctByQuestionId = new Map(
+    result.results.map((item) => [item.questionId, item.correct]),
+  );
 
   return (
     <>
@@ -29,7 +36,7 @@ export function TestSummary({
           <h2 className="text-3xl font-semibold">Simulado concluído!</h2>
           <p className="text-5xl font-semibold text-orange-600">
             {correctCount}
-            <span className="text-2xl opacity-50">/{total}</span>
+            <span className="text-2xl opacity-50">/{totalQuestions}</span>
           </p>
           <p className="opacity-70">
             Você acertou {percentage}% das questões deste simulado.
@@ -38,15 +45,12 @@ export function TestSummary({
 
         <ul className="flex flex-col gap-2">
           {questions.map((question, index) => {
-            const selected = question.alternativas[answers[index]];
-            const isCorrect = Boolean(selected?.correta);
-            const correctIndex = question.alternativas.findIndex(
-              (alternativa) => alternativa.correta,
-            );
+            const selectedOption = answers.get(question.id) ?? null;
+            const isCorrect = correctByQuestionId.get(question.id) ?? false;
 
             return (
               <li
-                key={question.pergunta}
+                key={question.id}
                 className="bg-white rounded-2xl shadow-surface p-4 flex gap-3"
               >
                 <span
@@ -62,18 +66,15 @@ export function TestSummary({
                 </span>
                 <div className="flex-1">
                   <p className="font-medium">
-                    {String(index + 1).padStart(2, "0")}. {question.pergunta}
+                    {String(index + 1).padStart(2, "0")}.{" "}
+                    <MathText>{question.question}</MathText>
                   </p>
                   <p className="text-sm opacity-70">
-                    Sua resposta: {alternativeLetter(answers[index])}.{" "}
-                    {selected?.texto}
+                    Sua resposta:{" "}
+                    {selectedOption === null
+                      ? "não respondida"
+                      : selectedOption}
                   </p>
-                  {!isCorrect ? (
-                    <p className="text-sm text-emerald-700">
-                      Resposta correta: {alternativeLetter(correctIndex)}.{" "}
-                      {question.alternativas[correctIndex]?.texto}
-                    </p>
-                  ) : null}
                 </div>
               </li>
             );
