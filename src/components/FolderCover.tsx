@@ -1,8 +1,8 @@
-import type { Folder } from "@/types/Folder";
+import type { MotherFolder } from "@/types/api/folder";
 import { cn } from "@heroui/styles";
 
 interface FolderCoverProps {
-  folder: Folder;
+  folder: MotherFolder;
   titleAs?: "h2" | "p";
   className?: string;
 }
