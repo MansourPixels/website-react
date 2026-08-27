@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 
 import { ColorPicker } from "@/components/ColorPicker";
 import { categorizeImage } from "@/mocks/categorization";
-import type { Folder } from "@/types/Folder";
+import type { MotherFolder } from "@/types/api/folder";
 import type { MaterialKind } from "@/types/Material";
 import { getRandomColor } from "@/utils/color";
 import { normalizeText } from "@/utils/text";
@@ -21,7 +21,7 @@ import { normalizeText } from "@/utils/text";
 const NEW_FOLDER_KEY = "nova-pasta";
 
 export interface ImageCategorization {
-  folder: Folder;
+  folder: MotherFolder;
   isNewFolder: boolean;
   subjectName: string;
 }
@@ -29,7 +29,7 @@ export interface ImageCategorization {
 interface DialogCategorizeImageProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  folders: Folder[];
+  folders: MotherFolder[];
   materialKind?: MaterialKind;
   onSubmit: (categorization: ImageCategorization) => void;
 }

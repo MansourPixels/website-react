@@ -1,25 +1,30 @@
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { FolderPen, FolderPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { createMotherFolder, updateMotherFolder } from "@/api/folders";
+import { ApiError } from "@/api/client";
 import { ColorPicker } from "@/components/ColorPicker";
-import type { Folder } from "@/types/Folder";
+import type { MotherFolder } from "@/types/api/folder";
 import { getRandomColor } from "@/utils/color";
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 interface DialogFormFolderProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSubmit: (folder: Folder) => void;
+  onSubmit: (folder: MotherFolder) => void;
   variant?: "edit" | "add";
-  folder?: Folder;
+  folder?: MotherFolder;
 }
 
-function createEmptyFolder(): Folder {
-  return {
-    id: crypto.randomUUID(),
-    name: "",
-    color: getRandomColor(),
-    amount: 0,
-  };
+interface FormState {
+  name: string;
+  color: string;
+}
+
+function createEmptyForm(): FormState {
+  return { name: "", color: getRandomColor() };
 }
 
 export function DialogFormFolder({
@@ -29,22 +34,56 @@ export function DialogFormFolder({
   variant = "add",
   folder,
 }: DialogFormFolderProps) {
-  const [form, setForm] = useState<Folder>(() => folder ?? createEmptyFolder());
+  const [form, setForm] = useState<FormState>(() => folder ?? createEmptyForm());
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleOpenChange(open: boolean) {
-    if (open) setForm(folder ?? createEmptyFolder());
-    onOpenChange(open);
-  }
-
-  function handleSubmit() {
-    onSubmit({ ...form, name: form.name.trim() });
-    handleOpenChange(false);
-  }
+  // O diálogo fica montado entre aberturas (só isOpen muda), então o reset
+  // precisa reagir à mudança de isOpen — chamar isso a partir de onSubmit
+  // não cobre a próxima abertura via botão externo (que não passa pelo
+  // onOpenChange do Modal).
+  useEffect(() => {
+    if (isOpen) {
+      setForm(folder ?? createEmptyForm());
+      setError(null);
+    }
+  }, [isOpen, folder]);
 
   const isAdding = variant === "add";
+  const trimmedName = form.name.trim();
+  const isValid =
+    trimmedName.length >= 3 && HEX_COLOR_PATTERN.test(form.color);
+
+  async function handleSubmit() {
+    if (!isValid || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result =
+        isAdding || folder === undefined
+          ? await createMotherFolder(trimmedName, form.color)
+          : await updateMotherFolder(folder.id, {
+              name: trimmedName,
+              color: form.color,
+            });
+
+      onSubmit(result);
+      onOpenChange(false);
+    } catch (apiError) {
+      setError(
+        apiError instanceof ApiError
+          ? apiError.detail
+          : "Não foi possível salvar a pasta. Tente novamente.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-90">
@@ -80,12 +119,17 @@ export function DialogFormFolder({
                 value={form.color}
                 onChange={(color) => setForm({ ...form, color })}
               />
+              {error !== null ? (
+                <p role="alert" className="text-danger text-sm text-pretty">
+                  {error}
+                </p>
+              ) : null}
             </Modal.Body>
             <Modal.Footer>
               <Button
                 className="w-full"
                 onPress={handleSubmit}
-                isDisabled={form.name.trim().length < 3}
+                isDisabled={!isValid || isSubmitting}
               >
                 {isAdding ? "Adicionar pasta" : "Salvar pasta"}
               </Button>

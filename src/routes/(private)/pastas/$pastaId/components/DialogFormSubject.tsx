@@ -1,22 +1,19 @@
-import type { Subject } from "@/types/Subject";
 import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { FilePlus, SquarePen } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { createChildFolder, updateChildFolder } from "@/api/folders";
+import { ApiError } from "@/api/client";
+import type { ChildFolder } from "@/types/api/folder";
 
 interface DialogFormSubjectProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSubmit: (subject: Subject) => void;
+  onSubmit: (subject: ChildFolder) => void;
   variant?: "edit" | "add";
-  subject?: Subject;
-}
-
-function createEmptySubject(): Subject {
-  return {
-    id: crypto.randomUUID(),
-    name: "",
-    materials: [],
-  };
+  subject?: ChildFolder;
+  // Só necessário no variant "add": pasta mãe onde o novo assunto é criado.
+  motherFolderId?: string;
 }
 
 export function DialogFormSubject({
@@ -25,25 +22,58 @@ export function DialogFormSubject({
   onSubmit,
   variant = "edit",
   subject,
+  motherFolderId,
 }: DialogFormSubjectProps) {
-  const [form, setForm] = useState<Subject>(
-    () => subject ?? createEmptySubject(),
-  );
+  const [name, setName] = useState(subject?.name ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleOpenChange(open: boolean) {
-    if (open) setForm(subject ?? createEmptySubject());
-    onOpenChange(open);
-  }
-
-  function handleSubmit() {
-    onSubmit({ ...form, name: form.name.trim() });
-    handleOpenChange(false);
-  }
+  // O diálogo fica montado entre aberturas (só isOpen muda), então o reset
+  // precisa reagir à mudança de isOpen — chamar isso a partir de onSubmit
+  // não cobre a próxima abertura via botão externo (que não passa pelo
+  // onOpenChange do Modal).
+  useEffect(() => {
+    if (isOpen) {
+      setName(subject?.name ?? "");
+      setError(null);
+    }
+  }, [isOpen, subject]);
 
   const isAdding = variant === "add";
+  const trimmedName = name.trim();
+  const isValid = trimmedName.length >= 3;
+
+  async function handleSubmit() {
+    if (!isValid || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result =
+        isAdding && motherFolderId !== undefined
+          ? await createChildFolder(motherFolderId, trimmedName)
+          : subject !== undefined
+            ? await updateChildFolder(subject.id, trimmedName)
+            : undefined;
+
+      if (result === undefined) return;
+
+      onSubmit(result);
+      onOpenChange(false);
+    } catch (apiError) {
+      setError(
+        apiError instanceof ApiError
+          ? apiError.detail
+          : "Não foi possível salvar o assunto. Tente novamente.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={handleOpenChange}>
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-90">
@@ -60,25 +90,28 @@ export function DialogFormSubject({
                 {isAdding ? "Adicionar novo assunto" : "Renomear assunto"}
               </Modal.Heading>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="grid gap-4">
               <TextField className="w-full">
                 <Label htmlFor="nome-assunto">Nome do assunto</Label>
                 <Input
                   autoFocus
                   id="nome-assunto"
                   placeholder="Equação de terceiro grau..."
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm({ ...form, name: event.target.value })
-                  }
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                 />
               </TextField>
+              {error !== null ? (
+                <p role="alert" className="text-danger text-sm text-pretty">
+                  {error}
+                </p>
+              ) : null}
             </Modal.Body>
             <Modal.Footer>
               <Button
                 className="w-full"
                 onPress={handleSubmit}
-                isDisabled={form.name.trim().length < 3}
+                isDisabled={!isValid || isSubmitting}
               >
                 {isAdding ? "Adicionar assunto" : "Salvar assunto"}
               </Button>

@@ -1,4 +1,4 @@
-import type { Subject } from "@/types/Subject";
+import type { ChildFolder } from "@/types/api/folder";
 import {
   Button,
   ButtonGroup,
@@ -20,9 +20,9 @@ import { DialogFormSubject } from "./DialogFormSubject";
 import { DialogSubjectExclusion } from "./DialogSubjectExclusion";
 
 interface SubjectCardProps {
-  subject: Subject;
-  onChangeSubject: (subject: Subject) => void;
-  onDeleteSubject: (subject: Subject) => void;
+  subject: ChildFolder;
+  onChangeSubject: (subject: ChildFolder) => void;
+  onDeleteSubject: (subject: ChildFolder) => void;
 }
 
 export function SubjectCard(props: SubjectCardProps) {
@@ -37,9 +37,6 @@ export function SubjectCard(props: SubjectCardProps) {
   }
   const { subject, onChangeSubject, onDeleteSubject } = props;
   const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
-  const previewImages = subject.materials
-    .filter((material) => material.kind === "image")
-    .slice(0, 4);
 
   return (
     <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
@@ -48,19 +45,6 @@ export function SubjectCard(props: SubjectCardProps) {
           <h2 className="leading-tight font-semibold line-clamp-2 h-10">
             {subject.name}
           </h2>
-          <div className="grid grid-cols-2 gap-2">
-            {previewImages.map((material) => (
-              <img
-                key={material.id}
-                src={material.url}
-                alt=""
-                className="rounded-lg aspect-video w-full object-cover"
-              />
-            ))}
-          </div>
-          <footer className="flex items-center h-8">
-            <span className="text-xs text-zinc-500">HOJE</span>
-          </footer>
         </div>
       </Link>
 
@@ -150,15 +134,6 @@ export function LoadingSubjectCard() {
           <Skeleton className="rounded-full h-4 w-3/4" />
           <Skeleton className="rounded-full h-4 w-11/12" />
         </header>
-        <div className="grid grid-cols-2 gap-2 *:rounded-lg *:w-full *:aspect-video">
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-        <footer className="flex items-center h-8">
-          <Skeleton className="rounded-full h-4 w-1/2" />
-        </footer>
       </div>
     </article>
   );

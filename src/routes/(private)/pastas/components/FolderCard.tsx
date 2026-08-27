@@ -1,5 +1,5 @@
 import { FolderCover } from "@/components/FolderCover";
-import type { Folder } from "@/types/Folder";
+import type { MotherFolder } from "@/types/api/folder";
 import { Button, ButtonGroup, Popover } from "@heroui/react";
 import { Link } from "react-router";
 import { Ellipsis, Pencil, Trash } from "lucide-react";
@@ -8,9 +8,9 @@ import { DialogFolderExclusion } from "./DialogFolderExclusion";
 import { DialogFormFolder } from "./DialogFormFolder";
 
 interface FolderProps {
-  folder: Folder;
-  onChangeFolder: (folder: Folder) => void;
-  onDeleteFolder: (folder: Folder) => void;
+  folder: MotherFolder;
+  onChangeFolder: (folder: MotherFolder) => void;
+  onDeleteFolder: (folder: MotherFolder) => void;
 }
 
 export function FolderCard({

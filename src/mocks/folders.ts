@@ -1,6 +1,6 @@
-import type { Folder } from "@/types/Folder";
+import type { MotherFolder } from "@/types/api/folder";
 
-export const defaultFolders: Folder[] = [
+export const defaultFolders: MotherFolder[] = [
   {
     id: "1",
     name: "Português",
