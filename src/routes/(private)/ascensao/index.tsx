@@ -23,7 +23,7 @@ export default function Ascensao() {
 
   return (
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
-      <NavMenu title="Ascensão" />
+      <NavMenu title="Ascensão" hasBackButton backHref="/perfil" />
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <div className="flex flex-col gap-8">

@@ -1,6 +1,7 @@
 import { Avatar, Button, Spinner } from "@heroui/react";
-import { Flame, LogOut, Trophy, Unplug } from "lucide-react";
-import { useNavigate } from "react-router";
+import { buttonVariants } from "@heroui/styles";
+import { CalendarCheck, Flame, LogOut, Trophy, Unplug } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 
 import { NavMenu } from "@/components/NavMenu";
 import { SpotifyMark } from "@/components/SpotifyMark";
@@ -34,25 +35,48 @@ export default function PerfilPage() {
         </Avatar>
 
         <div className="flex min-w-0 flex-col gap-1 text-center sm:text-left">
-          <h2 className="text-xl font-semibold break-words">{user.name}</h2>
+          <h2 className="text-xl font-semibold wrap-break-word">{user.name}</h2>
           <p className="text-muted text-sm break-all">{user.email}</p>
           <p className="text-muted text-sm">Conta local neste dispositivo</p>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3">
-        <StatTile
-          label="Dias em ascensão"
-          value={`${currentStreak}`}
-          hint="Sua sequência atual"
-          icon={Flame}
-        />
-        <StatTile
-          label="Recorde"
-          value={`${recordStreak} dias`}
-          hint="Sua maior sequência"
-          icon={Trophy}
-        />
+      <section className="flex flex-col gap-3">
+        <h2 className="font-semibold">Ascensão</h2>
+
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Dias em ascensão"
+            value={`${currentStreak}`}
+            hint="Sua sequência atual"
+            icon={Flame}
+          />
+          <StatTile
+            label="Recorde"
+            value={`${recordStreak} dias`}
+            hint="Sua maior sequência"
+            icon={Trophy}
+          />
+        </div>
+
+        <Link
+          to="/ascensao"
+          className={buttonVariants({
+            variant: "ghost",
+            className:
+              "bg-white rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+          })}
+        >
+          <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+            <CalendarCheck className="size-5" />
+          </div>
+          <div className="flex-1 text-left">
+            <h3 className="font-semibold">Ver a sua ascensão</h3>
+            <p className="text-xs text-muted font-normal whitespace-normal">
+              Calendário, marcos e congelamentos da sua sequência.
+            </p>
+          </div>
+        </Link>
       </section>
 
       <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-surface">

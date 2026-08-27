@@ -1,11 +1,4 @@
-import {
-  CalendarCheck,
-  Camera,
-  Folders,
-  Route as PathIcon,
-  Timer,
-  User,
-} from "lucide-react";
+import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "react-router";
 
 import { cn } from "@heroui/styles";
@@ -17,11 +10,6 @@ import "./app.css";
 
 const links = [
   {
-    to: "/capturar",
-    label: "Capturar",
-    icon: Camera,
-  },
-  {
     to: "/pastas",
     label: "Pastas",
     icon: Folders,
@@ -32,9 +20,9 @@ const links = [
     icon: Timer,
   },
   {
-    to: "/ascensao",
-    label: "Ascensão",
-    icon: CalendarCheck,
+    to: "/capturar",
+    label: "Capturar",
+    icon: Camera,
   },
   {
     to: "/trilha",
@@ -109,7 +97,7 @@ function AppShell() {
       <div
         className={cn(
           "flex flex-col min-h-full relative",
-          showBottomNavigation && "pb-[var(--nav-inset)]",
+          showBottomNavigation && "pb-(--nav-inset)",
         )}
       >
         <Outlet />
