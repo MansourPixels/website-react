@@ -1,7 +1,9 @@
+import { getDownloadUrl } from "@/api/content";
 import type { Content } from "@/types/api/content";
 import { Button } from "@heroui/react";
 import { cn } from "@heroui/styles";
 import { FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface MaterialTileProps {
   content: Content;
@@ -9,8 +11,27 @@ interface MaterialTileProps {
 }
 
 export function MaterialTile({ content, onOpen }: MaterialTileProps) {
-  const { name, contentType, hasSummary } = content;
+  const { id, name, contentType, hasSummary } = content;
   const isPdf = contentType === "PDF";
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isPdf) return;
+
+    let cancelled = false;
+
+    getDownloadUrl(id)
+      .then(({ url }) => {
+        if (!cancelled) setThumbnailUrl(url);
+      })
+      .catch(() => {
+        // Sem thumbnail, cai de volta para o ícone genérico.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isPdf]);
 
   return (
     <Button
@@ -27,17 +48,31 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
         .join(", ")}
       onPress={onOpen}
     >
-      <span className="size-full flex flex-col items-center justify-center gap-1.5 p-3 text-center">
-        {isPdf ? (
-          <FileText className="size-7 text-accent shrink-0" aria-hidden />
-        ) : (
-          <ImageIcon className="size-7 text-accent shrink-0" aria-hidden />
-        )}
+      {thumbnailUrl ? (
+        <>
+          <img
+            src={thumbnailUrl}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 size-full object-cover"
+          />
+          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4 text-left text-xs font-medium leading-snug text-white line-clamp-2 whitespace-normal break-all">
+            {name}
+          </span>
+        </>
+      ) : (
+        <span className="size-full flex flex-col items-center justify-center gap-1.5 p-3 text-center">
+          {isPdf ? (
+            <FileText className="size-7 text-accent shrink-0" aria-hidden />
+          ) : (
+            <ImageIcon className="size-7 text-accent shrink-0" aria-hidden />
+          )}
 
-        <span className="text-xs font-medium leading-snug line-clamp-2 whitespace-normal break-all">
-          {name}
+          <span className="text-xs font-medium leading-snug line-clamp-2 whitespace-normal break-all">
+            {name}
+          </span>
         </span>
-      </span>
+      )}
 
       {!hasSummary ? (
         <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white">
