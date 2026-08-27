@@ -1,6 +1,5 @@
-import type { DisciplinePerformance } from "@/mocks/performance";
-import { cn, Meter } from "@heroui/react";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import type { PerformanceByDiscipline } from "@/types/api/performance";
+import { Meter } from "@heroui/react";
 
 function accuracyColor(accuracy: number) {
   if (accuracy >= 75) return "success" as const;
@@ -9,7 +8,7 @@ function accuracyColor(accuracy: number) {
 }
 
 interface DisciplinePerformanceListProps {
-  disciplines: DisciplinePerformance[];
+  disciplines: PerformanceByDiscipline[];
 }
 
 export function DisciplinePerformanceList({
@@ -20,51 +19,52 @@ export function DisciplinePerformanceList({
       <header>
         <h2 className="font-semibold">Aproveitamento por disciplina</h2>
         <p className="text-sm text-muted">
-          Percentual de acertos nos flash cards e simulados de cada disciplina.
+          Percentual de acertos nos simulados de cada disciplina.
         </p>
       </header>
 
-      <ul className="flex flex-col gap-4">
-        {disciplines.map(({ name, accuracy, cards, delta }) => {
-          const isPositive = delta >= 0;
-          const DeltaIcon = isPositive ? TrendingUp : TrendingDown;
+      {disciplines.length > 0 ? (
+        <ul className="flex flex-col gap-4">
+          {disciplines.map(
+            ({
+              motherFolderId,
+              motherFolderName,
+              accuracyPercentage,
+              totalAttempts,
+            }) => (
+              <li key={motherFolderId} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-medium">{motherFolderName}</h3>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {Math.round(accuracyPercentage)}%
+                  </span>
+                </div>
 
-          return (
-            <li key={name} className="flex flex-col gap-1">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="font-medium">{name}</h3>
-                <span className="text-sm font-semibold tabular-nums">
-                  {accuracy}%
-                </span>
-              </div>
-
-              <Meter
-                value={accuracy}
-                color={accuracyColor(accuracy)}
-                aria-label={`${name}: ${accuracy}% de aproveitamento`}
-              >
-                <Meter.Track>
-                  <Meter.Fill />
-                </Meter.Track>
-              </Meter>
-
-              <div className="flex items-center justify-between gap-3 text-sm text-muted">
-                <span>{cards} cartões revisados</span>
-                <span
-                  className={cn(
-                    "flex items-center gap-1",
-                    isPositive ? "text-success" : "text-danger",
-                  )}
+                <Meter
+                  value={accuracyPercentage}
+                  color={accuracyColor(accuracyPercentage)}
+                  aria-label={`${motherFolderName}: ${Math.round(accuracyPercentage)}% de aproveitamento`}
                 >
-                  <DeltaIcon className="size-4 shrink-0" />
-                  {isPositive ? "+" : "−"}
-                  {Math.abs(delta)} pts
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  <Meter.Track>
+                    <Meter.Fill />
+                  </Meter.Track>
+                </Meter>
+
+                <p className="text-sm text-muted">
+                  {totalAttempts}{" "}
+                  {totalAttempts === 1
+                    ? "simulado respondido"
+                    : "simulados respondidos"}
+                </p>
+              </li>
+            ),
+          )}
+        </ul>
+      ) : (
+        <p className="text-muted text-sm">
+          Nenhuma disciplina com simulados respondidos ainda.
+        </p>
+      )}
     </section>
   );
 }

@@ -1,53 +1,28 @@
-import { useStudyPlans } from "@/contexts/StudyPlanContext";
-import type { StudyPlan } from "@/mocks/studyPlans";
-import { planStepKinds } from "@/utils/planSteps";
-import { Button, Meter } from "@heroui/react";
-import { buttonVariants, cn } from "@heroui/styles";
-import { Link, useNavigate } from "react-router";
+import type { StudyPlanGroup } from "@/utils/studyPlan";
+import { groupProgress, studyPlanStepKinds } from "@/utils/studyPlan";
+import { Meter } from "@heroui/react";
+import { buttonVariants } from "@heroui/styles";
+import { Link } from "react-router";
 import { CircleStar, Flame, ListChecks, Target } from "lucide-react";
 
 interface StudyPlanCardProps {
-  plan: StudyPlan;
+  group: StudyPlanGroup;
 }
 
-export function StudyPlanCard({ plan }: StudyPlanCardProps) {
-  const { discipline, focus, description, steps } = plan;
-  const { getProgress, followPlan, activePlanId } = useStudyPlans();
-  const navigate = useNavigate();
-
-  const { completed, total, isComplete, isStarted, nextStep } = getProgress(
-    plan.id,
-  );
-  const isActive = activePlanId === plan.id;
-
-  function startPlan() {
-    const firstStep = steps[0];
-
-    if (firstStep === undefined) return;
-
-    followPlan(plan.id);
-    navigate(`/trilha/plano/${plan.id}/etapa/${firstStep.id}`);
-  }
+export function StudyPlanCard({ group }: StudyPlanCardProps) {
+  const { motherFolderId, motherFolderName, steps } = group;
+  const { completed, total, isComplete, isStarted, nextStep } =
+    groupProgress(steps);
 
   return (
-    <article
-      className={cn(
-        "bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2",
-        isActive && !isComplete ? "border-accent" : "border-transparent",
-      )}
-    >
+    <article className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2 border-transparent">
       <header className="flex flex-col gap-1">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-xl font-semibold text-pretty">{discipline}</h3>
-          {isActive && !isComplete ? (
-            <span className="text-xs font-medium text-accent bg-accent-soft rounded-full px-2 py-1 shrink-0">
-              Seguindo
-            </span>
-          ) : null}
-        </div>
+        <h3 className="text-xl font-semibold text-pretty">
+          {motherFolderName}
+        </h3>
         <p className="flex items-start gap-2 text-sm text-accent">
           <Target className="size-4 shrink-0 mt-0.5" />
-          <span className="text-pretty">{focus}</span>
+          <span className="text-pretty">Reforçar esta disciplina</span>
         </p>
       </header>
 
@@ -59,7 +34,10 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
           </span>
         </p>
       ) : (
-        <p className="text-sm flex-1 text-pretty">{description}</p>
+        <p className="text-sm flex-1 text-pretty">
+          Um plano de {total} etapas para reforçar seu domínio nesta
+          disciplina.
+        </p>
       )}
 
       {isStarted ? (
@@ -74,7 +52,7 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
             value={completed}
             maxValue={total}
             color={isComplete ? "success" : "accent"}
-            aria-label={`${discipline}: ${completed} de ${total} etapas concluídas`}
+            aria-label={`${motherFolderName}: ${completed} de ${total} etapas concluídas`}
           >
             <Meter.Track>
               <Meter.Fill />
@@ -84,25 +62,18 @@ export function StudyPlanCard({ plan }: StudyPlanCardProps) {
       ) : null}
 
       <div className="flex flex-col gap-2">
-        {isComplete || !isStarted ? null : nextStep ? (
+        {!isComplete && nextStep ? (
           <Link
-            to={`/trilha/plano/${plan.id}/etapa/${nextStep.id}`}
+            to={`/trilha/plano/${motherFolderId}/etapa/${nextStep.id}`}
             className={buttonVariants({ variant: "primary", fullWidth: true })}
           >
             <CircleStar />
-            {planStepKinds[nextStep.kind].action}
+            {studyPlanStepKinds[nextStep.stepType].action}
           </Link>
         ) : null}
 
-        {!isStarted ? (
-          <Button variant="primary" fullWidth onPress={startPlan}>
-            <CircleStar />
-            Seguir plano de estudos
-          </Button>
-        ) : null}
-
         <Link
-          to={`/trilha/plano/${plan.id}`}
+          to={`/trilha/plano/${motherFolderId}`}
           className={buttonVariants({
             variant: isComplete || !isStarted ? "tertiary" : "ghost",
             fullWidth: true,
