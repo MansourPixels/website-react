@@ -1,7 +1,9 @@
 import type { ViewableFile } from "@/types/capture";
+import { pickImageForSeed } from "@/utils/imageFallback";
 import { Button, Modal } from "@heroui/react";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 
 interface MaterialViewerProps {
   material: ViewableFile | null;
@@ -15,6 +17,12 @@ export function MaterialViewer({
   footer,
 }: MaterialViewerProps) {
   const isPdf = material?.contentType === "PDF";
+  // Guardar a própria URL (em vez de um boolean) evita precisar de um efeito
+  // para "resetar" o erro quando o material muda: a comparação já não bate.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const imageSrc =
+    material &&
+    (material.url === failedUrl ? pickImageForSeed(material.name) : material.url);
 
   return (
     <Modal
@@ -66,9 +74,10 @@ export function MaterialViewer({
                 />
               ) : (
                 <img
-                  src={material.url}
+                  src={imageSrc || undefined}
                   alt={material.name}
                   className="max-h-full max-w-full object-contain"
+                  onError={() => setFailedUrl(material.url)}
                 />
               )}
             </Modal.Body>
