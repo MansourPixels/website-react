@@ -1,14 +1,37 @@
-import { Button, ProgressBar } from "@heroui/react";
+import { Button, ProgressBar, Spinner } from "@heroui/react";
 import { ChevronRight, ListCheck } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 
+import { ApiError } from "@/api/client";
+import { gradeQuiz, listQuiz } from "@/api/quiz";
 import { AlternativeOption } from "@/components/AlternativeOption";
+import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
+import type {
+  GradeRequestItem,
+  GradeResponse,
+  QuizOption,
+  QuizQuestion,
+} from "@/types/api/quiz";
 import { TestSummary } from "./components/TestSummary";
 
-import { practiceTest } from "@/mocks/practiceTest";
-import { alternativeLetter } from "@/utils/alternatives";
+// Enquanto a lista vier vazia (quiz ainda não gerado), reconsulta a cada
+// ~3s; desiste depois de ~30s e mostra o estado "ainda gerando" com opção
+// de tentar de novo manualmente.
+const POLL_INTERVAL_MS = 3_000;
+const POLL_TIMEOUT_MS = 30_000;
+
+const OPTION_LETTERS: QuizOption[] = ["A", "B", "C", "D"];
+
+function optionText(question: QuizQuestion, option: QuizOption) {
+  return {
+    A: question.optionA,
+    B: question.optionB,
+    C: question.optionC,
+    D: question.optionD,
+  }[option];
+}
 
 export default function PracticeTestPage() {
   const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
@@ -17,37 +40,120 @@ export default function PracticeTestPage() {
   };
   const navigate = useNavigate();
 
+  const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [isFinished, setIsFinished] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<QuizOption | null>(
+    null,
+  );
+  const [answers, setAnswers] = useState<Map<string, QuizOption>>(new Map());
+  const [result, setResult] = useState<GradeResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const total = practiceTest.length;
-  const currentQuestion = practiceTest[currentIndex];
+  const requestIdRef = useRef(0);
+
+  const loadQuiz = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    const startedAt = Date.now();
+
+    setQuestions(null);
+    setLoadError(null);
+    setIsGenerating(false);
+
+    async function poll() {
+      try {
+        const result = await listQuiz(assuntoId);
+
+        if (requestIdRef.current !== requestId) return;
+
+        setQuestions(result);
+
+        const timedOut = Date.now() - startedAt > POLL_TIMEOUT_MS;
+
+        if (result.length === 0 && !timedOut) {
+          setIsGenerating(true);
+          setTimeout(poll, POLL_INTERVAL_MS);
+        } else {
+          setIsGenerating(false);
+        }
+      } catch (error) {
+        if (requestIdRef.current !== requestId) return;
+
+        setLoadError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar o simulado. Tente novamente.",
+        );
+      }
+    }
+
+    poll();
+  }, [assuntoId]);
+
+  useEffect(() => {
+    loadQuiz();
+
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [loadQuiz]);
+
+  const total = questions?.length ?? 0;
+  const currentQuestion = questions?.[currentIndex] ?? null;
   const isLastQuestion = currentIndex === total - 1;
-  const answeredCount = isFinished ? total : currentIndex;
+  const answeredCount = result !== null ? total : currentIndex;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (selectedIndex === null) return;
-
-    setAnswers((previous) => [...previous, selectedIndex]);
-    setSelectedIndex(null);
-
-    if (isLastQuestion) {
-      setIsFinished(true);
+    if (selectedOption === null || currentQuestion === null || questions === null) {
       return;
     }
 
-    setCurrentIndex((previous) => previous + 1);
+    const nextAnswers = new Map(answers);
+    nextAnswers.set(currentQuestion.id, selectedOption);
+    setAnswers(nextAnswers);
+    setSelectedOption(null);
+
+    if (!isLastQuestion) {
+      setCurrentIndex((previous) => previous + 1);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const payload: GradeRequestItem[] = questions.map((question) => ({
+        questionId: question.id,
+        selectedOption: nextAnswers.get(question.id) as QuizOption,
+      }));
+
+      const gradeResult = await gradeQuiz(assuntoId, payload);
+
+      setResult(gradeResult);
+    } catch (error) {
+      setSubmitError(
+        error instanceof ApiError
+          ? error.detail
+          : "Não foi possível enviar o simulado. Tente novamente.",
+      );
+      // Volta para a última pergunta para o usuário poder tentar de novo.
+      setCurrentIndex(total - 1);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function restartTest() {
     setCurrentIndex(0);
-    setSelectedIndex(null);
-    setAnswers([]);
-    setIsFinished(false);
+    setSelectedOption(null);
+    setAnswers(new Map());
+    setResult(null);
+    setSubmitError(null);
   }
 
   return (
@@ -59,70 +165,102 @@ export default function PracticeTestPage() {
             hasBackButton
             className="text-center pr-12 mb-3"
           />
-          <ProgressBar
-            aria-label="Progresso"
-            size="lg"
-            value={(answeredCount / total) * 100}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill className="bg-orange-600" />
-            </ProgressBar.Track>
-          </ProgressBar>
+          {questions !== null && questions.length > 0 ? (
+            <ProgressBar
+              aria-label="Progresso"
+              size="lg"
+              value={(answeredCount / total) * 100}
+            >
+              <ProgressBar.Track>
+                <ProgressBar.Fill className="bg-orange-600" />
+              </ProgressBar.Track>
+            </ProgressBar>
+          ) : null}
         </div>
 
-        {isFinished ? (
+        {loadError !== null ? (
+          <p className="text-danger text-center py-8">{loadError}</p>
+        ) : questions === null ? (
+          <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
+            <Spinner size="lg" />
+            <span className="sr-only">Carregando simulado</span>
+          </div>
+        ) : questions.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <p className="text-muted">
+              {isGenerating
+                ? "O simulado ainda está sendo gerado a partir do conteúdo desta pasta. Isso costuma levar poucos segundos."
+                : "Ainda não há simulado para este assunto. Envie conteúdo primeiro para que o Revi IA possa gerar as perguntas."}
+            </p>
+            {isGenerating ? <Spinner size="lg" /> : null}
+            <Button variant="secondary" onPress={loadQuiz}>
+              Tentar novamente
+            </Button>
+          </div>
+        ) : result !== null ? (
           <TestSummary
-            questions={practiceTest}
+            questions={questions}
             answers={answers}
+            result={result}
             onRestart={restartTest}
             onFinish={() =>
               navigate(`/pastas/${pastaId}/assuntos/${assuntoId}`)
             }
           />
-        ) : (
+        ) : currentQuestion !== null ? (
           <form
             id="simulado"
             onSubmit={handleSubmit}
             className="flex flex-col gap-6 flex-1 justify-between"
           >
             <fieldset className="flex flex-col gap-4">
-              <legend className="sr-only">{currentQuestion.pergunta}</legend>
+              <legend className="sr-only">{currentQuestion.question}</legend>
               <div>
                 <span className="opacity-70">
                   Pergunta {String(currentIndex + 1).padStart(2, "0")} de{" "}
                   {String(total).padStart(2, "0")}
                 </span>
                 <h2 className="text-2xl font-semibold" aria-hidden>
-                  {currentQuestion.pergunta}
+                  <Math>{currentQuestion.question}</Math>
                 </h2>
               </div>
 
               <ul className="flex flex-col gap-3">
-                {currentQuestion.alternativas.map((alternativa, index) => (
-                  <li key={alternativeLetter(index)}>
+                {OPTION_LETTERS.map((option) => (
+                  <li key={option}>
                     <AlternativeOption
-                      letter={alternativeLetter(index)}
-                      isSelected={selectedIndex === index}
-                      onSelect={() => setSelectedIndex(index)}
+                      letter={option}
+                      isSelected={selectedOption === option}
+                      onSelect={() => setSelectedOption(option)}
                     >
-                      {alternativa.texto}
+                      <Math>{optionText(currentQuestion, option)}</Math>
                     </AlternativeOption>
                   </li>
                 ))}
               </ul>
+
+              {submitError !== null ? (
+                <p role="alert" className="text-danger text-sm text-pretty">
+                  {submitError}
+                </p>
+              ) : null}
             </fieldset>
 
             <Button
               type="submit"
               fullWidth
               size="lg"
-              isDisabled={selectedIndex === null}
+              isDisabled={selectedOption === null || isSubmitting}
             >
               {isLastQuestion ? <ListCheck /> : <ChevronRight />}
-              {isLastQuestion ? "Finalizar simulado" : "Próxima pergunta"}
+              {isSubmitting
+                ? "Enviando..."
+                : isLastQuestion
+                  ? "Finalizar simulado"
+                  : "Próxima pergunta"}
             </Button>
           </form>
-        )}
+        ) : null}
       </div>
     </main>
   );
