@@ -361,7 +361,7 @@
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
-    "@types/node": ["@types/node@26.3.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-L3fgrnchriRC2ExBflb8j4uZZURHZfQsmQeyVzhjcHW4kkwVyo8/0h1B2MVzMTrYUJYu6G7EWs14hW/L9putqw=="],
+    "@types/node": ["@types/node@26.4.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-faiGnoIrLH/V8cibOMEAZ8pMw6oXqSukl29ra4mN8GdaB2ZewzeaLj+INpV5N+Z1eKWzY+IzaIZH2EIR6YZRNQ=="],
 
     "@types/react": ["@types/react@19.2.18", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w=="],
 
@@ -407,9 +407,9 @@
 
     "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g=="],
 
-    "@vercel/react-router": ["@vercel/react-router@1.3.5", "", { "dependencies": { "@vercel/static-config": "3.4.2", "ts-morph": "12.0.0" }, "peerDependencies": { "@react-router/dev": "7", "@react-router/node": "7", "isbot": "5", "react": ">=18", "react-dom": ">=18" } }, "sha512-NYvWtZf58XbKM4kUYPa97X6vR7gWzRqb8YohGsh7aABjkUaFhd2LccT2hqTOJhFhR4eELVnfGMOluVv7ZYBR0w=="],
+    "@vercel/react-router": ["@vercel/react-router@1.3.6", "", { "dependencies": { "@vercel/static-config": "3.4.3", "ts-morph": "12.0.0" }, "peerDependencies": { "@react-router/dev": "7", "@react-router/node": "7", "isbot": "5", "react": ">=18", "react-dom": ">=18" } }, "sha512-3qcvaciW20zq6OEnuFgO/4n7zSYrEU/Sd9bSNW5gHyerxFzZnp1iEbftfA8Y0pRcHjISsMC+Z5KrUt/NjVW86Q=="],
 
-    "@vercel/static-config": ["@vercel/static-config@3.4.2", "", { "dependencies": { "ajv": "8.6.3", "json-schema-to-ts": "1.6.4", "oxc-parser": "0.121.0", "ts-morph": "12.0.0" } }, "sha512-cH1jQfF/bgW6TVz3+0gkihByGTsw9kuCxa08iG1r5WxFdRdYEb8PN/TpKPrB0Gsh64XkOBAdq8noBrGJmukPWw=="],
+    "@vercel/static-config": ["@vercel/static-config@3.4.3", "", { "dependencies": { "ajv": "8.6.3", "json-schema-to-ts": "1.6.4", "oxc-parser": "0.121.0", "ts-morph": "12.0.0" } }, "sha512-BY1sL8rNJvIm3TK/8TQ+Q6jIx7NpO5xckQzv7s6c1ypHvRnTl+vf6rmgY5WFXmoYDeGm3tMy4jiy/5M/5jGr/g=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.1.0", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0", "babel-plugin-react-compiler": "^1.0.0", "oxc-transform-react": "^0.145.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler", "oxc-transform-react"] }, "sha512-qd2BzUBehkov86WFhg0JkEFEYyCLG9uPCe6qWTY/kRlss9OvJrOF2UbIWT7p+8IzZHkEu0DNGHc4HSv+JdDLsw=="],
 
