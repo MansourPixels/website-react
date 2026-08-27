@@ -10,6 +10,7 @@ export default [
   layout("routes/(auth)/layout.tsx", [
     route("auth/entrar", "routes/(auth)/entrar/index.tsx"),
     route("auth/cadastro", "routes/(auth)/cadastro/index.tsx"),
+    route("auth/esqueci-senha", "routes/(auth)/esqueci-senha/index.tsx"),
   ]),
   layout("routes/(private)/layout.tsx", [
     route("perfil", "routes/(private)/perfil/index.tsx"),

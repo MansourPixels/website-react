@@ -1,7 +1,9 @@
 import { Avatar, Button } from "@heroui/react";
-import { Flame, LogOut, Trophy } from "lucide-react";
+import { Flame, LogOut, Mail, Trophy } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 
+import { resendVerificationEmail } from "@/api/auth";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,9 +16,26 @@ export default function PerfilPage() {
 
   const { currentStreak, recordStreak } = ascension;
 
-  function handleSignOut() {
-    signOut();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [verificationState, setVerificationState] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    await signOut();
     navigate("/", { replace: true });
+  }
+
+  async function handleResendVerification() {
+    setVerificationState("sending");
+
+    try {
+      await resendVerificationEmail();
+      setVerificationState("sent");
+    } catch {
+      setVerificationState("error");
+    }
   }
 
   if (user === null) return null;
@@ -27,13 +46,14 @@ export default function PerfilPage() {
 
       <section className="flex flex-col items-center gap-4 rounded-3xl bg-white p-6 shadow-surface sm:flex-row sm:items-center sm:gap-6">
         <Avatar size="lg" variant="soft" color="accent" className="shrink-0">
-          <Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
+          <Avatar.Fallback>{getInitials(user.username)}</Avatar.Fallback>
         </Avatar>
 
         <div className="flex min-w-0 flex-col gap-1 text-center sm:text-left">
-          <h2 className="text-xl font-semibold break-words">{user.name}</h2>
+          <h2 className="text-xl font-semibold break-words">
+            {user.username}
+          </h2>
           <p className="text-muted text-sm break-all">{user.email}</p>
-          <p className="text-muted text-sm">Conta local neste dispositivo</p>
         </div>
       </section>
 
@@ -52,14 +72,35 @@ export default function PerfilPage() {
         />
       </section>
 
-      <Button
-        variant="secondary"
-        className="w-full sm:w-fit"
-        onPress={handleSignOut}
-      >
-        <LogOut className="size-4" />
-        Sair da conta
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          variant="secondary"
+          className="w-full sm:w-fit"
+          isDisabled={verificationState === "sending"}
+          onPress={handleResendVerification}
+        >
+          <Mail className="size-4" />
+          {verificationState === "sent"
+            ? "E-mail de verificação reenviado"
+            : "Reenviar e-mail de verificação"}
+        </Button>
+
+        <Button
+          variant="secondary"
+          className="w-full sm:w-fit"
+          isDisabled={isSigningOut}
+          onPress={handleSignOut}
+        >
+          <LogOut className="size-4" />
+          Sair da conta
+        </Button>
+      </div>
+
+      {verificationState === "error" ? (
+        <p role="alert" className="text-danger text-sm text-pretty">
+          Não foi possível reenviar o e-mail de verificação. Tente novamente.
+        </p>
+      ) : null}
     </main>
   );
 }

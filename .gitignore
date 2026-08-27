@@ -25,3 +25,9 @@ dist-ssr
 
 .vercel
 .react-router
+
+# Ambiente local
+.env
+
+# Documentos de planejamento local (não versionados)
+docs/
