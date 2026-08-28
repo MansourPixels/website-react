@@ -6,6 +6,7 @@ const sections = [
   { href: "#modos", label: "Modos de estudo" },
   { href: "#sessao", label: "Sessão de estudos" },
   { href: "#acompanhamento", label: "Acompanhamento" },
+  { href: "#equipe", label: "Equipe" },
 ];
 
 export function LandingNav() {

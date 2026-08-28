@@ -6,6 +6,7 @@ import { LandingNav } from "./components/LandingNav";
 import { Progress } from "./components/Progress";
 import { StudyModes } from "./components/StudyModes";
 import { StudySession } from "./components/StudySession";
+import { Team } from "./components/Team";
 
 export default function LandingPage() {
   return (
@@ -18,6 +19,7 @@ export default function LandingPage() {
         <StudySession />
         <Progress />
         <FinalCta />
+        <Team />
       </main>
       <LandingFooter />
     </div>
