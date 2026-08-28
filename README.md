@@ -1,34 +1,83 @@
-# React + TypeScript + Vite
+# Revi
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+O Revi transforma fotos de material de estudo (caderno, lousa, apostila) em flash cards,
+resumos e simulados de prova, com acompanhamento de constância (Ascensão) e desempenho
+(Trilha).
 
-Currently, two official plugins are available:
+Deploy: **https://revi-jovi.vercel.app**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologias utilizadas
 
-## React Compiler
+- [React 19](https://react.dev/) com o React Compiler
+- [React Router 8](https://reactrouter.com/) em modo framework (SSR, rotas por arquivo)
+- [Vite 8](https://vite.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS 4](https://tailwindcss.com/)
+- [HeroUI](https://www.heroui.com/)
+- [@xyflow/react](https://reactflow.dev/) (mapa mental)
+- [react-markdown](https://github.com/remarkjs/react-markdown), `remark-gfm`, `remark-math`,
+  `rehype-katex` (renderização de resumos e notação matemática)
+- [oxlint](https://oxc.rs/) para lint
+- Deploy na [Vercel](https://vercel.com/)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Pré-requisitos
 
-Note: This will impact Vite dev & build performances.
+- A API do Revi (`revi_back`) rodando localmente para login, cadastro e demais chamadas
+  autenticadas — veja `docs/API.md` para a referência completa dos endpoints. Sem ela, as
+  telas atrás de login não conseguem autenticar.
 
-## Expanding the Oxlint configuration
+## Como instalar as dependências
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Configuração
+
+Copie o arquivo de exemplo e ajuste os valores conforme seu ambiente:
+
+```bash
+cp .env.example .env
+```
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `VITE_API_BASE_URL` | Sim | URL base da API `revi_back` (ex.: `http://localhost:8080`) |
+| `VITE_SPOTIFY_CLIENT_ID` | Não | Client ID de um app no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), usado no fluxo opcional de tocar música durante o estudo (Authorization Code + PKCE). Sem essa variável, a integração com Spotify fica desabilitada e o restante do app funciona normalmente. |
+
+## Como executar o projeto
+
+Ambiente de desenvolvimento (com hot reload), em `http://127.0.0.1:5173`:
+
+```bash
+npm run dev
+```
+
+Build de produção:
+
+```bash
+npm run build
+```
+
+Servir o build de produção localmente:
+
+```bash
+npm run start
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+## Usuários e senhas necessários para teste
+
+Não há usuários fixos: o cadastro é self-service. Crie sua própria conta em `/cadastro`
+informando e-mail, nome de usuário e senha (mínimo 8 caracteres) — o cadastro já efetua login
+automaticamente. Para acessar novamente depois, use `/entrar` com o e-mail e a senha
+cadastrados.
+
+## Link do Deploy na Vercel
+
+**https://revi-jovi.vercel.app**

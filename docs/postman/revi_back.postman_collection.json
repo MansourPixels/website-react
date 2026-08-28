@@ -1,0 +1,796 @@
+{
+  "info": {
+    "name": "revi_back API",
+    "description": "API REST do revi_back: pastas, upload/categorização de conteúdo, quizzes gerados por IA, resumos de pasta, flashcards e uma ofensiva diária. Rode \"Auth > Register\" primeiro -- ele cria uma conta nova e guarda o par de tokens em variáveis da coleção que toda outra requisição reaproveita automaticamente, sem precisar de uma chamada separada ao Keycloak. Depois que uma conta existir, use \"Auth > Login\" em vez de registrar de novo, \"Auth > Refresh\" quando o access token expirar, e \"Auth > Logout\" para encerrar a sessão. \"Auth > Get Access Token\" continua disponível como alternativa (um token de service-account via client_credentials, não vinculado a um usuário registrado específico). As requisições estão ordenadas para que, rodando-as de cima para baixo, mother_folder_id / child_folder_id / content_id / question_id sejam encadeados automaticamente pelos test scripts.\n\nEnviar conteúdo (\"Content > Upload Content\") dispara imediatamente a regeneração em segundo plano do quiz, do resumo da pasta, dos flashcards e do mapa mental daquela pasta filha -- \"Quiz > List Quiz\", \"Folder Summary > Get Summary\", \"Flashcards > List Flashcards\" e \"Mind Map > Get Mind Map\" apenas leem o que foi gerado por último, sem precisar de atualização manual, exceto \"Quiz > Generate Quiz\" (que força um novo lote sob demanda). Enviar conteúdo, ler um resumo existente, ler uma lista de flashcards não vazia e corrigir um quiz também contam para a ofensiva diária de quem chama (\"Streak > Get Streak\") -- fazer as quatro coisas no mesmo dia torna esse dia dourado.\n\nAmbiente local: `docker compose up`, depois `./mvnw spring-boot:run` (veja CLAUDE.md). Veja docs/API.md para a referência em texto puro.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "b7e2b4a0-2f0a-4c2a-9e8a-3f5a2a2f6a10"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{access_token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+    { "key": "keycloak_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "realm", "value": "revi", "type": "string" },
+    { "key": "client_id", "value": "revi-api-test-client", "type": "string" },
+    { "key": "client_secret", "value": "revi-api-test-secret", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" },
+    { "key": "registered_email", "value": "", "type": "string" },
+    { "key": "registered_username", "value": "", "type": "string" },
+    { "key": "test_password", "value": "correct-horse-battery", "type": "string" },
+    { "key": "mother_folder_id", "value": "", "type": "string" },
+    { "key": "child_folder_id", "value": "", "type": "string" },
+    { "key": "content_id", "value": "", "type": "string" },
+    { "key": "question_id", "value": "", "type": "string" },
+    { "key": "study_plan_step_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Registrar",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"username\": \"{{$randomWord}}{{$randomInt}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Cria uma conta totalmente nova e já efetua login automaticamente -- a resposta já contém um access/refresh token funcional, sem precisar de uma chamada de login separada. O test script abaixo guarda o par de tokens em `access_token`/`refresh_token`, e o e-mail em `registered_email` para que \"Login\" possa reaproveitar a mesma conta."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('registrado', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.accessToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('access_token', body.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', body.refreshToken);",
+                  "    pm.collectionVariables.set('registered_email', body.email);",
+                  "    pm.collectionVariables.set('registered_username', body.username);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{registered_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Troca as credenciais da conta em `registered_email` (definida por \"Register\") por um novo par de tokens -- use isso em vez de \"Register\" quando a conta já existir, por exemplo depois de um logout ou numa execução posterior."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('logado', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.accessToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('access_token', body.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', body.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Renovar Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Troca a variável de coleção `refresh_token` por um novo par de tokens. Refresh tokens são de uso único: o test script abaixo atualiza tanto `access_token` quanto `refresh_token`, já que o que acabou de ser usado deixa de funcionar depois desta chamada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('renovado', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.accessToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('access_token', body.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', body.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Revoga a variável de coleção `refresh_token`, encerrando a sessão. Idempotente -- sempre 204, esteja o token ainda válido ou não. Rode \"Login\" ou \"Refresh\" novamente depois para continuar usando a coleção."
+          },
+          "response": []
+        },
+        {
+          "name": "Esqueci a Senha",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"person@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Sempre responde 202, independentemente de o e-mail ter ou não uma conta -- a resposta nunca revela quais e-mails estão cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Reenviar E-mail de Verificação",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/resend-verification-email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "resend-verification-email"]
+            },
+            "description": "Autenticado -- reenvia o e-mail de verificação para a própria conta de quem chama (resolvida a partir do bearer token)."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Access Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "client_credentials", "type": "text" },
+                { "key": "client_id", "value": "{{client_id}}", "type": "text" },
+                { "key": "client_secret", "value": "{{client_secret}}", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": ["{{keycloak_url}}"],
+              "path": ["realms", "{{realm}}", "protocol", "openid-connect", "token"]
+            },
+            "description": "Grant client-credentials contra o realm de dev local do Keycloak. O test script abaixo guarda o token na variável de coleção `access_token`, de onde a autenticação Bearer de toda outra requisição é lida."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('token emitido', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.access_token).to.be.a('string');",
+                  "    pm.collectionVariables.set('access_token', body.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quem Sou Eu",
+      "item": [
+        {
+          "name": "Quem Sou Eu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/whoami",
+              "host": ["{{base_url}}"],
+              "path": ["api", "whoami"]
+            },
+            "description": "Retorna o ownerId resolvido a partir da claim `sub` do bearer token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pastas Mãe",
+      "item": [
+        {
+          "name": "Criar Pasta Mãe",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cálculo I\",\n  \"color\": \"#6b7280\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('criada', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('mother_folder_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar Pastas Mãe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Pasta Mãe",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cálculo II\",\n  \"color\": \"#ff0000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders/{{mother_folder_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders", "{{mother_folder_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Pasta Mãe",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders/{{mother_folder_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders", "{{mother_folder_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pastas Filhas",
+      "item": [
+        {
+          "name": "Criar Pasta Filha",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Semana 1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders/{{mother_folder_id}}/child-folders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders", "{{mother_folder_id}}", "child-folders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('criada', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('child_folder_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar Pastas Filhas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mother-folders/{{mother_folder_id}}/child-folders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mother-folders", "{{mother_folder_id}}", "child-folders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Pasta Filha",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Semana 2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Pasta Filha",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conteúdo",
+      "item": [
+        {
+          "name": "Enviar Conteúdo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] },
+                { "key": "contentType", "type": "text", "value": "PDF" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/contents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "contents"]
+            },
+            "description": "Escolha um arquivo `.pdf` para o campo `file` e defina `contentType` como `PDF`, ou um arquivo `.jpg`/`.jpeg`/`.png` com `contentType` definido como `IMAGE` -- a extensão precisa corresponder ao tipo declarado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('enviado', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('content_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar Conteúdo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/contents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "contents"]
+            },
+            "description": "`hasSummary` vira true assim que o pipeline assíncrono de categorização (RabbitMQ + Groq) termina -- nesse momento o quiz, o resumo e os flashcards da pasta filha também se regeneram automaticamente em segundo plano."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter URL de Download",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}/download-url",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}", "download-url"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sugerir Pasta para Conteúdo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] },
+                { "key": "contentType", "type": "text", "value": "PDF" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contents/folder-suggestion",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "folder-suggestion"]
+            },
+            "description": "Síncrono, não persiste nada. Compara o arquivo com as pastas existentes de quem chama, ou sugere um novo par de nomes quando nada corresponde."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quiz",
+      "item": [
+        {
+          "name": "Gerar Quiz",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/quiz/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "quiz", "generate"]
+            },
+            "description": "Opcional -- enviar conteúdo já dispara a regeneração automaticamente. Use isso para forçar um novo lote sob demanda mesmo que o quiz já esteja em dia. Assíncrono: publica uma solicitação de geração e responde 202 imediatamente. 409 se a pasta filha ainda não tiver conteúdo resumido -- envie conteúdo e espere hasSummary:true primeiro. Faça polling em \"List Quiz\" depois."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Quiz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/quiz",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "quiz"]
+            },
+            "description": "correctOption é omitido de propósito -- chame Grade Quiz em vez de inspecioná-lo no cliente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listado', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    if (Array.isArray(body) && body.length > 0) {",
+                  "        pm.collectionVariables.set('question_id', body[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Corrigir Quiz",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"questionId\": \"{{question_id}}\", \"selectedOption\": \"A\" }\n]"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/quiz/grade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "quiz", "grade"]
+            },
+            "description": "O corpo é um array JSON puro, uma entrada por questão respondida. Adicione um objeto por id de questão de \"List Quiz\"; um questionId omitido é pontuado como incorreto."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Desempenho",
+      "item": [
+        {
+          "name": "Obter Desempenho Geral",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/performance/overview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "performance", "overview"]
+            },
+            "description": "Precisão agregada em cada tentativa de quiz que já foi corrigida para quem chama. Todos os campos são 0 sem tentativas ainda -- não é um erro."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Desempenho por Disciplina",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/performance/by-discipline",
+              "host": ["{{base_url}}"],
+              "path": ["api", "performance", "by-discipline"]
+            },
+            "description": "Precisão agrupada por pasta mãe ('disciplina'). Uma pasta mãe com zero tentativas é omitida; uma pasta mãe excluída aparece como \"(pasta excluída)\", mas suas tentativas continuam contando."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trilha",
+      "item": [
+        {
+          "name": "Gerar Plano de Estudos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{base_url}}/api/study-plan/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "study-plan", "generate"]
+            },
+            "description": "Assíncrono: publica uma solicitação de geração e responde 202 imediatamente. Sem corpo (ou com um motherFolderIds vazio) classifica as disciplinas (pastas mãe) de quem chama por precisão de quiz crescente, excluindo disciplinas sem tentativas e disciplinas cujas únicas pastas filhas foram excluídas; mantém as 3 mais fracas, cada uma tendo como alvo sua própria pasta filha de pior desempenho. Faça polling em \"Get Study Plan\" depois."
+          },
+          "response": []
+        },
+        {
+          "name": "Gerar Plano de Estudos (Seleção Manual)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motherFolderIds\": [\"{{mother_folder_id}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/study-plan/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "study-plan", "generate"]
+            },
+            "description": "Assíncrono: indica até 3 ids de pasta mãe próprios (qualquer disciplina própria, inclusive uma sem nenhuma tentativa de quiz ainda) para ter como alvo em vez da classificação automática das 3 mais fracas. Responde 202 imediatamente; faça polling em \"Get Study Plan\" depois. Erros: 400 se mais de 3 ids distintos forem informados, 404 se algum id informado não for uma pasta mãe própria — nenhum dos dois enfileira uma geração."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Plano de Estudos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/study-plan",
+              "host": ["{{base_url}}"],
+              "path": ["api", "study-plan"]
+            },
+            "description": "O plano atual de quem chama. generatedAt é null com uma lista steps vazia se um plano nunca foi gerado. Cada disciplina selecionada contribui com uma sequência fixa de 3 passos (REVIEW_SUMMARY, REVIEW_FLASHCARDS, RETAKE_QUIZ) contra seu childFolderId alvo. Uma pasta mãe/filha excluída aparece como \"(pasta excluída)\", mas o passo continua sendo retornado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('obtido', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    if (Array.isArray(body.steps) && body.steps.length > 0) {",
+                  "        pm.collectionVariables.set('study_plan_step_id', body.steps[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Concluir Passo do Plano de Estudos",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{base_url}}/api/study-plan/steps/{{study_plan_step_id}}/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "study-plan", "steps", "{{study_plan_step_id}}", "complete"]
+            },
+            "description": "Marca um dos próprios passos do plano atual de quem chama como concluído. 204 em caso de sucesso, 404 se o passo não existir ou pertencer ao plano de outro dono. Regenerar o plano reinicia o progresso de conclusão."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Resumo da Pasta",
+      "item": [
+        {
+          "name": "Obter Resumo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "summary"]
+            },
+            "description": "Resumo agregado em Markdown de tudo que está atualmente resumido na pasta filha. Regenera automaticamente em segundo plano sempre que conteúdo é enviado -- sem endpoint manual de geração/atualização. 404 se a pasta filha não pertencer a quem chama, ou se nenhum resumo tiver sido gerado ainda."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Flashcards",
+      "item": [
+        {
+          "name": "Listar Flashcards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/flashcards",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "flashcards"]
+            },
+            "description": "Flashcards frente/verso gerados a partir do mesmo conteúdo e do mesmo gatilho automático do Resumo da Pasta -- sem endpoint manual de geração/atualização. 200 com um array vazio se nenhum foi gerado ainda; 404 se a pasta filha não pertencer a quem chama."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mapa Mental",
+      "item": [
+        {
+          "name": "Obter Mapa Mental",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/mind-map",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "mind-map"]
+            },
+            "description": "Uma árvore de conceitos gerada a partir do mesmo conteúdo e do mesmo gatilho automático do Resumo da Pasta/Flashcards -- sem endpoint manual de geração/atualização. 200 com raiz/generatedAt nulos se nenhum foi gerado ainda; 404 se a pasta filha não pertencer a quem chama."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ofensiva",
+      "item": [
+        {
+          "name": "Obter Ofensiva",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/streak",
+              "host": ["{{base_url}}"],
+              "path": ["api", "streak"]
+            },
+            "description": "Ofensiva atual de dias consecutivos (corte de dia fixo em America/Sao_Paulo, sem contador persistido -- calculado na leitura), recordStreak, daysThisMonth, daysActiveThisWeek e o checklist de hoje. Rode isso depois de Upload Content, Get Summary, List Flashcards e Grade Quiz para ver o checklist de hoje se preencher e todayIsGold virar true quando as quatro ações forem feitas. Sem verificação de posse (é por conta, não por pasta) e sem caso de 404 -- uma conta sem atividade simplesmente reporta currentStreak: 0."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Calendário da Ofensiva",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/streak/calendar?month=2026-08",
+              "host": ["{{base_url}}"],
+              "path": ["api", "streak", "calendar"],
+              "query": [{ "key": "month", "value": "2026-08" }]
+            },
+            "description": "Status de atividade dia a dia (NONE/PARTIAL/GOLD/FROZEN) para um mês do calendário. `month` (YYYY-MM) é opcional e assume o mês atual por padrão; um mês futuro retorna um array vazio."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
