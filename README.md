@@ -22,7 +22,7 @@ Deploy: **https://revi-jovi.vercel.app**
 
 ## Pré-requisitos
 
-- A API do Revi (`revi_back`) rodando localmente para login, cadastro e demais chamadas
+- A API do Revi ([`revi_back`](https://github.com/MansourPixels/revi-back)) rodando localmente para login, cadastro e demais chamadas
   autenticadas — veja `docs/API.md` para a referência completa dos endpoints. Sem ela, as
   telas atrás de login não conseguem autenticar.
 
