@@ -5,43 +5,14 @@ import { flashCards } from "@/mocks/flashCards";
 import { practiceTest } from "@/mocks/practiceTest";
 import { alternativeLetter } from "@/utils/alternatives";
 import { difficulties } from "@/utils/difficulties";
-import { Button, cn } from "@heroui/react";
-import { FileText, ListCheck, Zap, type LucideIcon } from "lucide-react";
+import { Button } from "@heroui/react";
+import { FileText, ListCheck, Network, Zap } from "lucide-react";
 import { useState } from "react";
+import { MindMapPreview } from "./MindMapPreview";
+import { ModeHeader } from "./ModeHeader";
 
 const sampleCard = flashCards[0];
 const sampleQuestion = practiceTest[2];
-
-interface ModeHeaderProps {
-  icon: LucideIcon;
-  iconClass: string;
-  name: string;
-  description: string;
-}
-
-function ModeHeader({
-  icon: Icon,
-  iconClass,
-  name,
-  description,
-}: ModeHeaderProps) {
-  return (
-    <header className="flex items-center gap-4">
-      <div
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-xl text-white",
-          iconClass,
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-      <div>
-        <h3 className="font-semibold">{name}</h3>
-        <p className="text-xs text-muted">{description}</p>
-      </div>
-    </header>
-  );
-}
 
 export function StudyModes() {
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
@@ -54,10 +25,10 @@ export function StudyModes() {
     >
       <header className="max-w-2xl">
         <h2 className="text-3xl font-semibold tracking-tight text-balance md:text-4xl">
-          Três jeitos de estudar a mesma foto.
+          Quatro jeitos de estudar a mesma foto.
         </h2>
         <p className="mt-4 leading-relaxed text-pretty text-muted">
-          Você escolhe o modo dentro do assunto. Os três leem o conteúdo que
+          Você escolhe o modo dentro do assunto. Os quatro leem o conteúdo que
           você capturou, inclusive a notação matemática.
         </p>
       </header>
@@ -173,6 +144,24 @@ export function StudyModes() {
               })}
             </fieldset>
           </div>
+        </article>
+
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-12">
+          <ModeHeader
+            icon={Network}
+            iconClass="bg-cyan-600"
+            name="Mapa mental"
+            description="Os conceitos ligados em ramos, revelados um a um"
+          />
+
+          <div className="content-bg-cyan-200 rounded-2xl p-4">
+            <MindMapPreview />
+          </div>
+
+          <p className="text-sm leading-relaxed text-pretty text-muted">
+            Os ramos começam fechados. Você abre um de cada vez e o mapa se
+            reorganiza sozinho — lembrar o que vem depois é parte do estudo.
+          </p>
         </article>
       </div>
     </section>

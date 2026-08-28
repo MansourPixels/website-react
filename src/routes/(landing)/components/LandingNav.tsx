@@ -4,6 +4,7 @@ import { Link } from "react-router";
 const sections = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#modos", label: "Modos de estudo" },
+  { href: "#sessao", label: "Sessão de estudos" },
   { href: "#acompanhamento", label: "Acompanhamento" },
 ];
 
@@ -18,7 +19,7 @@ export function LandingNav() {
           href="#topo"
           className="flex shrink-0 items-center gap-2 rounded-full outline-offset-4 outline-accent focus-visible:outline-2"
         >
-          <img src="/favicon.svg" alt="" className="size-8" />
+          <img src="/logo.svg" alt="" className="size-8" />
           <span className="text-lg font-semibold">Revi</span>
           <span className="sr-only">Voltar ao topo</span>
         </a>

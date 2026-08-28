@@ -5,6 +5,7 @@ import { LandingFooter } from "./components/LandingFooter";
 import { LandingNav } from "./components/LandingNav";
 import { Progress } from "./components/Progress";
 import { StudyModes } from "./components/StudyModes";
+import { StudySession } from "./components/StudySession";
 
 export default function LandingPage() {
   return (
@@ -14,6 +15,7 @@ export default function LandingPage() {
         <Hero />
         <HowItWorks />
         <StudyModes />
+        <StudySession />
         <Progress />
         <FinalCta />
       </main>

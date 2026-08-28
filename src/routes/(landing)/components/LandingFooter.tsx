@@ -12,7 +12,7 @@ export function LandingFooter() {
     <footer className="mx-auto w-full max-w-6xl px-6 pb-10 md:px-8">
       <div className="flex flex-col gap-6 border-t pt-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <img src="/favicon.svg" alt="" className="size-8" />
+          <img src="/logo.svg" alt="" className="size-8" />
           <p className="text-sm text-muted">
             <span className="font-semibold text-foreground">Revi</span>
             <br />

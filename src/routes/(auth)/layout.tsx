@@ -23,7 +23,7 @@ export default function AuthLayout() {
         to="/"
         className="flex items-center gap-2 rounded-full outline-accent outline-offset-4 focus-visible:outline-2"
       >
-        <img src="/favicon.svg" alt="" className="size-8" />
+        <img src="/logo.svg" alt="" className="size-8" />
         <span className="text-lg font-semibold">Revi</span>
         <span className="sr-only">Voltar para a página inicial</span>
       </Link>

@@ -1,9 +1,14 @@
 import { Math } from "@/components/Math";
 import type { FlashCardData } from "@/mocks/flashCards";
+import { mindMap, type MindMapData } from "@/mocks/mindMap";
 import type { PracticeTestQuestion } from "@/mocks/practiceTest";
 import type { ReactNode } from "react";
 
-export type PlanStepKind = "resumo" | "flash-cards" | "simulado";
+export type PlanStepKind =
+  | "resumo"
+  | "flash-cards"
+  | "simulado"
+  | "mapa-mental";
 
 interface PlanStepBase {
   id: string;
@@ -27,7 +32,16 @@ export interface PracticePlanStep extends PlanStepBase {
   questions: PracticeTestQuestion[];
 }
 
-export type PlanStep = SummaryPlanStep | FlashCardsPlanStep | PracticePlanStep;
+export interface MindMapPlanStep extends PlanStepBase {
+  kind: "mapa-mental";
+  map: MindMapData;
+}
+
+export type PlanStep =
+  | SummaryPlanStep
+  | FlashCardsPlanStep
+  | PracticePlanStep
+  | MindMapPlanStep;
 
 export interface StudyPlan {
   id: string;
@@ -535,6 +549,14 @@ export const studyPlans: StudyPlan[] = [
             </p>
           </>
         ),
+      },
+      {
+        id: "panorama",
+        kind: "mapa-mental",
+        title: "O mapa da cúbica",
+        goal: "Ver como coeficientes, Girard e resolução se conectam.",
+        minutes: 5,
+        map: mindMap,
       },
       {
         id: "raizes",

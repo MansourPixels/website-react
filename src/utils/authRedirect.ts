@@ -10,8 +10,6 @@ export function buildSignInPath(pathname: string, search: string) {
   return `/auth/entrar?${NEXT_ROUTE_PARAM}=${encodeURIComponent(target)}`;
 }
 
-// Só aceita caminhos internos: "//outro.site" e URLs absolutas viram o destino
-// padrão, para o parâmetro não ser usado como redirecionamento aberto.
 export function resolveNextRoute(value: string | null) {
   if (value === null) return DEFAULT_ROUTE;
   if (!value.startsWith("/") || value.startsWith("//")) return DEFAULT_ROUTE;

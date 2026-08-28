@@ -67,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
 
-  // A sessão só pode ser lida no cliente: durante o SSR o status permanece
-  // "loading", o que evita divergência de hidratação e piscar de conteúdo.
   useEffect(() => {
     let cancelled = false;
 
