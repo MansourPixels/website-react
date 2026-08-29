@@ -9,6 +9,7 @@ pipeline {
         STATIC_BRANCH = 'static'
         BUILD_OUTPUT_DIR = 'build/client'
         GIT_SSH_CREDENTIAL_ID = 'github-ssh'
+        GIT_REPO_SSH_URL = 'git@github.com:MansourPixels/website-react.git'
         PATH = "/var/jenkins_home/.nvm/versions/node/v22.23.2/bin:${env.PATH}"
     }
 
@@ -56,8 +57,8 @@ pipeline {
                         DEPLOY_DIR="$(mktemp -d)"
                         trap 'git worktree remove --force "$DEPLOY_DIR" 2>/dev/null || rm -rf "$DEPLOY_DIR"' EXIT
 
-                        git fetch origin "$STATIC_BRANCH"
-                        git worktree add "$DEPLOY_DIR" "origin/$STATIC_BRANCH"
+                        git fetch "$GIT_REPO_SSH_URL" "$STATIC_BRANCH"
+                        git worktree add --detach "$DEPLOY_DIR" FETCH_HEAD
 
                         find "$DEPLOY_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
                         cp -a "$BUILD_OUTPUT_DIR/." "$DEPLOY_DIR/"
@@ -70,7 +71,7 @@ pipeline {
                         else
                             git -c user.name='jenkins-deploy' -c user.email='jenkins-deploy@revi.local' \
                                 commit -m "deploy: build ${BUILD_NUMBER}"
-                            git push origin "HEAD:${STATIC_BRANCH}"
+                            git push "$GIT_REPO_SSH_URL" "HEAD:${STATIC_BRANCH}"
                         fi
                     '''
                 }
