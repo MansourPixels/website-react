@@ -1,7 +1,7 @@
 # Revi - v1
 
 > [!NOTE]  
-> Versão inicial do projeto Revi apenas convertido para React.
+> Versão inicial do projeto Revi apenas convertido para React. Você pode acessá-la através do link: https://revi-v1.vercel.app/
 
 O Revi transforma fotos de material de estudo (caderno, lousa, apostila) em flash cards,
 resumos e simulados de prova, com acompanhamento de constância (Ascensão) e desempenho
