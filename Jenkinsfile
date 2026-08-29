@@ -52,7 +52,7 @@ pipeline {
                     sh '''
                         set -e
 
-                        export GIT_SSH_COMMAND="ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=accept-new"
+                        export GIT_SSH_COMMAND="ssh -i $SSH_KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
                         DEPLOY_DIR="$(mktemp -d)"
                         trap 'git worktree remove --force "$DEPLOY_DIR" 2>/dev/null || rm -rf "$DEPLOY_DIR"' EXIT
