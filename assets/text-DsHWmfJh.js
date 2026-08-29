@@ -1,0 +1,1 @@
+function e(e){return e.normalize(`NFD`).replace(/\p{Diacritic}/gu,``).toLowerCase().trim()}function t(e){let t=e.trim().split(/\s+/).filter(Boolean);return t.length===0?``:`${t[0].charAt(0)}${t.length>1?t[t.length-1].charAt(0):``}`.toUpperCase()}export{e as n,t};

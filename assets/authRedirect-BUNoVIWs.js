@@ -1,0 +1,1 @@
+var e=`proximo`;function t(t,n){let r=`${t}${n}`;return r===`/`||r.length===0?`/auth/entrar`:`/auth/entrar?${e}=${encodeURIComponent(r)}`}function n(e){return e===null||!e.startsWith(`/`)||e.startsWith(`//`)?`/capturar`:e}export{t as n,n as r,e as t};
