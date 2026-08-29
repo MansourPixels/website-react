@@ -25,13 +25,11 @@ pipeline {
         stage('Env') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'revi-front-base-url', variable: 'VITE_API_BASE_URL'),
-                    string(credentialsId: 'revi-front-spotify-client', variable: 'VITE_SPOTIFY_CLIENT_ID')
+                    string(credentialsId: 'revi-front-base-url', variable: 'VITE_API_BASE_URL')
                 ]) {
                     sh '''
                         {
                             printf "VITE_API_BASE_URL=%s\\n" "$VITE_API_BASE_URL"
-                            printf "VITE_SPOTIFY_CLIENT_ID=%s\\n" "$VITE_SPOTIFY_CLIENT_ID"
                         } > .env
                     '''
                 }
