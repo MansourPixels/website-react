@@ -69,7 +69,7 @@ pipeline {
                         if git diff --cached --quiet; then
                             echo "Build igual ao já publicado, nada para enviar."
                         else
-                            git -c user.name='jenkins-deploy' -c user.email='jenkins-deploy@revi.local' \
+                            git -c user.name='Henrique-CBueno' -c user.email='henriquecb2507@outlook.pt' \
                                 commit -m "deploy: build ${BUILD_NUMBER}"
                             git push "$GIT_REPO_SSH_URL" "HEAD:${STATIC_BRANCH}"
                         fi
