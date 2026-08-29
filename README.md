@@ -85,19 +85,3 @@ cadastrados.
 ## Link do Deploy na Vercel
 
 **https://revi-jovi.vercel.app**
-
-## Deploy em hosting estático
-
-`npm run build` gera um site 100% estático em `build/client/` — é essa pasta (e só ela) que
-deve ser publicada em qualquer hosting estático/CDN. Como o roteamento é feito no navegador
-(React Router SPA mode), o host precisa devolver `build/client/index.html` para qualquer
-caminho que não seja um arquivo real, senão dar refresh numa rota como
-`/pastas/:pastaId/assuntos/:assuntoId` retorna 404:
-
-- **Apache** (hospedagem compartilhada, cPanel etc.): já resolvido — `public/.htaccess` é
-  copiado para `build/client/` no build e faz esse fallback via `mod_rewrite`.
-- **Vercel** (estático, sem Functions): `vercel.json` na raiz com
-  `{"outputDirectory": "build/client", "rewrites": [{"source": "/(.*)", "destination": "/index.html"}]}`.
-- **Netlify / Cloudflare Pages**: `public/_redirects` com a linha `/*  /index.html  200`.
-- **GitHub Pages**: sem rewrite nativo; a solução usual é duplicar `index.html` como
-  `404.html` no output.
