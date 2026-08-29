@@ -8,7 +8,7 @@ pipeline {
     environment {
         STATIC_BRANCH = 'static'
         BUILD_OUTPUT_DIR = 'build/client'
-        GIT_SSH_CREDENTIAL_ID = 'github-ssh'
+        GIT_SSH_CREDENTIAL_ID = 'github-revi-front-static-ssh'
         GIT_REPO_SSH_URL = 'git@github.com:MansourPixels/website-react.git'
         PATH = "/var/jenkins_home/.nvm/versions/node/v22.23.2/bin:${env.PATH}"
     }
