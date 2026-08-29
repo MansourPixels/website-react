@@ -1,34 +1,51 @@
-# React + TypeScript + Vite
+# Revi - v1
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> [!NOTE]  
+> Versão inicial do projeto Revi apenas convertido para React.
 
-Currently, two official plugins are available:
+O Revi transforma fotos de material de estudo (caderno, lousa, apostila) em flash cards,
+resumos e simulados de prova, com acompanhamento de constância (Ascensão) e desempenho
+(Trilha).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologias utilizadas
 
-## React Compiler
+- [React 19](https://react.dev/) com o React Compiler
+- [Tanstack Router](https://tanstack.com/router/latest) em modo framework (SSR, rotas por arquivo)
+- [Vite 8](https://vite.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS 4](https://tailwindcss.com/)
+- [HeroUI](https://www.heroui.com/)
+- [oxlint](https://oxc.rs/) para lint
+- Deploy na [Vercel](https://vercel.com/)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Como instalar as dependências
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Como executar o projeto
+
+Ambiente de desenvolvimento (com hot reload), em `http://127.0.0.1:5173`:
+
+```bash
+npm run dev
+```
+
+Build de produção:
+
+```bash
+npm run build
+```
+
+Servir o build de produção localmente:
+
+```bash
+npm run start
+```
+
+Lint:
+
+```bash
+npm run lint
+```
