@@ -94,6 +94,8 @@ deve ser publicada em qualquer hosting estático/CDN. Como o roteamento é feito
 caminho que não seja um arquivo real, senão dar refresh numa rota como
 `/pastas/:pastaId/assuntos/:assuntoId` retorna 404:
 
+- **Apache** (hospedagem compartilhada, cPanel etc.): já resolvido — `public/.htaccess` é
+  copiado para `build/client/` no build e faz esse fallback via `mod_rewrite`.
 - **Vercel** (estático, sem Functions): `vercel.json` na raiz com
   `{"outputDirectory": "build/client", "rewrites": [{"source": "/(.*)", "destination": "/index.html"}]}`.
 - **Netlify / Cloudflare Pages**: `public/_redirects` com a linha `/*  /index.html  200`.
