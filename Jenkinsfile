@@ -22,6 +22,22 @@ pipeline {
             }
         }
 
+        stage('Env') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'revi-front-base-url', variable: 'VITE_API_BASE_URL'),
+                    string(credentialsId: 'revi-front-spotify-client', variable: 'VITE_SPOTIFY_CLIENT_ID')
+                ]) {
+                    sh '''
+                        {
+                            printf "VITE_API_BASE_URL=%s\\n" "$VITE_API_BASE_URL"
+                            printf "VITE_SPOTIFY_CLIENT_ID=%s\\n" "$VITE_SPOTIFY_CLIENT_ID"
+                        } > .env
+                    '''
+                }
+            }
+        }
+
         stage('Build') {
             steps {
                 sh 'bun run build'
@@ -64,6 +80,7 @@ pipeline {
 
     post {
         always {
+            sh 'rm -f .env'
             sh 'git worktree prune || true'
         }
     }
