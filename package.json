@@ -7,14 +7,12 @@
     "dev": "react-router dev",
     "build": "react-router typegen && tsc -b && react-router build",
     "lint": "oxlint",
-    "start": "react-router-serve ./build/server/index.js",
+    "preview": "vite preview",
     "deploy": "vercel deploy"
   },
   "dependencies": {
     "@heroui/react": "^3.2.4",
     "@heroui/styles": "^3.2.4",
-    "@react-router/serve": "^8.3.0",
-    "@vercel/react-router": "^1.3.4",
     "@xyflow/react": "^12.11.5",
     "isbot": "^5",
     "katex": "^0.18.4",
