@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router typegen && tsc -b && react-router build",
+    "postbuild": "rm -rf build/server",
     "lint": "oxlint",
     "preview": "vite preview",
     "deploy": "vercel deploy"
