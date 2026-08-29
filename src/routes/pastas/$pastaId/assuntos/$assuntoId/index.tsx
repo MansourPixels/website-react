@@ -20,6 +20,7 @@ function SubjectDetailsPage() {
   );
   const images = subject?.images ?? [];
 
+  // @ts-ignore
   const [search, setSearch] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
