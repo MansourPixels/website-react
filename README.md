@@ -1,5 +1,8 @@
 # Revi
 
+> [!NOTE]  
+> Versão aprimorada e atualizada do Revi. Você pode visualizar a versão inicial prototipada na branch [v1](https://github.com/MansourPixels/website-react/tree/v1).
+
 O Revi transforma fotos de material de estudo (caderno, lousa, apostila) em flash cards,
 resumos e simulados de prova, com acompanhamento de constância (Ascensão) e desempenho
 (Trilha).
@@ -40,10 +43,10 @@ Copie o arquivo de exemplo e ajuste os valores conforme seu ambiente:
 cp .env.example .env
 ```
 
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `VITE_API_BASE_URL` | Sim | URL base da API `revi_back` (ex.: `http://localhost:8080`) |
-| `VITE_SPOTIFY_CLIENT_ID` | Não | Client ID de um app no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), usado no fluxo opcional de tocar música durante o estudo (Authorization Code + PKCE). Sem essa variável, a integração com Spotify fica desabilitada e o restante do app funciona normalmente. |
+| Variável                 | Obrigatória | Descrição                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`      | Sim         | URL base da API `revi_back` (ex.: `http://localhost:8080`)                                                                                                                                                                                                                                   |
+| `VITE_SPOTIFY_CLIENT_ID` | Não         | Client ID de um app no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), usado no fluxo opcional de tocar música durante o estudo (Authorization Code + PKCE). Sem essa variável, a integração com Spotify fica desabilitada e o restante do app funciona normalmente. |
 
 ## Como executar o projeto
 
