@@ -1,17 +1,18 @@
+import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
 import {
-  Camera,
-  Folders,
-  Route as PathIcon,
-  Timer,
-  User,
-} from "lucide-react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "react-router";
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLocation,
+} from "react-router";
 
 import { cn } from "@heroui/styles";
+import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
-import "./app.css";
 
 const links = [
   {
@@ -46,7 +47,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="pt-br">
       <head>
         <meta charSet="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -60,7 +63,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Libertinus+Math&family=Poppins:wght@300;400;500;600;800&display=swap"
           rel="stylesheet"
@@ -106,7 +113,7 @@ function AppShell() {
       <div
         className={cn(
           "flex flex-col min-h-full relative",
-          showBottomNavigation && "pb-[var(--nav-inset)]",
+          showBottomNavigation && "pb-(--nav-inset)",
         )}
       >
         <Outlet />
