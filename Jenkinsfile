@@ -47,9 +47,11 @@ pipeline {
                 branch 'deploy-static'
             }
             steps {
-                sshagent(credentials: [GIT_SSH_CREDENTIAL_ID]) {
+                withCredentials([sshUserPrivateKey(credentialsId: GIT_SSH_CREDENTIAL_ID, keyFileVariable: 'SSH_KEY_FILE')]) {
                     sh '''
                         set -e
+
+                        export GIT_SSH_COMMAND="ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=accept-new"
 
                         DEPLOY_DIR="$(mktemp -d)"
                         trap 'git worktree remove --force "$DEPLOY_DIR" 2>/dev/null || rm -rf "$DEPLOY_DIR"' EXIT
