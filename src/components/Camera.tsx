@@ -11,6 +11,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
+import { useTapToFocus } from "../hooks/useTapToFocus";
+import { CameraFocusOverlay } from "./CameraFocusOverlay";
 import { CaptureDesk } from "./CaptureDesk";
 import {
   DialogCategorizeImage,
@@ -35,7 +37,12 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     error,
     isFlashSupported,
     isFlashOn,
+    isTapFocusSupported,
+    exposureRange,
+    exposureBaseline,
     toggleFlash,
+    focusAt,
+    setExposureCompensation,
     capturePhoto,
     retry,
   } = camera;
@@ -53,6 +60,22 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   const [submitMaterialError, setSubmitMaterialError] = useState<
     string | null
   >(null);
+
+  const isFocusEnabled =
+    isTouchPrimary &&
+    isTapFocusSupported &&
+    status === "ready" &&
+    !reviewMaterial &&
+    !isCategorizeOpen;
+
+  const { indicator, handlers: focusHandlers } = useTapToFocus({
+    videoRef,
+    isEnabled: isFocusEnabled,
+    exposureRange,
+    exposureBaseline,
+    focusAt,
+    setExposureCompensation,
+  });
 
   useEffect(() => {
     return () => {
@@ -189,11 +212,26 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         autoPlay
         muted
         playsInline
-        aria-label="Visualização da câmera"
+        draggable={false}
+        aria-label={
+          isFocusEnabled
+            ? "Visualização da câmera. Toque para focar e arraste para cima ou para baixo para ajustar a exposição."
+            : "Visualização da câmera"
+        }
         className={cn(
           "size-full object-cover transition-opacity",
+          // O arrasto vertical precisa chegar até aqui: sem `touch-none` o
+          // compositor do Chrome Android o converte em scroll e mata o gesto
+          // com um `pointercancel` no meio.
+          "touch-none overscroll-none select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]",
           status === "ready" ? "opacity-100" : "opacity-0",
         )}
+        {...focusHandlers}
+      />
+
+      <CameraFocusOverlay
+        indicator={indicator}
+        hasExposureControl={Boolean(exposureRange)}
       />
 
       {status === "loading" ? (

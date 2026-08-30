@@ -154,10 +154,29 @@
     }
   }
 
+  .camera-focus {
+    opacity: 1;
+    transform: scale(1);
+    transition:
+      opacity 200ms var(--ease-out-strong),
+      transform 200ms var(--ease-out-strong);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+  }
+
+  .camera-focus-fade {
+    transition: opacity 220ms var(--ease-out-strong);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .celebrate,
     .celebrate-stagger > *,
-    .mind-map-node {
+    .mind-map-node,
+    .camera-focus,
+    .camera-focus-fade {
       transition: none;
     }
   }
