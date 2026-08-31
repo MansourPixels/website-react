@@ -1,8 +1,8 @@
+import { useCanGoBack } from "@/hooks/useCanGoBack";
 import { Button, cn, SearchField } from "@heroui/react";
 import { ChevronLeft, Search } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useCanGoBack } from "@/hooks/useCanGoBack";
 
 interface NavMenuProps {
   title: string;
@@ -62,12 +62,12 @@ export function NavMenu({
                 variant="ghost"
                 aria-label="Voltar"
                 onPress={() => {
+                  if (backHref) navigate(backHref, { replace: true });
+
                   if (canGoBack) {
                     navigate(-1);
                     return;
                   }
-
-                  if (backHref) navigate(backHref, { replace: true });
                 }}
                 size="lg"
                 className={variant === "white" ? "not-active:text-white" : ""}

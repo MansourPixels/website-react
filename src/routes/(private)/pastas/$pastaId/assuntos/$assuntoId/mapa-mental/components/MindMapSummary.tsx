@@ -34,7 +34,7 @@ export function MindMapSummary({
         </div>
       </section>
 
-      <footer className="flex flex-col gap-3">
+      <footer className="flex flex-col gap-3 max-w-lg w-full mx-auto">
         <Button fullWidth size="lg" onClick={onRestart}>
           <RotateCcw />
           Refazer o mapa

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { snapExposure, type ExposureRange, type FocusPoint } from "./useCamera";
+import { useFeedback } from "./useFeedback";
 
 /** Deslocamento vertical, em px, que separa um toque de um arrasto. */
 const DRAG_THRESHOLD = 8;
@@ -90,6 +91,8 @@ export function useTapToFocus({
   focusAt,
   setExposureCompensation,
 }: UseTapToFocusOptions) {
+  const feedback = useFeedback();
+
   const [indicator, setIndicator] = useState<FocusIndicator | null>(null);
 
   const pointerIdRef = useRef<number | null>(null);
@@ -203,6 +206,7 @@ export function useTapToFocus({
         : 0.5,
     });
 
+    feedback("camera-foco");
     void focusAt(point);
   }
 

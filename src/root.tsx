@@ -12,6 +12,8 @@ import { cn } from "@heroui/styles";
 import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PreferencesProvider } from "./contexts/PreferencesContext";
+import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
 
 const links = [
@@ -50,6 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <link rel="icon" href="/favicon.ico" sizes="48x48" />
         <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -86,12 +89,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useServiceWorker();
+
   return (
-    <AuthProvider>
-      <SpotifyProvider>
-        <AppShell />
-      </SpotifyProvider>
-    </AuthProvider>
+    <PreferencesProvider>
+      <AuthProvider>
+        <SpotifyProvider>
+          <AppShell />
+        </SpotifyProvider>
+      </AuthProvider>
+    </PreferencesProvider>
   );
 }
 

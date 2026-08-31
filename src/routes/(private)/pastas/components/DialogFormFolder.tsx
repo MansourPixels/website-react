@@ -3,6 +3,7 @@ import { FolderPen, FolderPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { createMotherFolder, updateMotherFolder } from "@/api/folders";
+import { useFeedback } from "@/hooks/useFeedback";
 import { ApiError } from "@/api/client";
 import { ColorPicker } from "@/components/ColorPicker";
 import type { MotherFolder } from "@/types/api/folder";
@@ -54,6 +55,8 @@ export function DialogFormFolder({
   const isValid =
     trimmedName.length >= 3 && HEX_COLOR_PATTERN.test(form.color);
 
+  const feedback = useFeedback();
+
   async function handleSubmit() {
     if (!isValid || isSubmitting) return;
 
@@ -69,9 +72,11 @@ export function DialogFormFolder({
               color: form.color,
             });
 
+      feedback("sucesso");
       onSubmit(result);
       onOpenChange(false);
     } catch (apiError) {
+      feedback("erro");
       setError(
         apiError instanceof ApiError
           ? apiError.detail

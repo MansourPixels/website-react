@@ -9,6 +9,7 @@ import { Button, cn, Spinner } from "@heroui/react";
 import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useFeedback } from "../hooks/useFeedback";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
 import { useTapToFocus } from "../hooks/useTapToFocus";
@@ -48,6 +49,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   } = camera;
 
   const navigate = useNavigate();
+  const feedback = useFeedback();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -112,6 +114,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         previewUrlRef.current = null;
         setReviewMaterial(null);
       } catch (error) {
+        feedback("erro");
         setSubmitMaterialError(
           error instanceof ApiError
             ? error.detail
@@ -133,12 +136,23 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
   async function handleCapture() {
     const photo = await capturePhoto();
-    if (photo) showPreview(photo);
+
+    if (photo === null) {
+      feedback("erro");
+      return;
+    }
+
+    feedback("camera-obturador");
+    showPreview(photo);
   }
 
   function handleSelectFile(event: React.ChangeEvent<HTMLInputElement>) {
     const [file] = event.target.files ?? [];
-    if (file && isAcceptedMaterial(file)) showPreview(file);
+
+    if (file !== undefined) {
+      if (isAcceptedMaterial(file)) showPreview(file);
+      else feedback("erro");
+    }
 
     event.target.value = "";
   }

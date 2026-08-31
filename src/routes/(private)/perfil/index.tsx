@@ -7,16 +7,28 @@ import { Link, useNavigate } from "react-router";
 import { resendVerificationEmail } from "@/api/auth";
 import { getStreak } from "@/api/streak";
 import { NavMenu } from "@/components/NavMenu";
+import { SettingToggle } from "@/components/SettingToggle";
 import { SpotifyMark } from "@/components/SpotifyMark";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
+import { isHapticsSupported } from "@/utils/haptics";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
   const { user, signOut } = useAuth();
   const spotify = useSpotify();
+  const { preferences, setPreference } = usePreferences();
   const navigate = useNavigate();
+
+  // `navigator.vibrate` não existe no servidor; checar só depois de montar
+  // evita divergência entre o HTML do servidor e o primeiro render.
+  const [hasHaptics, setHasHaptics] = useState(true);
+
+  useEffect(() => {
+    setHasHaptics(isHapticsSupported());
+  }, []);
 
   const [streak, setStreak] = useState<{
     currentStreak: number;
@@ -178,6 +190,34 @@ export default function PerfilPage() {
             </p>
           )
         ) : null}
+      </section>
+
+      <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-4">
+        <header className="flex flex-col gap-1">
+          <h2 className="font-semibold">Preferências</h2>
+          <p className="text-xs text-muted text-balance">
+            Como o Revi responde quando você toca na tela e conclui uma etapa.
+          </p>
+        </header>
+
+        <SettingToggle
+          label="Sons"
+          description="Toca um som ao concluir simulados, flash cards e sessões."
+          isSelected={preferences.soundEnabled}
+          onChange={(value) => setPreference("soundEnabled", value)}
+        />
+
+        <SettingToggle
+          label="Vibração"
+          description={
+            hasHaptics
+              ? undefined
+              : "Este aparelho não oferece retorno tátil no navegador."
+          }
+          isDisabled={!hasHaptics}
+          isSelected={preferences.hapticsEnabled}
+          onChange={(value) => setPreference("hapticsEnabled", value)}
+        />
       </section>
 
       <div className="flex flex-col gap-2 sm:flex-row">
