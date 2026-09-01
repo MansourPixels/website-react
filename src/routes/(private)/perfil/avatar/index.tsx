@@ -3,6 +3,7 @@ import { Dices } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { ApiError } from "@/api/client";
 import { getWhoami, updateAvatar } from "@/api/user";
 import { NavMenu } from "@/components/NavMenu";
 import { useFeedback } from "@/hooks/useFeedback";
@@ -47,9 +48,10 @@ export default function AvatarPage() {
       .then(({ avatarUrl }) => {
         if (cancelled) return;
 
-        // Sem avatar guardado é o primeiro acesso: um sorteio dá ao aluno algo
-        // já montado para ajustar, em vez de um rosto padrão vazio.
-        const stored = avatarUrl === null ? null : parseAvatarUrl(avatarUrl);
+        // O backend já garante um avatar default no primeiro acesso, então
+        // `avatarUrl` sempre vem preenchido; o sorteio local só entra se o
+        // parse falhar (URL num formato inesperado).
+        const stored = parseAvatarUrl(avatarUrl);
 
         setConfig(stored ?? randomAvatarConfig());
         setSavedUrl(avatarUrl);
@@ -83,9 +85,13 @@ export default function AvatarPage() {
       await updateAvatar(url);
       feedback("sucesso");
       navigate("/perfil");
-    } catch {
+    } catch (error) {
       feedback("erro");
-      setSaveError("Não foi possível salvar o avatar. Tente novamente.");
+      setSaveError(
+        error instanceof ApiError
+          ? error.detail
+          : "Não foi possível salvar o avatar. Tente novamente.",
+      );
       setIsSaving(false);
     }
   }
