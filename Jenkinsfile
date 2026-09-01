@@ -23,6 +23,12 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                sh 'bun run test'
+            }
+        }
+
         stage('Env') {
             steps {
                 withCredentials([

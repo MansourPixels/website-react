@@ -13,7 +13,7 @@ const cycleChips = [
 ];
 
 export function StudySession() {
-  const preview = useStudySession({ persist: false });
+  const preview = useStudySession({ persist: false, feedback: false });
 
   return (
     <section

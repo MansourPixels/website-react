@@ -8,7 +8,8 @@
     "build": "react-router typegen && tsc -b && react-router build",
     "postbuild": "rm -rf build/server",
     "lint": "oxlint",
-    "preview": "vite preview",
+    "test": "vitest run",
+    "start": "react-router-serve ./build/server/index.js",
     "deploy": "vercel deploy"
   },
   "dependencies": {
@@ -27,7 +28,7 @@
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.1",
+    "@babel/core": "^7.29.7",
     "@react-router/dev": "^8.3.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/typography": "^0.5.20",
@@ -41,6 +42,8 @@
     "oxlint": "^1.78.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~7.0.2",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.11"
   }
 }

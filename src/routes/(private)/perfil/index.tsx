@@ -1,22 +1,43 @@
 import { Avatar, Button, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { CalendarCheck, Flame, LogOut, Mail, Trophy, Unplug } from "lucide-react";
+import {
+  CalendarCheck,
+  Flame,
+  LogOut,
+  Mail,
+  Pencil,
+  Trophy,
+  Unplug,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { resendVerificationEmail } from "@/api/auth";
 import { getStreak } from "@/api/streak";
+import { getWhoami } from "@/api/user";
 import { NavMenu } from "@/components/NavMenu";
+import { SettingToggle } from "@/components/SettingToggle";
 import { SpotifyMark } from "@/components/SpotifyMark";
 import { StatTile } from "@/components/StatTile";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
+import { isHapticsSupported } from "@/utils/haptics";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
   const { user, signOut } = useAuth();
   const spotify = useSpotify();
+  const { preferences, setPreference } = usePreferences();
   const navigate = useNavigate();
+
+  // `navigator.vibrate` não existe no servidor; checar só depois de montar
+  // evita divergência entre o HTML do servidor e o primeiro render.
+  const [hasHaptics, setHasHaptics] = useState(true);
+
+  useEffect(() => {
+    setHasHaptics(isHapticsSupported());
+  }, []);
 
   const [streak, setStreak] = useState<{
     currentStreak: number;
@@ -33,6 +54,25 @@ export default function PerfilPage() {
       .catch(() => {
         // Estatísticas secundárias nesta tela — uma falha aqui não deve
         // travar o resto do perfil.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getWhoami()
+      .then(({ avatarUrl: stored }) => {
+        if (!cancelled) setAvatarUrl(stored);
+      })
+      .catch(() => {
+        // Sem avatar o card cai nas iniciais sozinho — não é motivo para
+        // atrapalhar o resto do perfil.
       });
 
     return () => {
@@ -69,16 +109,32 @@ export default function PerfilPage() {
       <NavMenu title="Perfil" />
 
       <section className="flex flex-col items-center gap-4 rounded-3xl bg-white p-6 shadow-surface sm:flex-row sm:items-center sm:gap-6">
-        <Avatar size="lg" variant="soft" color="accent" className="shrink-0">
+        <Avatar size="lg" variant="soft" color="accent" className="shrink-0 size-26 rounded-2xl">
+          {/* `null` aqui só existe enquanto o `getWhoami` inicial não resolve
+              — o backend sempre entrega um avatar depois disso, então
+              `Avatar.Fallback` só aparece durante esse carregamento. */}
+          {avatarUrl !== null ? <Avatar.Image src={avatarUrl} alt="" /> : null}
           <Avatar.Fallback>{getInitials(user.username)}</Avatar.Fallback>
         </Avatar>
 
-        <div className="flex min-w-0 flex-col gap-1 text-center sm:text-left">
+        <div className="flex min-w-0 flex-col items-center gap-1 sm:items-start">
           <h2 className="text-xl font-semibold break-words">
             {user.username}
           </h2>
           <p className="text-muted text-sm break-all">{user.email}</p>
         </div>
+
+        <Link
+          to="/perfil/avatar"
+          className={buttonVariants({
+            variant: "secondary",
+            size: "sm",
+            className: "shrink-0 sm:ml-auto",
+          })}
+        >
+          <Pencil className="size-4" />
+          Editar avatar
+        </Link>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
@@ -178,6 +234,34 @@ export default function PerfilPage() {
             </p>
           )
         ) : null}
+      </section>
+
+      <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-4">
+        <header className="flex flex-col gap-1">
+          <h2 className="font-semibold">Preferências</h2>
+          <p className="text-xs text-muted text-balance">
+            Como o Revi responde quando você toca na tela e conclui uma etapa.
+          </p>
+        </header>
+
+        <SettingToggle
+          label="Sons"
+          description="Toca um som ao concluir simulados, flash cards e sessões."
+          isSelected={preferences.soundEnabled}
+          onChange={(value) => setPreference("soundEnabled", value)}
+        />
+
+        <SettingToggle
+          label="Vibração"
+          description={
+            hasHaptics
+              ? undefined
+              : "Este aparelho não oferece retorno tátil no navegador."
+          }
+          isDisabled={!hasHaptics}
+          isSelected={preferences.hapticsEnabled}
+          onChange={(value) => setPreference("hapticsEnabled", value)}
+        />
       </section>
 
       <div className="flex flex-col gap-2 sm:flex-row">

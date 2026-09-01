@@ -7,7 +7,8 @@ import {
   type SessionRunState,
   type SessionSettings,
 } from "@/types/StudySession";
-import { playChime, unlockChime } from "@/utils/chime";
+import { unlockAudio } from "@/utils/sound";
+import { useFeedback } from "./useFeedback";
 import {
   readStudySession,
   sanitizeSettings,
@@ -26,6 +27,14 @@ export const phaseLabels: Record<SessionPhase, string> = {
   shortBreak: "Pausa curta",
   longBreak: "Pausa longa",
 };
+
+export function formatCountdown(remainingMs: number) {
+  const totalSeconds = Math.ceil(remainingMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${`${minutes}`.padStart(2, "0")}:${`${seconds}`.padStart(2, "0")}`;
+}
 
 export function durationOf(phase: SessionPhase, settings: SessionSettings) {
   const minutes =
@@ -59,9 +68,15 @@ function announce(phase: SessionPhase, settings: SessionSettings) {
 
 interface UseStudySessionOptions {
   persist?: boolean;
+  /** Desligado no widget da landing: página de marketing não emite som. */
+  feedback?: boolean;
 }
 
-export function useStudySession({ persist = true }: UseStudySessionOptions = {}) {
+export function useStudySession({
+  persist = true,
+  feedback: isFeedbackEnabled = true,
+}: UseStudySessionOptions = {}) {
+  const feedback = useFeedback();
   const [settings, setSettings] = useState<SessionSettings>(
     DEFAULT_SESSION_SETTINGS,
   );
@@ -185,16 +200,24 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
       }));
     }
 
-    if (settings.soundEnabled) playChime(wasFocus ? "up" : "down");
-
     const finishedRound = wasFocus && nextPhase === "longBreak";
+
+    if (isFeedbackEnabled) {
+      feedback(
+        finishedRound
+          ? "sessao-ciclo-concluido"
+          : wasFocus
+            ? "sessao-foco-concluido"
+            : "sessao-pausa-concluida",
+      );
+    }
 
     setAnnouncement(
       finishedRound
         ? `Ciclo ${nextCycleInRound} concluído. Hora da pausa longa.`
         : announce(nextPhase, settings),
     );
-  }, [run, remainingMs, settings]);
+  }, [run, remainingMs, settings, feedback, isFeedbackEnabled]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -217,7 +240,7 @@ export function useStudySession({ persist = true }: UseStudySessionOptions = {})
   }, [persist, isReady, settings, counter, run]);
 
   const start = useCallback(() => {
-    unlockChime();
+    unlockAudio();
 
     const now = Date.now();
 

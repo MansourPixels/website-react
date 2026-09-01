@@ -6,6 +6,7 @@ import { ApiError } from "@/api/client";
 import { getStreak } from "@/api/streak";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
+import { useAchievementFeedback } from "@/hooks/useAchievementFeedback";
 import type { StreakStatus } from "@/types/api/streak";
 import { AscentionCalendar } from "./components/AscentionCalendar";
 import { MilestoneList } from "./components/MilestoneList";
@@ -14,6 +15,8 @@ import { TodayChecklist } from "./components/TodayChecklist";
 export default function Ascensao() {
   const [streak, setStreak] = useState<StreakStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  useAchievementFeedback(streak);
 
   useEffect(() => {
     let cancelled = false;

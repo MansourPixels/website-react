@@ -1,4 +1,5 @@
-import { Button, Label, Modal, NumberField, Switch } from "@heroui/react";
+import { Button, Label, Modal, NumberField } from "@heroui/react";
+import { SettingToggle } from "@/components/SettingToggle";
 import { Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -38,43 +39,6 @@ function DurationField({
         <NumberField.IncrementButton />
       </NumberField.Group>
     </NumberField>
-  );
-}
-
-interface SettingToggleProps {
-  label: string;
-  description?: string;
-  isSelected: boolean;
-  isDisabled?: boolean;
-  onChange: (isSelected: boolean) => void;
-}
-
-function SettingToggle({
-  label,
-  description,
-  isSelected,
-  isDisabled = false,
-  onChange,
-}: SettingToggleProps) {
-  return (
-    <Switch
-      isSelected={isSelected}
-      isDisabled={isDisabled}
-      onChange={onChange}
-      className="w-full"
-    >
-      <Switch.Content>
-        <Switch.Control>
-          <Switch.Thumb />
-        </Switch.Control>
-        <span className="flex flex-col">
-          <Label>{label}</Label>
-          {description ? (
-            <span className="text-xs text-muted">{description}</span>
-          ) : null}
-        </span>
-      </Switch.Content>
-    </Switch>
   );
 }
 
@@ -164,11 +128,6 @@ export function DialogSessionSettings({
                 label="Iniciar a próxima fase sozinho"
                 isSelected={form.autoStart}
                 onChange={(autoStart) => update({ autoStart })}
-              />
-              <SettingToggle
-                label="Tocar um som ao terminar a fase"
-                isSelected={form.soundEnabled}
-                onChange={(soundEnabled) => update({ soundEnabled })}
               />
               <SettingToggle
                 label="Controlar a música do Spotify"

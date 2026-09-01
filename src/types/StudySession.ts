@@ -8,7 +8,6 @@ export interface SessionSettings {
   longBreakMinutes: number;
   cyclesUntilLongBreak: number;
   autoStart: boolean;
-  soundEnabled: boolean;
   controlsSpotify: boolean;
 }
 
@@ -18,7 +17,6 @@ export const DEFAULT_SESSION_SETTINGS: SessionSettings = {
   longBreakMinutes: 15,
   cyclesUntilLongBreak: 4,
   autoStart: false,
-  soundEnabled: true,
   controlsSpotify: true,
 };
 

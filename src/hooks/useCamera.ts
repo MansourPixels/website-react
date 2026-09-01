@@ -2,8 +2,35 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type CameraStatus = "idle" | "loading" | "ready" | "error";
 
+export interface ExposureRange {
+  min: number;
+  max: number;
+  step: number;
+}
+
+export interface FocusPoint {
+  x: number;
+  y: number;
+}
+
 interface UseCameraOptions {
   autoStart?: boolean;
+}
+
+/**
+ * `applyConstraints` substitui o conjunto inteiro de constraints da track em vez
+ * de mesclar, então as capacidades que o app controla vivem aqui em partes
+ * nomeadas e são sempre reaplicadas juntas. Cada parte vira um conjunto separado
+ * dentro de `advanced`, que é aplicado em melhor esforço de forma independente —
+ * assim uma capacidade ausente no aparelho não derruba as outras junto.
+ *
+ * Nunca acrescente `width`, `height` ou `frameRate` aqui: reaplicar resolução
+ * renegocia a sessão de captura e trava a preview.
+ */
+interface TrackConstraintParts {
+  torch?: MediaTrackConstraintSet;
+  focus?: MediaTrackConstraintSet;
+  exposure?: MediaTrackConstraintSet;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -30,9 +57,59 @@ function stopStream(stream: MediaStream | null) {
   }
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function pickMode(modes: string[] | undefined, preferred: string[]) {
+  return preferred.find((mode) => modes?.includes(mode)) ?? null;
+}
+
+/**
+ * O ponto de interesse não é declarado em capabilities pela spec do Image
+ * Capture, só em constraints — quem responde por ele é o navegador, não o
+ * aparelho. O Safari devolve `undefined` aqui, que é o que desliga o recurso lá.
+ */
+function supportsPointsOfInterest() {
+  return Boolean(
+    navigator.mediaDevices?.getSupportedConstraints?.().pointsOfInterest,
+  );
+}
+
+function readExposureRange(
+  capabilities: MediaTrackCapabilities | undefined,
+): ExposureRange | null {
+  const range = capabilities?.exposureCompensation;
+  if (!range) return null;
+
+  const { min, max, step } = range;
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+
+  return {
+    min,
+    max,
+    step: Number.isFinite(step) && step > 0 ? step : (max - min) / 100,
+  };
+}
+
+/** Alinha o valor ao passo de EV do aparelho, evitando applies redundantes. */
+export function snapExposure(value: number, range: ExposureRange) {
+  const steps = Math.round((value - range.min) / range.step);
+  const snapped = Number((range.min + steps * range.step).toFixed(4));
+
+  return clamp(snapped, range.min, range.max);
+}
+
 export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const constraintsRef = useRef<TrackConstraintParts>({});
+  const focusModeRef = useRef<string | null>(null);
+  const exposureModeRef = useRef<string | null>(null);
+  const exposureRangeRef = useRef<ExposureRange | null>(null);
+  const exposureBaselineRef = useRef(0);
+  const exposureValueRef = useRef(0);
 
   const [status, setStatus] = useState<CameraStatus>(
     autoStart ? "loading" : "idle",
@@ -40,7 +117,25 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [isFlashSupported, setIsFlashSupported] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
+  const [isTapFocusSupported, setIsTapFocusSupported] = useState(false);
+  const [exposureRange, setExposureRange] = useState<ExposureRange | null>(null);
+  const [exposureBaseline, setExposureBaseline] = useState(0);
   const [attempt, setAttempt] = useState(autoStart ? 1 : 0);
+
+  const resetCapabilities = useCallback(() => {
+    constraintsRef.current = {};
+    focusModeRef.current = null;
+    exposureModeRef.current = null;
+    exposureRangeRef.current = null;
+    exposureBaselineRef.current = 0;
+    exposureValueRef.current = 0;
+
+    setIsFlashOn(false);
+    setIsFlashSupported(false);
+    setIsTapFocusSupported(false);
+    setExposureRange(null);
+    setExposureBaseline(0);
+  }, []);
 
   useEffect(() => {
     if (attempt === 0) return;
@@ -50,8 +145,7 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     async function startCamera() {
       setStatus("loading");
       setError(null);
-      setIsFlashOn(false);
-      setIsFlashSupported(false);
+      resetCapabilities();
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setStatus("error");
@@ -73,8 +167,6 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
 
-        const [track] = stream.getVideoTracks();
-        setIsFlashSupported(Boolean(track?.getCapabilities?.().torch));
         setStatus("ready");
       } catch (cause) {
         if (isCancelled) return;
@@ -90,8 +182,9 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
       isCancelled = true;
       stopStream(streamRef.current);
       streamRef.current = null;
+      constraintsRef.current = {};
     };
-  }, [attempt]);
+  }, [attempt, resetCapabilities]);
 
   useEffect(() => {
     if (status !== "ready") return;
@@ -100,19 +193,161 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     }
   }, [status]);
 
-  const toggleFlash = useCallback(async () => {
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    const video = videoRef.current;
     const [track] = streamRef.current?.getVideoTracks() ?? [];
     if (!track) return;
 
-    const nextValue = !isFlashOn;
+    let isCancelled = false;
+
+    // As capacidades de imagem do Chrome Android só ficam completas depois do
+    // primeiro frame. Ler uma única vez logo após o `getUserMedia` devolve um
+    // conjunto vazio e desliga flash e foco em aparelhos que os suportam; por
+    // isso a leitura se repete no `loadedmetadata` e sempre que a track volta a
+    // emitir depois de o app ficar em segundo plano.
+    function readCapabilities() {
+      if (isCancelled) return;
+
+      const capabilities = track.getCapabilities?.();
+
+      setIsFlashSupported(Boolean(capabilities?.torch));
+
+      // Disparo único trava o foco no ponto tocado até o próximo toque; a
+      // exposição fica contínua para que a compensação siga valendo como bias.
+      const focusMode = pickMode(capabilities?.focusMode, [
+        "single-shot",
+        "continuous",
+      ]);
+      const exposureMode = pickMode(capabilities?.exposureMode, [
+        "continuous",
+        "single-shot",
+      ]);
+
+      focusModeRef.current = focusMode;
+      exposureModeRef.current = exposureMode;
+      setIsTapFocusSupported(
+        supportsPointsOfInterest() && Boolean(focusMode || exposureMode),
+      );
+
+      const range = exposureMode ? readExposureRange(capabilities) : null;
+      exposureRangeRef.current = range;
+      setExposureRange(range);
+
+      const setting = track.getSettings?.().exposureCompensation;
+      const baseline =
+        range && typeof setting === "number" && Number.isFinite(setting)
+          ? snapExposure(setting, range)
+          : 0;
+
+      exposureBaselineRef.current = baseline;
+      exposureValueRef.current = baseline;
+      setExposureBaseline(baseline);
+    }
+
+    readCapabilities();
+
+    video?.addEventListener("loadedmetadata", readCapabilities);
+    track.addEventListener("unmute", readCapabilities);
+
+    return () => {
+      isCancelled = true;
+      video?.removeEventListener("loadedmetadata", readCapabilities);
+      track.removeEventListener("unmute", readCapabilities);
+    };
+  }, [status]);
+
+  const applyConstraintParts = useCallback(async (patch: TrackConstraintParts) => {
+    const [track] = streamRef.current?.getVideoTracks() ?? [];
+    if (!track) return false;
+
+    const next = { ...constraintsRef.current, ...patch };
+    const advanced = [next.torch, next.focus, next.exposure].filter(
+      (set): set is MediaTrackConstraintSet => Boolean(set),
+    );
 
     try {
-      await track.applyConstraints({ advanced: [{ torch: nextValue }] });
-      setIsFlashOn(nextValue);
+      await track.applyConstraints({ advanced });
+      constraintsRef.current = next;
     } catch {
+      return false;
+    }
+
+    // O Chrome Android tem um bug conhecido em que a lanterna ignora
+    // `torch: false`, então o estado real do flash é o que o device relata.
+    const { torch } = track.getSettings?.() ?? {};
+    if (typeof torch === "boolean") setIsFlashOn(torch);
+
+    return true;
+  }, []);
+
+  const toggleFlash = useCallback(async () => {
+    const previous = isFlashOn;
+    setIsFlashOn(!previous);
+
+    if (!(await applyConstraintParts({ torch: { torch: !previous } }))) {
+      setIsFlashOn(previous);
       setIsFlashSupported(false);
     }
-  }, [isFlashOn]);
+  }, [applyConstraintParts, isFlashOn]);
+
+  /** Recebe o ponto já normalizado em 0..1 no espaço do frame da track. */
+  const focusAt = useCallback(
+    async (point: FocusPoint) => {
+      const focusMode = focusModeRef.current;
+      const exposureMode = exposureModeRef.current;
+      if (!focusMode && !exposureMode) return false;
+
+      const pointsOfInterest = [
+        { x: clamp(point.x, 0, 1), y: clamp(point.y, 0, 1) },
+      ];
+
+      // Um toque novo devolve a exposição ao valor de fábrica, como na câmera
+      // nativa: o arrasto que vem em seguida parte sempre do mesmo lugar.
+      const baseline = exposureBaselineRef.current;
+      exposureValueRef.current = baseline;
+
+      // O ponto de interesse é uma configuração única da track, não uma por
+      // modo, então vai num conjunto só. O mesmo ponto alimenta foco e medição.
+      const applied = await applyConstraintParts({
+        focus: focusMode
+          ? { focusMode, pointsOfInterest }
+          : { pointsOfInterest },
+        exposure: exposureMode
+          ? {
+              exposureMode,
+              ...(exposureRangeRef.current
+                ? { exposureCompensation: baseline }
+                : {}),
+            }
+          : undefined,
+      });
+
+      if (!applied) setIsTapFocusSupported(false);
+
+      return applied;
+    },
+    [applyConstraintParts],
+  );
+
+  const setExposureCompensation = useCallback(
+    async (value: number) => {
+      const range = exposureRangeRef.current;
+      const exposureMode = exposureModeRef.current;
+      if (!range || !exposureMode) return false;
+
+      const snapped = snapExposure(value, range);
+      if (snapped === exposureValueRef.current) return true;
+
+      exposureValueRef.current = snapped;
+
+      return applyConstraintParts({
+        exposure: { exposureMode, exposureCompensation: snapped },
+      });
+    },
+    [applyConstraintParts],
+  );
 
   const capturePhoto = useCallback(async () => {
     const video = videoRef.current;
@@ -144,9 +379,8 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     setAttempt(0);
     setStatus("idle");
     setError(null);
-    setIsFlashOn(false);
-    setIsFlashSupported(false);
-  }, []);
+    resetCapabilities();
+  }, [resetCapabilities]);
 
   return {
     videoRef,
@@ -154,7 +388,12 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     error,
     isFlashSupported,
     isFlashOn,
+    isTapFocusSupported,
+    exposureRange,
+    exposureBaseline,
     toggleFlash,
+    focusAt,
+    setExposureCompensation,
     capturePhoto,
     retry,
     start,

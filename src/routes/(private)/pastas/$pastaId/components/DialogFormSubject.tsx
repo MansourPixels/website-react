@@ -3,6 +3,7 @@ import { FilePlus, SquarePen } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { createChildFolder, updateChildFolder } from "@/api/folders";
+import { useFeedback } from "@/hooks/useFeedback";
 import { ApiError } from "@/api/client";
 import type { ChildFolder } from "@/types/api/folder";
 
@@ -43,6 +44,8 @@ export function DialogFormSubject({
   const trimmedName = name.trim();
   const isValid = trimmedName.length >= 3;
 
+  const feedback = useFeedback();
+
   async function handleSubmit() {
     if (!isValid || isSubmitting) return;
 
@@ -59,9 +62,11 @@ export function DialogFormSubject({
 
       if (result === undefined) return;
 
+      feedback("sucesso");
       onSubmit(result);
       onOpenChange(false);
     } catch (apiError) {
+      feedback("erro");
       setError(
         apiError instanceof ApiError
           ? apiError.detail

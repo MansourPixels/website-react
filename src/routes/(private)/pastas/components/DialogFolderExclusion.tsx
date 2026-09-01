@@ -3,6 +3,7 @@ import { Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { deleteMotherFolder } from "@/api/folders";
+import { useFeedback } from "@/hooks/useFeedback";
 import { ApiError } from "@/api/client";
 import type { MotherFolder } from "@/types/api/folder";
 
@@ -28,6 +29,8 @@ export function DialogFolderExclusion({
     if (isOpen) setError(null);
   }, [isOpen]);
 
+  const feedback = useFeedback();
+
   async function handleConfirm() {
     if (isDeleting) return;
 
@@ -36,6 +39,8 @@ export function DialogFolderExclusion({
 
     try {
       await deleteMotherFolder(folder.id);
+
+      feedback("exclusao");
       onConfirm(folder);
       onOpenChange(false);
     } catch (apiError) {
@@ -47,6 +52,7 @@ export function DialogFolderExclusion({
         return;
       }
 
+      feedback("erro");
       setError(
         apiError instanceof ApiError
           ? apiError.detail

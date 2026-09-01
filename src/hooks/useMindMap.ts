@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { MindMapBranch } from "@/types/api/mindMap";
 import {
@@ -6,6 +6,7 @@ import {
   layoutMindMap,
   type MindMapPlacement,
 } from "@/utils/mindMapLayout";
+import { useFeedback } from "./useFeedback";
 
 function seedExpanded(root: MindMapBranch | null) {
   return root === null ? new Set<string>() : new Set([root.id]);
@@ -36,6 +37,8 @@ export interface MindMapState {
  * visíveis, colapsar um ramo faria o progresso andar para trás.
  */
 export function useMindMap(root: MindMapBranch | null): MindMapState {
+  const feedback = useFeedback();
+
   const [expanded, setExpanded] = useState(() => seedExpanded(root));
   const [revealed, setRevealed] = useState(() => seedRevealed(root));
   const [seededId, setSeededId] = useState(root?.id ?? null);
@@ -74,6 +77,8 @@ export function useMindMap(root: MindMapBranch | null): MindMapState {
 
       const isOpening = !expanded.has(id);
 
+      if (isOpening) feedback("mapa-ramo-abrir");
+
       setExpanded((previous) => {
         const next = new Set(previous);
 
@@ -92,7 +97,7 @@ export function useMindMap(root: MindMapBranch | null): MindMapState {
         return next;
       });
     },
-    [byId, expanded],
+    [byId, expanded, feedback],
   );
 
   const expandAll = useCallback(() => {
@@ -113,11 +118,23 @@ export function useMindMap(root: MindMapBranch | null): MindMapState {
     [root, expanded],
   );
 
+  const isComplete = total > 0 && revealed.size === total;
+
+  // O mapa ficar completo é derivado do render, nunca foi um evento. Só a
+  // transição interessa — chegar num mapa já completo não celebra nada.
+  const wasComplete = useRef(isComplete);
+
+  useEffect(() => {
+    if (isComplete && !wasComplete.current) feedback("mapa-concluido");
+
+    wasComplete.current = isComplete;
+  }, [isComplete, feedback]);
+
   return {
     placements,
     revealedCount: revealed.size,
     total,
-    isComplete: total > 0 && revealed.size === total,
+    isComplete,
     toggle,
     expandAll,
     reset,

@@ -1,3 +1,4 @@
+import { useFeedback } from "@/hooks/useFeedback";
 import type { StudyPlanStep } from "@/types/api/studyPlan";
 import { stepDestinationPath, studyPlanStepKinds } from "@/utils/studyPlan";
 import { Button } from "@heroui/react";
@@ -34,6 +35,8 @@ export function StepRunner({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const feedback = useFeedback();
+
   const meta = studyPlanStepKinds[step.stepType];
   const Icon = meta.icon;
 
@@ -48,8 +51,11 @@ export function StepRunner({
 
     try {
       await onComplete();
+
+      feedback(isPlanComplete ? "trilha-plano-concluido" : "trilha-etapa-concluida");
       setIsFinished(true);
     } catch {
+      feedback("erro");
       setError(
         "Não foi possível marcar esta etapa como concluída. Tente novamente.",
       );
