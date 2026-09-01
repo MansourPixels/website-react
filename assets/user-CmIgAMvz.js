@@ -1,0 +1,1 @@
+import{r as e}from"./client-W1GzSXzX.js";function t(){return e(`/api/whoami`)}function n(t){return e(`/api/whoami`,{method:`PATCH`,body:{avatarUrl:t}})}export{n,t};
