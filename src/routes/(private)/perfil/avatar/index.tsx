@@ -38,6 +38,12 @@ export default function AvatarPage() {
 
   const [config, setConfig] = useState<AvatarConfig | null>(null);
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
+  // `true` quando `config` foi sorteado como ponto de partida (avatar salvo é
+  // um seed do backend, sem como virar peças do catálogo) em vez de refletir
+  // o avatar salvo de verdade. Nesse caso a prévia mostra `savedUrl` — o
+  // avatar real — até o aluno mexer em algo; só então passa a derivar de
+  // `config`, senão a prévia mostraria uma cara que não é a do usuário.
+  const [isPlaceholderConfig, setIsPlaceholderConfig] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -48,16 +54,17 @@ export default function AvatarPage() {
       .then(({ avatarUrl }) => {
         if (cancelled) return;
 
-        // O backend já garante um avatar default no primeiro acesso, então
-        // `avatarUrl` sempre vem preenchido; o sorteio local só entra se o
-        // parse falhar (URL num formato inesperado).
         const stored = parseAvatarUrl(avatarUrl);
 
         setConfig(stored ?? randomAvatarConfig());
+        setIsPlaceholderConfig(stored === null);
         setSavedUrl(avatarUrl);
       })
       .catch(() => {
-        if (!cancelled) setConfig(randomAvatarConfig());
+        if (!cancelled) {
+          setConfig(randomAvatarConfig());
+          setIsPlaceholderConfig(true);
+        }
       });
 
     return () => {
@@ -68,10 +75,12 @@ export default function AvatarPage() {
   // A URL nunca vira estado próprio: ela é sempre derivada da configuração, o
   // que impede as duas de saírem de sincronia.
   const url = config === null ? null : buildAvatarUrl(config);
-  const preview = usePreloadedImage(url);
+  const previewUrl = isPlaceholderConfig ? savedUrl : url;
+  const preview = usePreloadedImage(previewUrl);
 
   function patch(next: Partial<AvatarConfig>) {
     setConfig((current) => (current === null ? current : { ...current, ...next }));
+    setIsPlaceholderConfig(false);
     setSaveError(null);
   }
 
