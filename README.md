@@ -12,7 +12,7 @@ Deploy: **https://revi-jovi.vercel.app**
 ## Tecnologias utilizadas
 
 - [React 19](https://react.dev/) com o React Compiler
-- [React Router 8](https://reactrouter.com/) em modo framework (SSR, rotas por arquivo)
+- [React Router 8](https://reactrouter.com/) em modo framework (SPA, rotas por arquivo)
 - [Vite 8](https://vite.dev/)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS 4](https://tailwindcss.com/)
@@ -62,10 +62,11 @@ Build de produção:
 npm run build
 ```
 
-Servir o build de produção localmente:
+Servir o build de produção localmente (mesmo comportamento do hosting estático final,
+incluindo fallback de rota para as URLs dinâmicas):
 
 ```bash
-npm run start
+npm run preview
 ```
 
 Lint:
