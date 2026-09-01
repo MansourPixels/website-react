@@ -1,11 +1,20 @@
 import { Avatar, Button, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { CalendarCheck, Flame, LogOut, Mail, Trophy, Unplug } from "lucide-react";
+import {
+  CalendarCheck,
+  Flame,
+  LogOut,
+  Mail,
+  Pencil,
+  Trophy,
+  Unplug,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { resendVerificationEmail } from "@/api/auth";
 import { getStreak } from "@/api/streak";
+import { getWhoami } from "@/api/user";
 import { NavMenu } from "@/components/NavMenu";
 import { SettingToggle } from "@/components/SettingToggle";
 import { SpotifyMark } from "@/components/SpotifyMark";
@@ -52,6 +61,25 @@ export default function PerfilPage() {
     };
   }, []);
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getWhoami()
+      .then(({ avatarUrl: stored }) => {
+        if (!cancelled) setAvatarUrl(stored);
+      })
+      .catch(() => {
+        // Sem avatar o card cai nas iniciais sozinho — não é motivo para
+        // atrapalhar o resto do perfil.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [verificationState, setVerificationState] = useState<
     "idle" | "sending" | "sent" | "error"
@@ -81,16 +109,29 @@ export default function PerfilPage() {
       <NavMenu title="Perfil" />
 
       <section className="flex flex-col items-center gap-4 rounded-3xl bg-white p-6 shadow-surface sm:flex-row sm:items-center sm:gap-6">
-        <Avatar size="lg" variant="soft" color="accent" className="shrink-0">
+        <Avatar size="lg" variant="soft" color="accent" className="shrink-0 size-26 rounded-2xl">
+          {avatarUrl !== null ? <Avatar.Image src={avatarUrl} alt="" /> : null}
           <Avatar.Fallback>{getInitials(user.username)}</Avatar.Fallback>
         </Avatar>
 
-        <div className="flex min-w-0 flex-col gap-1 text-center sm:text-left">
+        <div className="flex min-w-0 flex-col items-center gap-1 sm:items-start">
           <h2 className="text-xl font-semibold break-words">
             {user.username}
           </h2>
           <p className="text-muted text-sm break-all">{user.email}</p>
         </div>
+
+        <Link
+          to="/perfil/avatar"
+          className={buttonVariants({
+            variant: "secondary",
+            size: "sm",
+            className: "shrink-0 sm:ml-auto",
+          })}
+        >
+          <Pencil className="size-4" />
+          Editar avatar
+        </Link>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
