@@ -60,7 +60,12 @@ function userFromAccessToken(
     claims.preferred_username ??
     (email.length > 0 ? email.split("@")[0] : claims.sub.slice(0, 8));
 
-  return { id: claims.sub, email, username };
+  return {
+    id: claims.sub,
+    email,
+    username,
+    emailVerified: claims.email_verified ?? false,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -139,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: response.id,
           email: response.email,
           username: response.username,
+          emailVerified: false,
         });
         setStatus("authenticated");
 
