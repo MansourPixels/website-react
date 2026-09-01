@@ -9,21 +9,8 @@ import {
   Timer,
 } from "lucide-react";
 
+import { formatCountdown, phaseLabels } from "@/hooks/useStudySession";
 import type { SessionPhase, SessionStatus } from "@/types/StudySession";
-
-const phaseLabels: Record<SessionPhase, string> = {
-  focus: "Foco",
-  shortBreak: "Pausa curta",
-  longBreak: "Pausa longa",
-};
-
-function formatCountdown(remainingMs: number) {
-  const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${`${minutes}`.padStart(2, "0")}:${`${seconds}`.padStart(2, "0")}`;
-}
 
 interface SessionTimerProps {
   phase: SessionPhase;

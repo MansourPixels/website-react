@@ -11,8 +11,10 @@ import {
 import { cn } from "@heroui/styles";
 import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
+import { SessionIsland } from "./components/SessionIsland";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
+import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
 
@@ -95,7 +97,9 @@ export default function App() {
     <PreferencesProvider>
       <AuthProvider>
         <SpotifyProvider>
-          <AppShell />
+          <SessionProvider>
+            <AppShell />
+          </SessionProvider>
         </SpotifyProvider>
       </AuthProvider>
     </PreferencesProvider>
@@ -106,14 +110,27 @@ export default function App() {
 // de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
 const extraBottomNavigationRoutes = ["/ascensao"];
 
+// A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
+// o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
+const islandFreeRoutes = ["/", "/sessao"];
+
 function AppShell() {
   const { pathname } = useLocation();
   const { status } = useAuth();
+  const session = useSession();
 
   const showBottomNavigation =
     status === "authenticated" &&
     (links.some(({ to }) => pathname === to) ||
       extraBottomNavigationRoutes.includes(pathname));
+
+  // `isReady` só vira true depois da leitura do `localStorage`, no cliente —
+  // é o que impede a ilha de divergir entre o HTML do servidor e a hidratação.
+  const showIsland =
+    status === "authenticated" &&
+    session.isReady &&
+    session.status !== "idle" &&
+    !islandFreeRoutes.includes(pathname);
 
   return (
     <>
@@ -121,11 +138,23 @@ function AppShell() {
         className={cn(
           "flex flex-col min-h-full relative",
           showBottomNavigation && "pb-(--nav-inset)",
+          // No mobile a ilha flutua sobre o topo da página; no desktop ela mora
+          // no dock, e aí é a borda de baixo que precisa de folga.
+          showIsland && "pt-(--island-inset) md:pt-0",
+          showIsland && !showBottomNavigation && "md:pb-(--nav-inset)",
         )}
       >
         <Outlet />
       </div>
-      {showBottomNavigation ? <BottomNavigation links={links} /> : null}
+
+      {showIsland ? <SessionIsland placement="top" /> : null}
+
+      {showBottomNavigation || showIsland ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex items-end justify-center md:gap-3 md:px-4 md:pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {showIsland ? <SessionIsland placement="dock" /> : null}
+          {showBottomNavigation ? <BottomNavigation links={links} /> : null}
+        </div>
+      ) : null}
     </>
   );
 }

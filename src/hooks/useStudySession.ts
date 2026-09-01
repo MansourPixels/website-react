@@ -28,6 +28,14 @@ export const phaseLabels: Record<SessionPhase, string> = {
   longBreak: "Pausa longa",
 };
 
+export function formatCountdown(remainingMs: number) {
+  const totalSeconds = Math.ceil(remainingMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${`${minutes}`.padStart(2, "0")}:${`${seconds}`.padStart(2, "0")}`;
+}
+
 export function durationOf(phase: SessionPhase, settings: SessionSettings) {
   const minutes =
     phase === "focus"
