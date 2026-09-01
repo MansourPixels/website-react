@@ -142,7 +142,26 @@ login), ou refresh token inválido/expirado/já usado (somente no refresh).
 
 | Método | Caminho | Descrição |
 |---|---|---|
-| `GET` | `/api/whoami` | Retorna o `ownerId` resolvido de quem chama |
+| `GET` | `/api/whoami` | Retorna o `ownerId` resolvido de quem chama e a URL do avatar |
+| `PATCH` | `/api/whoami` | Atualiza a URL do avatar de quem chama |
+
+**Resposta** (`GET`, `200`)
+```json
+{ "ownerId": "0198...", "avatarUrl": "https://api.dicebear.com/10.x/big-smile/svg?seed=0198..." }
+```
+`avatarUrl` nunca é `null`: no primeiro `GET` de uma conta, o backend gera e persiste um
+avatar default (URL do DiceBear semeada pelo `ownerId`) em vez de deixar em branco.
+
+**Corpo da requisição de atualização**
+```json
+{ "avatarUrl": "https://api.dicebear.com/10.x/big-smile/svg?seed=custom" }
+```
+`avatarUrl`: obrigatório, não em branco, apenas `https`, host precisa ser
+`api.dicebear.com`, no máximo 2048 caracteres. Responde `204 No Content`. Funciona tanto se
+já existir um avatar salvo quanto se for o primeiro.
+
+Erros: `400` URL em branco, scheme diferente de `https`, host não permitido, ou acima de
+2048 caracteres (só no `PATCH`).
 
 ### Pastas Mãe
 
