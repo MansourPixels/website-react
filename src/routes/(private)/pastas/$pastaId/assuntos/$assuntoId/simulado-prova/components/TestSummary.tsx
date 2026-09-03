@@ -74,7 +74,7 @@ export function TestSummary({
   return (
     <>
       <section className="flex flex-col gap-6">
-        <div className="bg-white rounded-2xl shadow-surface p-6 flex flex-col items-center gap-2 text-center">
+        <div className="bg-surface rounded-2xl shadow-surface p-6 flex flex-col items-center gap-2 text-center">
           <h2 className="text-3xl font-semibold">Simulado concluído!</h2>
           <p className="text-5xl font-semibold text-orange-600">
             {correctCount}
@@ -93,7 +93,7 @@ export function TestSummary({
             return (
               <li
                 key={question.id}
-                className="celebrate bg-white rounded-2xl shadow-surface p-4 flex gap-3"
+                className="celebrate bg-surface rounded-2xl shadow-surface p-4 flex gap-3"
               >
                 <span
                   className={`size-7 shrink-0 rounded-full flex items-center justify-center text-white ${

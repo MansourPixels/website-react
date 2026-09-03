@@ -31,7 +31,7 @@ export function StudySession() {
       </header>
 
       <div className="mt-10 grid gap-4 lg:grid-cols-12 lg:gap-5">
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-7">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-7">
           <SessionTimer
             phase={preview.phase}
             status={preview.status}
@@ -53,7 +53,7 @@ export function StudySession() {
         </article>
 
         <div className="flex flex-col gap-4 lg:col-span-5 lg:gap-5">
-          <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6">
+          <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6">
             <ModeHeader
               icon={Music}
               iconClass="bg-accent"
@@ -74,7 +74,7 @@ export function StudySession() {
             </p>
           </article>
 
-          <article className="reveal flex flex-1 flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6">
+          <article className="reveal flex flex-1 flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6">
             <h3 className="font-semibold">Ciclos e pausas do seu jeito</h3>
 
             <ul className="flex flex-wrap gap-2">

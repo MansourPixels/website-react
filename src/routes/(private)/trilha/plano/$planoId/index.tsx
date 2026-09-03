@@ -64,7 +64,7 @@ export default function StudyPlanPage() {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto">
         <NavMenu title="Plano de estudos" hasBackButton />
-        <section className="bg-white rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
+        <section className="bg-surface rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
           <h2 className="text-xl font-semibold">Plano não encontrado</h2>
           <p className="text-muted text-balance">
             Esse plano não existe mais ou o endereço está incorreto. Volte para
@@ -115,7 +115,7 @@ export default function StudyPlanPage() {
       </section>
 
       {isComplete ? (
-        <section className="bg-white rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
+        <section className="bg-surface rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
           <span
             aria-hidden
             className="size-16 rounded-full bg-accent text-accent-foreground flex items-center justify-center"

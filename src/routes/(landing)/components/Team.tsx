@@ -36,7 +36,7 @@ export function Team() {
               href={`https://github.com/${user}`}
               target="_blank"
               rel="noreferrer"
-              className="flex h-full flex-col items-center gap-4 rounded-3xl bg-white p-5 text-center shadow-surface outline-accent transition focus-visible:outline-2 motion-safe:hover:-translate-y-0.5 md:p-6"
+              className="flex h-full flex-col items-center gap-4 rounded-3xl bg-surface p-5 text-center shadow-surface outline-accent transition focus-visible:outline-2 motion-safe:hover:-translate-y-0.5 md:p-6"
             >
               <Avatar className="size-20 rounded-full">
                 <Avatar.Image src={`https://github.com/${user}.png`} alt="" />

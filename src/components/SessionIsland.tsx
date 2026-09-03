@@ -47,7 +47,11 @@ export function SessionIsland({ placement }: SessionIslandProps) {
     >
       <div
         className={cn(
-          "pointer-events-auto flex items-center gap-1 rounded-full bg-zinc-900 md:bg-white md:text-zinc-900 p-1.5 text-white md:shadow-none md:border shadow-lg shadow-black/25 md:h-16",
+          // A pílula do mobile fica sempre escura de propósito — imita a
+          // Dynamic Island de verdade, que não muda com o tema do app. Só o
+          // dock do desktop acompanha o tema, para casar com a barra de
+          // navegação ao lado.
+          "pointer-events-auto flex items-center gap-1 rounded-full bg-zinc-900 md:bg-surface md:text-foreground p-1.5 text-white md:shadow-none md:border shadow-lg shadow-black/25 md:h-16",
           isTop
             ? "island-in-top w-full max-w-xs"
             : "island-in-bottom w-60 lg:w-80",
@@ -65,7 +69,7 @@ export function SessionIsland({ placement }: SessionIslandProps) {
                 r="15.5"
                 fill="none"
                 strokeWidth="2.5"
-                className="stroke-white/20 md:stroke-black/20"
+                className="stroke-white/20 md:stroke-foreground/20"
               />
               <circle
                 cx="18"
@@ -77,7 +81,7 @@ export function SessionIsland({ placement }: SessionIslandProps) {
                 strokeDasharray={`${progress * RING_LENGTH} ${RING_LENGTH}`}
                 className={cn(
                   "transition-[stroke-dasharray] duration-300 ease-linear motion-reduce:transition-none",
-                  isFocus ? "stroke-white md:stroke-black" : "stroke-white/60 md:stroke-black/60",
+                  isFocus ? "stroke-white md:stroke-foreground" : "stroke-white/60 md:stroke-foreground/60",
                 )}
               />
             </svg>
@@ -88,7 +92,7 @@ export function SessionIsland({ placement }: SessionIslandProps) {
             <span className="text-sm font-semibold tabular-nums">
               {formatCountdown(session.remainingMs)}
             </span>
-            <span className="truncate text-xs text-white/60 md:text-black/60">
+            <span className="truncate text-xs text-white/60 md:text-muted">
               {isRunning ? phaseLabels[session.phase] : "Pausado"}
             </span>
           </span>
@@ -102,9 +106,9 @@ export function SessionIsland({ placement }: SessionIslandProps) {
                   className="size-7 shrink-0 rounded-md object-cover"
                 />
               ) : (
-                <Music className="size-4 shrink-0 text-white/60 md:text-black/60" />
+                <Music className="size-4 shrink-0 text-white/60 md:text-muted" />
               )}
-              <span className="truncate text-xs text-white/70 md:text-black/70">
+              <span className="truncate text-xs text-white/70 md:text-muted">
                 {track.trackName}
               </span>
             </span>
@@ -117,7 +121,7 @@ export function SessionIsland({ placement }: SessionIslandProps) {
           type="button"
           onClick={session.toggle}
           aria-label={isRunning ? "Pausar a sessão" : "Retomar a sessão"}
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 outline-offset-2 transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 outline-offset-2 transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white md:bg-foreground/10 md:hover:bg-foreground/20 md:focus-visible:outline-foreground"
         >
           {isRunning ? (
             <Pause className="size-4 fill-current" />

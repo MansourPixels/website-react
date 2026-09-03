@@ -46,7 +46,7 @@ export function SubjectCard(props: SubjectCardProps) {
   const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
 
   return (
-    <article className="relative bg-white rounded-xl shadow-surface hover:brightness-105">
+    <article className="relative bg-surface rounded-xl shadow-surface hover:brightness-105">
       <Link to={basePath} className="px-3 block h-full">
         <div className="pt-3 pb-2 flex flex-col gap-2 h-full justify-between">
           <h2 className="leading-tight font-semibold line-clamp-2 h-10">
@@ -165,7 +165,7 @@ export function SubjectCard(props: SubjectCardProps) {
 
 export function LoadingSubjectCard() {
   return (
-    <article className="relative bg-white rounded-xl shadow-surface">
+    <article className="relative bg-surface rounded-xl shadow-surface">
       <div className="px-3 pt-4 pb-2 flex flex-col gap-2 h-full justify-between">
         <header className="h-10 flex flex-col justify-between">
           <Skeleton className="rounded-full h-4 w-3/4" />

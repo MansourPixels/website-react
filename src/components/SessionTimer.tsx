@@ -53,7 +53,7 @@ export function SessionTimer({
   return (
     <section
       className={cn(
-        "flex flex-col items-center gap-6 rounded-3xl bg-white shadow-surface",
+        "flex flex-col items-center gap-6 rounded-3xl bg-surface shadow-surface",
         isCompact ? "p-5" : "p-6",
       )}
     >
