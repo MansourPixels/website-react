@@ -260,7 +260,27 @@
               "host": ["{{base_url}}"],
               "path": ["api", "whoami"]
             },
-            "description": "Retorna o ownerId resolvido a partir da claim `sub` do bearer token."
+            "description": "Retorna o ownerId resolvido a partir da claim `sub` do bearer token, e a URL do avatar de quem chama (nunca null -- um default é gerado e persistido no primeiro acesso)."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Avatar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatarUrl\": \"https://api.dicebear.com/10.x/big-smile/svg?seed=custom\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/whoami",
+              "host": ["{{base_url}}"],
+              "path": ["api", "whoami"]
+            },
+            "description": "Atualiza a URL do avatar de quem chama. Precisa ser https, host precisa ser api.dicebear.com, no máximo 2048 caracteres. Responde 204 No Content."
           },
           "response": []
         }

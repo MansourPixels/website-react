@@ -113,6 +113,9 @@ export default function PerfilPage() {
 
       <section className="flex flex-col items-center gap-4 rounded-3xl bg-surface p-6 shadow-surface sm:flex-row sm:items-center sm:gap-6">
         <Avatar size="lg" variant="soft" color="accent" className="shrink-0 size-26 rounded-2xl">
+          {/* `null` aqui só existe enquanto o `getWhoami` inicial não resolve
+              — o backend sempre entrega um avatar depois disso, então
+              `Avatar.Fallback` só aparece durante esse carregamento. */}
           {avatarUrl !== null ? <Avatar.Image src={avatarUrl} alt="" /> : null}
           <Avatar.Fallback>{getInitials(user.username)}</Avatar.Fallback>
         </Avatar>
@@ -267,17 +270,19 @@ export default function PerfilPage() {
       </section>
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
-          variant="secondary"
-          className="w-full sm:w-fit"
-          isDisabled={verificationState === "sending"}
-          onPress={handleResendVerification}
-        >
-          <Mail className="size-4" />
-          {verificationState === "sent"
-            ? "E-mail de verificação reenviado"
-            : "Reenviar e-mail de verificação"}
-        </Button>
+        {!user.emailVerified ? (
+          <Button
+            variant="secondary"
+            className="w-full sm:w-fit"
+            isDisabled={verificationState === "sending"}
+            onPress={handleResendVerification}
+          >
+            <Mail className="size-4" />
+            {verificationState === "sent"
+              ? "E-mail de verificação reenviado"
+              : "Reenviar e-mail de verificação"}
+          </Button>
+        ) : null}
 
         <Button
           variant="secondary"
@@ -290,7 +295,7 @@ export default function PerfilPage() {
         </Button>
       </div>
 
-      {verificationState === "error" ? (
+      {!user.emailVerified && verificationState === "error" ? (
         <p role="alert" className="text-danger text-sm text-pretty">
           Não foi possível reenviar o e-mail de verificação. Tente novamente.
         </p>

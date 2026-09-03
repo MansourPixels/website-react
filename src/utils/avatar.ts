@@ -210,6 +210,19 @@ export function parseAvatarUrl(url: string): AvatarConfig | null {
     return null;
   }
 
+  // O default de primeiro acesso do backend é `?seed=<ownerId>` — sem nenhum
+  // desses parâmetros, o DiceBear sorteia o desenho inteiro a partir do hash
+  // do seed, e não há como recuperar quais variants ele escolheu. Tratar como
+  // "sem config" (em vez de cair no default fixo abaixo) evita que o editor
+  // abra sempre com a mesma cara pra todo mundo, diferente do avatar salvo.
+  const hasEditorParams =
+    params.has("eyesVariant") ||
+    params.has("hairVariant") ||
+    params.has("mouthVariant") ||
+    params.has("accessoriesProbability");
+
+  if (!hasEditorParams) return null;
+
   const hasAccessories = params.get("accessoriesProbability") !== "0";
 
   return sanitizeAvatarConfig({
