@@ -1,0 +1,232 @@
+import { Spinner, Tabs } from "@heroui/react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
+
+import { ApiError } from "@/api/client";
+import { listClassrooms } from "@/api/classrooms";
+import {
+  getPreviousChampion,
+  getRanking,
+  getRankingSummary,
+  type RankingQuery,
+} from "@/api/ranking";
+import { NavMenu } from "@/components/NavMenu";
+import type { Classroom } from "@/types/api/classroom";
+import type {
+  RankingEntry,
+  RankingScope,
+  RankingSummary,
+  SeasonChampion,
+} from "@/types/api/ranking";
+import { buttonVariants } from "@heroui/styles";
+
+import { ChampionCard } from "./components/ChampionCard";
+import { ClassroomScopePicker } from "./components/ClassroomScopePicker";
+import { RankingList } from "./components/RankingList";
+import { SeasonSummary } from "./components/SeasonSummary";
+
+const PAGE_SIZE = 20;
+
+const scopeTabs = [
+  { id: "global", label: "Global" },
+  { id: "friends", label: "Amigos" },
+  { id: "classroom", label: "Turma" },
+] as const;
+
+export default function RankingPage() {
+  const [scope, setScope] = useState<RankingScope>("global");
+  const [classrooms, setClassrooms] = useState<Classroom[] | null>(null);
+  const [classroomId, setClassroomId] = useState<string | null>(null);
+
+  const [entries, setEntries] = useState<RankingEntry[] | null>(null);
+  const [summary, setSummary] = useState<RankingSummary | null>(null);
+  const [champion, setChampion] = useState<SeasonChampion | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    listClassrooms()
+      .then((result) => {
+        if (cancelled) return;
+
+        setClassrooms(result);
+        setClassroomId(result[0]?.id ?? null);
+      })
+      .catch(() => {
+        // A lista de turmas só alimenta a terceira aba: uma falha aqui não
+        // pode derrubar o ranking global, que é o que a página abre mostrando.
+        if (!cancelled) setClassrooms([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const buildQuery = useCallback((): RankingQuery | null => {
+    if (scope !== "classroom") return { scope, page: 1, pageSize: PAGE_SIZE };
+    if (classroomId === null) return null;
+
+    return { scope, classroomId, page: 1, pageSize: PAGE_SIZE };
+  }, [scope, classroomId]);
+
+  useEffect(() => {
+    const query = buildQuery();
+
+    if (query === null) {
+      setEntries([]);
+      setSummary(null);
+      setChampion(null);
+      setHasMore(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    setEntries(null);
+    setError(null);
+    setPage(1);
+
+    Promise.all([
+      getRanking(query),
+      getRankingSummary(query),
+      getPreviousChampion(query),
+    ])
+      .then(([rankingPage, rankingSummary, previousChampion]) => {
+        if (cancelled) return;
+
+        setEntries(rankingPage.entries);
+        setHasMore(rankingPage.hasMore);
+        setSummary(rankingSummary);
+        setChampion(previousChampion);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+
+        setError(
+          loadError instanceof ApiError
+            ? loadError.detail
+            : "Não foi possível carregar o ranking. Tente novamente.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [buildQuery]);
+
+  async function handleLoadMore() {
+    const query = buildQuery();
+
+    if (query === null || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      const next = await getRanking({ ...query, page: page + 1 });
+
+      setEntries((current) => [...(current ?? []), ...next.entries]);
+      setHasMore(next.hasMore);
+      setPage(page + 1);
+    } catch (loadError) {
+      setError(
+        loadError instanceof ApiError
+          ? loadError.detail
+          : "Não foi possível carregar mais posições. Tente novamente.",
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
+  const emptyState =
+    scope === "friends" ? (
+      <div className="flex flex-col items-center gap-3 py-8">
+        <p className="text-muted text-center text-pretty">
+          Você ainda não tem amigos para comparar. Adicione alguém e volte aqui.
+        </p>
+        <Link to="/amigos" className={buttonVariants({ variant: "secondary" })}>
+          Encontrar amigos
+        </Link>
+      </div>
+    ) : scope === "classroom" ? (
+      <div className="flex flex-col items-center gap-3 py-8">
+        <p className="text-muted text-center text-pretty">
+          Você ainda não participa de nenhuma turma. Crie ou entre em uma para
+          disputar o ranking com a sua sala.
+        </p>
+        <Link to="/turmas" className={buttonVariants({ variant: "secondary" })}>
+          Ver turmas
+        </Link>
+      </div>
+    ) : (
+      <p className="text-muted py-8 text-center">
+        Ninguém pontuou nesta temporada ainda.
+      </p>
+    );
+
+  return (
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
+      <NavMenu title="Ranking" hasBackButton backHref="/turmas" />
+
+      {summary !== null ? <SeasonSummary summary={summary} /> : null}
+
+      <Tabs
+        selectedKey={scope}
+        onSelectionChange={(key) => setScope(key as RankingScope)}
+      >
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Escopo do ranking">
+            {scopeTabs.map(({ id, label }) => (
+              <Tabs.Tab key={id} id={id}>
+                {label}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs.ListContainer>
+
+        {scopeTabs.map(({ id }) => (
+          <Tabs.Panel
+            key={id}
+            id={id}
+            className="flex flex-col gap-4 pt-4"
+          >
+            {id === "classroom" ? (
+              classrooms === null ? (
+                <div
+                  className="flex items-center justify-center py-6"
+                  aria-busy="true"
+                >
+                  <Spinner size="sm" />
+                  <span className="sr-only">Carregando suas turmas</span>
+                </div>
+              ) : classrooms.length > 0 && classroomId !== null ? (
+                <ClassroomScopePicker
+                  classrooms={classrooms}
+                  value={classroomId}
+                  onChange={setClassroomId}
+                />
+              ) : null
+            ) : null}
+
+            {champion !== null ? <ChampionCard champion={champion} /> : null}
+
+            <RankingList
+              entries={entries}
+              error={error}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
+              emptyState={emptyState}
+              onLoadMore={handleLoadMore}
+            />
+          </Tabs.Panel>
+        ))}
+      </Tabs>
+    </main>
+  );
+}

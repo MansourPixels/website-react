@@ -1,4 +1,11 @@
-import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
+import {
+  Camera,
+  Folders,
+  Route as PathIcon,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Links,
   Meta,
@@ -40,6 +47,11 @@ const links = [
     to: "/trilha",
     label: "Trilha",
     icon: PathIcon,
+  },
+  {
+    to: "/turmas",
+    label: "Turmas",
+    icon: Users,
   },
   {
     to: "/perfil",
@@ -115,8 +127,9 @@ export default function App() {
 }
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
-// de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
-const extraBottomNavigationRoutes = ["/ascensao"];
+// de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
+// e do Perfil), não são elas mesmas uma aba.
+const extraBottomNavigationRoutes = ["/ascensao", "/amigos", "/ranking"];
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.

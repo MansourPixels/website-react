@@ -50,6 +50,25 @@ export default [
       "pastas/:pastaId/assuntos/:assuntoId/mapa-mental",
       "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/mapa-mental/index.tsx",
     ),
+    route("amigos", "routes/(private)/amigos/index.tsx"),
+    route("usuarios/:username", "routes/(private)/usuarios/$username/index.tsx"),
+    route("ranking", "routes/(private)/ranking/index.tsx"),
+    route("turmas", "routes/(private)/turmas/index.tsx"),
+    // Antes de "turmas/:turmaId": o segmento estático precisa vencer o
+    // dinâmico, senão "convite" seria lido como um id de turma.
+    route(
+      "turmas/convite/:codigo",
+      "routes/(private)/turmas/convite/$codigo/index.tsx",
+    ),
+    route("turmas/:turmaId", "routes/(private)/turmas/$turmaId/index.tsx"),
+    route(
+      "turmas/:turmaId/membros",
+      "routes/(private)/turmas/$turmaId/membros/index.tsx",
+    ),
+    route(
+      "turmas/:turmaId/pastas/:pastaId",
+      "routes/(private)/turmas/$turmaId/pastas/$pastaId/index.tsx",
+    ),
     route("trilha", "routes/(private)/trilha/index.tsx"),
     route(
       "trilha/plano/:planoId",
