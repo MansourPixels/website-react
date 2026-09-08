@@ -1,6 +1,6 @@
 import { Button, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
-import { KeyRound, RotateCcw, Trophy, UserPlus } from "lucide-react";
+import { KeyRound, Trophy, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
@@ -14,7 +14,6 @@ import { ClassroomCard } from "./components/ClassroomCard";
 import { ClassroomInviteRow } from "./components/ClassroomInviteRow";
 import { DialogFormClassroom } from "./components/DialogFormClassroom";
 import { DialogJoinByCode } from "./components/DialogJoinByCode";
-import { DialogResetSocialData } from "./components/DialogResetSocialData";
 
 const shortcuts = [
   {
@@ -38,8 +37,6 @@ export default function ClassroomsPage() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const [isResetOpen, setIsResetOpen] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +64,7 @@ export default function ClassroomsPage() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, []);
 
   function handleAdd(classroom: Classroom) {
     setClassrooms((current) =>
@@ -175,16 +172,6 @@ export default function ClassroomsPage() {
         )}
       </section>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-muted mx-auto"
-        onPress={() => setIsResetOpen(true)}
-      >
-        <RotateCcw className="size-4" />
-        Restaurar dados de demonstração
-      </Button>
-
       <FABButton
         aria-label="Criar turma"
         onPress={() => setIsAddOpen(true)}
@@ -198,11 +185,6 @@ export default function ClassroomsPage() {
         onSubmit={handleAdd}
       />
       <DialogJoinByCode isOpen={isJoinOpen} onOpenChange={setIsJoinOpen} />
-      <DialogResetSocialData
-        isOpen={isResetOpen}
-        onOpenChange={setIsResetOpen}
-        onConfirm={() => setReloadToken((token) => token + 1)}
-      />
     </main>
   );
 }

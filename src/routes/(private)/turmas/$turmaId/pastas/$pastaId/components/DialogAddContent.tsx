@@ -11,24 +11,26 @@ import {
   FileText,
   FileUp,
   Layers,
+  Network,
   Plus,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { createContent, listReviMaterials } from "@/api/classrooms";
+import { createContent, listReviMaterials, uploadContent } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
 import { useFeedback } from "@/hooks/useFeedback";
-import type { ReviMaterialRecord } from "@/mocks/social/schema";
 import type {
   ClassroomContent,
   ClassroomContentKind,
+  ReviMaterial,
 } from "@/types/api/classroom";
 
-const materialIcons: Record<string, LucideIcon> = {
+const materialIcons: Record<ReviMaterial["kind"], LucideIcon> = {
   flashcards: Layers,
   summary: FileText,
   quiz: ClipboardList,
+  mindmap: Network,
 };
 
 const MAX_FILE_SIZE = 20 * 1_048_576;
@@ -48,7 +50,7 @@ export function DialogAddContent({
   onOpenChange,
   onSubmit,
 }: DialogAddContentProps) {
-  const [materials, setMaterials] = useState<ReviMaterialRecord[] | null>(null);
+  const [materials, setMaterials] = useState<ReviMaterial[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,6 +111,7 @@ export function DialogAddContent({
             kind: material.kind,
             title: material.title,
             description: material.description,
+            reviMaterialId: material.reviMaterialId,
           }),
         );
       }
@@ -140,22 +143,20 @@ export function DialogAddContent({
     setError(null);
     setUploadProgress(0);
 
-    // Progresso simulado: o upload real vai reportar bytes enviados, e a tela
-    // já está preparada para exibi-los.
+    // Progresso simulado: `apiFetch` não reporta bytes enviados no momento —
+    // a tela já está preparada para exibi-los quando isso existir.
     const timer = setInterval(() => {
       setUploadProgress((current) => Math.min(90, current + 15));
     }, 120);
 
     try {
-      const kind: ClassroomContentKind = file.type.startsWith("image/")
-        ? "image"
-        : "pdf";
-      const created = await createContent(classroomId, folderId, {
+      const kind: Extract<ClassroomContentKind, "pdf" | "image"> =
+        file.type.startsWith("image/") ? "image" : "pdf";
+      const created = await uploadContent(classroomId, folderId, {
         kind,
         title: file.name.replace(/\.[^.]+$/, ""),
         description: "Arquivo enviado para a turma.",
-        fileName: file.name,
-        fileSize: file.size,
+        file,
       });
 
       setUploadProgress(100);

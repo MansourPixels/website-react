@@ -54,7 +54,7 @@ export default function ClassroomInvitePage() {
     setActionError(null);
 
     try {
-      const classroom = await acceptInvite(preview.invite.id);
+      const classroom = await acceptInvite(preview.inviteId);
 
       feedback("sucesso");
       navigate(`/turmas/${classroom.id}`, { replace: true });
@@ -74,8 +74,10 @@ export default function ClassroomInvitePage() {
     if (preview === null || isBusy) return;
 
     // Convite por link não tem destinatário para recusar — ele segue valendo
-    // para outras pessoas. Aqui "recusar" é só desistir de entrar.
-    if (preview.invite.invitee === null) {
+    // para outras pessoas. Aqui "recusar" é só desistir de entrar. Chamar o
+    // endpoint de recusa nesse caso responderia 403 (a regra "só o convidado
+    // recusa" nunca bate com um convite sem convidado).
+    if (preview.invitee === null) {
       navigate("/turmas", { replace: true });
       return;
     }
@@ -84,7 +86,7 @@ export default function ClassroomInvitePage() {
     setActionError(null);
 
     try {
-      await declineInvite(preview.invite.id);
+      await declineInvite(preview.inviteId);
       navigate("/turmas", { replace: true });
     } catch (apiError) {
       feedback("erro");
@@ -123,11 +125,11 @@ export default function ClassroomInvitePage() {
             <span
               aria-hidden="true"
               className="size-11 shrink-0 rounded-2xl"
-              style={{ backgroundColor: preview.invite.classroomColor }}
+              style={{ backgroundColor: preview.classroomColor }}
             />
             <div className="flex min-w-0 flex-col">
               <h2 className="text-xl font-semibold text-balance">
-                {preview.invite.classroomName}
+                {preview.classroomName}
               </h2>
               <p className="text-muted text-sm tabular-nums">
                 <Users className="mr-1 inline size-3.5" aria-hidden="true" />
@@ -138,20 +140,17 @@ export default function ClassroomInvitePage() {
           </header>
 
           <div className="flex flex-col gap-2">
+            {/* Só o dono convida (nominal ou por link) — owner e "quem convidou" são sempre a mesma pessoa. */}
             <p className="text-muted text-xs">Convite enviado por</p>
-            <UserIdentity
-              user={preview.invite.invitedBy}
-              size="sm"
-              linkToProfile
-            />
+            <UserIdentity user={preview.owner} size="sm" linkToProfile />
           </div>
 
           <div className="bg-default flex flex-col gap-1 rounded-xl p-3">
             <p className="text-sm font-medium">
-              Você entra como {roleLabel(preview.invite.role).toLowerCase()}
+              Você entra como {roleLabel(preview.role).toLowerCase()}
             </p>
             <p className="text-muted text-xs text-pretty">
-              {roleDescription(preview.invite.role)}
+              {roleDescription(preview.role)}
             </p>
           </div>
 

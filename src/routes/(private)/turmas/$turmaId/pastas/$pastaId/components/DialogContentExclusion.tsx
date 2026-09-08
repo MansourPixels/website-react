@@ -39,7 +39,7 @@ export function DialogContentExclusion({
     setError(null);
 
     try {
-      await deleteContent(content.classroomId, content.id);
+      await deleteContent(content.classroomId, content.folderId, content.id);
 
       feedback("exclusao");
       onConfirm(content);
@@ -77,7 +77,7 @@ export function DialogContentExclusion({
             <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
                 {isOwnerModerating
-                  ? `Este conteúdo é de @${content.authorUsername}. Como dono da turma, você pode removê-lo. `
+                  ? `Este conteúdo é de @${content.author.username}. Como dono da turma, você pode removê-lo. `
                   : ""}
                 O item sai da pasta para todos os membros. Esta ação não pode ser
                 desfeita.

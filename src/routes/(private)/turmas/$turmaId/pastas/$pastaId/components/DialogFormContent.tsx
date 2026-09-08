@@ -46,10 +46,12 @@ export function DialogFormContent({
     setError(null);
 
     try {
-      const result = await updateContent(content.classroomId, content.id, {
-        title: trimmedTitle,
-        description: description.trim(),
-      });
+      const result = await updateContent(
+        content.classroomId,
+        content.folderId,
+        content.id,
+        { title: trimmedTitle, description: description.trim() },
+      );
 
       feedback("sucesso");
       onSubmit(result);
