@@ -75,7 +75,7 @@ export default function PlanStepPage() {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-2xl mx-auto">
         <NavMenu title="Etapa não encontrada" hasBackButton />
-        <section className="bg-white rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
+        <section className="bg-surface rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
           <h2 className="text-xl font-semibold">Esta etapa não existe</h2>
           <p className="text-muted text-balance">
             O plano pode ter mudado desde que você abriu este endereço. Volte

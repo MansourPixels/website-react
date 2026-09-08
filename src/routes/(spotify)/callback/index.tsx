@@ -80,7 +80,7 @@ export default function SpotifyCallbackPage() {
           <p className="text-muted text-sm">Conectando ao Spotify…</p>
         </div>
       ) : (
-        <section className="flex max-w-sm flex-col items-center gap-4 rounded-3xl bg-white p-6 text-center shadow-surface">
+        <section className="flex max-w-sm flex-col items-center gap-4 rounded-3xl bg-surface p-6 text-center shadow-surface">
           <h1 className="text-xl font-semibold">Conexão não concluída</h1>
           <p className="text-muted text-sm text-pretty" role="alert">
             {error}

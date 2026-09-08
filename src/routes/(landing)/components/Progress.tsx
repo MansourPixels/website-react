@@ -52,7 +52,7 @@ export function Progress() {
       </header>
 
       <div className="mt-10 grid gap-4 lg:grid-cols-2 lg:gap-5">
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6">
           <header className="flex items-start gap-4">
             <img src="/icone-ascensao.svg" alt="" className="size-9 shrink-0" />
             <div>
@@ -92,7 +92,7 @@ export function Progress() {
           </ul>
         </article>
 
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6">
           <header className="flex items-start gap-4">
             <Path className="size-9 shrink-0 p-1.5 text-accent" />
             <div>

@@ -8,6 +8,7 @@ import { gradeQuiz, listQuiz } from "@/api/quiz";
 import { AlternativeOption } from "@/components/AlternativeOption";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
+import { useFeedback } from "@/hooks/useFeedback";
 import type {
   GradeRequestItem,
   GradeResponse,
@@ -39,6 +40,7 @@ export default function PracticeTestPage() {
     assuntoId: string;
   };
   const navigate = useNavigate();
+  const feedback = useFeedback();
 
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -134,8 +136,10 @@ export default function PracticeTestPage() {
 
       const gradeResult = await gradeQuiz(assuntoId, payload);
 
+      feedback("simulado-concluido");
       setResult(gradeResult);
     } catch (error) {
+      feedback("erro");
       setSubmitError(
         error instanceof ApiError
           ? error.detail

@@ -17,7 +17,7 @@ export function BottomNavigation({ links }: BottomNavigationProps) {
       style={{
         gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`,
       }}
-      className="grid w-full border-t fixed bottom-0 inset-x-0 bg-white pb-[env(safe-area-inset-bottom,0px)] md:pb-0 md:max-w-md md:mx-auto md:rounded-full md:overflow-hidden md:border md:mb-[max(1rem,env(safe-area-inset-bottom))] z-40"
+      className="grid w-full border-t bg-surface pb-[env(safe-area-inset-bottom,0px)] pointer-events-auto md:w-[28rem] md:max-w-full md:pb-0 md:rounded-full md:overflow-hidden md:border"
     >
       {links.map(({ to, label, icon: Icon, exact }) => (
         <NavLink

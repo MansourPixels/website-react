@@ -1,20 +1,6 @@
+import { milestones } from "@/utils/milestones";
 import { Meter } from "@heroui/react";
 import { CircleCheckBig, Flame } from "lucide-react";
-
-interface Milestone {
-  title: string;
-  description: string;
-  goal: number;
-}
-
-// Metas fixas do lado do cliente — não vêm da API, só marcam pontos na
-// sequência real (currentStreak) que o back devolve.
-const milestones: Milestone[] = [
-  { title: "Primeira chama", description: "3 dias seguidos de estudo", goal: 3 },
-  { title: "Semana completa", description: "7 dias seguidos de estudo", goal: 7 },
-  { title: "Duas semanas", description: "14 dias seguidos de estudo", goal: 14 },
-  { title: "Mês em ascensão", description: "30 dias seguidos de estudo", goal: 30 },
-];
 
 interface MilestoneListProps {
   currentStreak: number;
@@ -22,7 +8,7 @@ interface MilestoneListProps {
 
 export function MilestoneList({ currentStreak }: MilestoneListProps) {
   return (
-    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-4">
+    <section className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-4">
       <h2 className="font-semibold">Metas de ascensão</h2>
 
       <ul className="flex flex-col gap-4">
@@ -36,7 +22,7 @@ export function MilestoneList({ currentStreak }: MilestoneListProps) {
                 className={
                   isReached
                     ? "text-success shrink-0"
-                    : "text-muted shrink-0 opacity-60"
+                    : "text-muted shrink-0 opacity-60 dark:opacity-90"
                 }
               >
                 {isReached ? (

@@ -52,7 +52,7 @@ export function SpotifyStrip({
   const message = issueMessage(issue, retryAfter);
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-surface">
+    <section className="flex flex-col gap-3 rounded-2xl bg-surface p-4 shadow-surface">
       {status === "loading" ? (
         <p className="flex items-center gap-2 text-sm text-muted">
           <Spinner size="sm" />

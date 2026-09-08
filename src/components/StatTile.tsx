@@ -28,7 +28,7 @@ export function StatTile({
   return (
     <article
       className={cn(
-        "bg-white rounded-2xl shadow-surface p-4 flex flex-col gap-1",
+        "bg-surface rounded-2xl shadow-surface p-4 flex flex-col gap-1",
         className,
       )}
     >

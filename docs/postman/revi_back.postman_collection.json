@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "revi_back API",
-    "description": "API REST do revi_back: pastas, upload/categorização de conteúdo, quizzes gerados por IA, resumos de pasta, flashcards e uma ofensiva diária. Rode \"Auth > Register\" primeiro -- ele cria uma conta nova e guarda o par de tokens em variáveis da coleção que toda outra requisição reaproveita automaticamente, sem precisar de uma chamada separada ao Keycloak. Depois que uma conta existir, use \"Auth > Login\" em vez de registrar de novo, \"Auth > Refresh\" quando o access token expirar, e \"Auth > Logout\" para encerrar a sessão. \"Auth > Get Access Token\" continua disponível como alternativa (um token de service-account via client_credentials, não vinculado a um usuário registrado específico). As requisições estão ordenadas para que, rodando-as de cima para baixo, mother_folder_id / child_folder_id / content_id / question_id sejam encadeados automaticamente pelos test scripts.\n\nEnviar conteúdo (\"Content > Upload Content\") dispara imediatamente a regeneração em segundo plano do quiz, do resumo da pasta, dos flashcards e do mapa mental daquela pasta filha -- \"Quiz > List Quiz\", \"Folder Summary > Get Summary\", \"Flashcards > List Flashcards\" e \"Mind Map > Get Mind Map\" apenas leem o que foi gerado por último, sem precisar de atualização manual, exceto \"Quiz > Generate Quiz\" (que força um novo lote sob demanda). Enviar conteúdo, ler um resumo existente, ler uma lista de flashcards não vazia e corrigir um quiz também contam para a ofensiva diária de quem chama (\"Streak > Get Streak\") -- fazer as quatro coisas no mesmo dia torna esse dia dourado.\n\nAmbiente local: `docker compose up`, depois `./mvnw spring-boot:run` (veja CLAUDE.md). Veja docs/API.md para a referência em texto puro.",
+    "description": "REST API for revi_back: folders, content upload/categorization, AI-generated quizzes, folder summaries, flashcards, and a daily streak. Run \"Auth > Register\" first -- it creates a fresh account and stores the token pair in collection variables that every other request reuses automatically, no separate Keycloak call needed. Once an account exists, use \"Auth > Login\" instead of registering again, \"Auth > Refresh\" when the access token expires, and \"Auth > Logout\" to end the session. \"Auth > Get Access Token\" is still there as an alternative (a service-account token via client_credentials, not tied to a specific registered user). Requests are ordered so that running them top-to-bottom threads mother_folder_id / child_folder_id / content_id / question_id through automatically via test scripts.\n\nUploading content (\"Content > Upload Content\") immediately triggers background regeneration of the quiz, folder summary, flashcards, and mind map for that child folder -- \"Quiz > List Quiz\", \"Folder Summary > Get Summary\", \"Flashcards > List Flashcards\", and \"Mind Map > Get Mind Map\" all just read whatever was last generated, no manual refresh needed except \"Quiz > Generate Quiz\" (which forces a fresh batch on demand). Uploading content, reading an existing summary, reading a non-empty flashcard list, and grading a quiz each also count toward the caller's daily streak (\"Streak > Get Streak\") -- doing all four on the same day makes that day gold.\n\nLocal dev: `docker compose up`, then `./mvnw spring-boot:run` (see CLAUDE.md). See docs/API.md for the plain-text reference.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "b7e2b4a0-2f0a-4c2a-9e8a-3f5a2a2f6a10"
   },
@@ -26,14 +26,15 @@
     { "key": "child_folder_id", "value": "", "type": "string" },
     { "key": "content_id", "value": "", "type": "string" },
     { "key": "question_id", "value": "", "type": "string" },
-    { "key": "study_plan_step_id", "value": "", "type": "string" }
+    { "key": "study_plan_step_id", "value": "", "type": "string" },
+    { "key": "classroom_id", "value": "", "type": "string" }
   ],
   "item": [
     {
-      "name": "Autenticação",
+      "name": "Auth",
       "item": [
         {
-          "name": "Registrar",
+          "name": "Register",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -49,7 +50,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "register"]
             },
-            "description": "Cria uma conta totalmente nova e já efetua login automaticamente -- a resposta já contém um access/refresh token funcional, sem precisar de uma chamada de login separada. O test script abaixo guarda o par de tokens em `access_token`/`refresh_token`, e o e-mail em `registered_email` para que \"Login\" possa reaproveitar a mesma conta."
+            "description": "Creates a brand-new account and auto-logs in -- the response already contains a working access/refresh token, no separate login call needed. The test script below stores the token pair in `access_token`/`refresh_token`, and the email in `registered_email` so \"Login\" can reuse the same account."
           },
           "event": [
             {
@@ -57,7 +58,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('registrado', function () {",
+                  "pm.test('registered', function () {",
                   "    pm.response.to.have.status(201);",
                   "    const body = pm.response.json();",
                   "    pm.expect(body.accessToken).to.be.a('string');",
@@ -89,7 +90,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "login"]
             },
-            "description": "Troca as credenciais da conta em `registered_email` (definida por \"Register\") por um novo par de tokens -- use isso em vez de \"Register\" quando a conta já existir, por exemplo depois de um logout ou numa execução posterior."
+            "description": "Exchanges the `registered_email` account's credentials (set by \"Register\") for a fresh token pair -- use this instead of \"Register\" once an account already exists, e.g. after logging out or on a later run."
           },
           "event": [
             {
@@ -97,7 +98,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('logado', function () {",
+                  "pm.test('logged in', function () {",
                   "    pm.response.to.have.status(200);",
                   "    const body = pm.response.json();",
                   "    pm.expect(body.accessToken).to.be.a('string');",
@@ -111,7 +112,7 @@
           "response": []
         },
         {
-          "name": "Renovar Token",
+          "name": "Refresh",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -127,7 +128,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "refresh"]
             },
-            "description": "Troca a variável de coleção `refresh_token` por um novo par de tokens. Refresh tokens são de uso único: o test script abaixo atualiza tanto `access_token` quanto `refresh_token`, já que o que acabou de ser usado deixa de funcionar depois desta chamada."
+            "description": "Exchanges the `refresh_token` collection variable for a fresh token pair. Refresh tokens are single-use: the test script below updates both `access_token` and `refresh_token`, since the one just used stops working after this call."
           },
           "event": [
             {
@@ -135,7 +136,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('renovado', function () {",
+                  "pm.test('refreshed', function () {",
                   "    pm.response.to.have.status(200);",
                   "    const body = pm.response.json();",
                   "    pm.expect(body.accessToken).to.be.a('string');",
@@ -165,12 +166,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "logout"]
             },
-            "description": "Revoga a variável de coleção `refresh_token`, encerrando a sessão. Idempotente -- sempre 204, esteja o token ainda válido ou não. Rode \"Login\" ou \"Refresh\" novamente depois para continuar usando a coleção."
+            "description": "Revokes the `refresh_token` collection variable, ending the session. Idempotent -- always 204, whether or not that token was still valid. Run \"Login\" or \"Refresh\" again afterward to keep using the collection."
           },
           "response": []
         },
         {
-          "name": "Esqueci a Senha",
+          "name": "Forgot Password",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -186,12 +187,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "forgot-password"]
             },
-            "description": "Sempre responde 202, independentemente de o e-mail ter ou não uma conta -- a resposta nunca revela quais e-mails estão cadastrados."
+            "description": "Always responds 202, whether or not the email has an account -- the response never reveals which emails are registered."
           },
           "response": []
         },
         {
-          "name": "Reenviar E-mail de Verificação",
+          "name": "Resend Verification Email",
           "request": {
             "method": "POST",
             "header": [],
@@ -200,12 +201,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "resend-verification-email"]
             },
-            "description": "Autenticado -- reenvia o e-mail de verificação para a própria conta de quem chama (resolvida a partir do bearer token)."
+            "description": "Authenticated -- resends the verification email to the caller's own account (resolved from the bearer token)."
           },
           "response": []
         },
         {
-          "name": "Obter Access Token",
+          "name": "Get Access Token",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -225,7 +226,7 @@
               "host": ["{{keycloak_url}}"],
               "path": ["realms", "{{realm}}", "protocol", "openid-connect", "token"]
             },
-            "description": "Grant client-credentials contra o realm de dev local do Keycloak. O test script abaixo guarda o token na variável de coleção `access_token`, de onde a autenticação Bearer de toda outra requisição é lida."
+            "description": "Client-credentials grant against the local dev Keycloak realm. The test script below stores the token in the `access_token` collection variable, which every other request's Bearer auth reads from."
           },
           "event": [
             {
@@ -233,7 +234,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('token emitido', function () {",
+                  "pm.test('token issued', function () {",
                   "    pm.response.to.have.status(200);",
                   "    const body = pm.response.json();",
                   "    pm.expect(body.access_token).to.be.a('string');",
@@ -248,10 +249,10 @@
       ]
     },
     {
-      "name": "Quem Sou Eu",
+      "name": "Who Am I",
       "item": [
         {
-          "name": "Quem Sou Eu",
+          "name": "Who Am I",
           "request": {
             "method": "GET",
             "header": [],
@@ -260,17 +261,37 @@
               "host": ["{{base_url}}"],
               "path": ["api", "whoami"]
             },
-            "description": "Retorna o ownerId resolvido a partir da claim `sub` do bearer token."
+            "description": "Returns the ownerId resolved from the bearer token's `sub` claim, and the caller's avatar URL (never null -- a default is generated and persisted on first access)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Avatar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatarUrl\": \"https://api.dicebear.com/10.x/big-smile/svg?seed=custom\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/whoami",
+              "host": ["{{base_url}}"],
+              "path": ["api", "whoami"]
+            },
+            "description": "Updates the caller's avatar URL. Must be https, host must be api.dicebear.com, at most 2048 characters. Responds 204 No Content."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Pastas Mãe",
+      "name": "Mother Folders",
       "item": [
         {
-          "name": "Criar Pasta Mãe",
+          "name": "Create Mother Folder",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -290,7 +311,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('criada', function () {",
+                  "pm.test('created', function () {",
                   "    pm.response.to.have.status(201);",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('mother_folder_id', body.id);",
@@ -302,7 +323,7 @@
           "response": []
         },
         {
-          "name": "Listar Pastas Mãe",
+          "name": "List Mother Folders",
           "request": {
             "method": "GET",
             "header": [],
@@ -315,7 +336,7 @@
           "response": []
         },
         {
-          "name": "Atualizar Pasta Mãe",
+          "name": "Update Mother Folder",
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -332,7 +353,7 @@
           "response": []
         },
         {
-          "name": "Excluir Pasta Mãe",
+          "name": "Delete Mother Folder",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -347,10 +368,10 @@
       ]
     },
     {
-      "name": "Pastas Filhas",
+      "name": "Child Folders",
       "item": [
         {
-          "name": "Criar Pasta Filha",
+          "name": "Create Child Folder",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -370,7 +391,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('criada', function () {",
+                  "pm.test('created', function () {",
                   "    pm.response.to.have.status(201);",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('child_folder_id', body.id);",
@@ -382,7 +403,7 @@
           "response": []
         },
         {
-          "name": "Listar Pastas Filhas",
+          "name": "List Child Folders",
           "request": {
             "method": "GET",
             "header": [],
@@ -395,7 +416,7 @@
           "response": []
         },
         {
-          "name": "Atualizar Pasta Filha",
+          "name": "Update Child Folder",
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -412,7 +433,7 @@
           "response": []
         },
         {
-          "name": "Excluir Pasta Filha",
+          "name": "Delete Child Folder",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -427,10 +448,10 @@
       ]
     },
     {
-      "name": "Conteúdo",
+      "name": "Content",
       "item": [
         {
-          "name": "Enviar Conteúdo",
+          "name": "Upload Content",
           "request": {
             "method": "POST",
             "header": [],
@@ -446,7 +467,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "contents"]
             },
-            "description": "Escolha um arquivo `.pdf` para o campo `file` e defina `contentType` como `PDF`, ou um arquivo `.jpg`/`.jpeg`/`.png` com `contentType` definido como `IMAGE` -- a extensão precisa corresponder ao tipo declarado."
+            "description": "Pick a `.pdf` file for the `file` field and set `contentType` to `PDF`, or a `.jpg`/`.jpeg`/`.png` file with `contentType` set to `IMAGE` -- the extension must match the declared type."
           },
           "event": [
             {
@@ -454,7 +475,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('enviado', function () {",
+                  "pm.test('uploaded', function () {",
                   "    pm.response.to.have.status(201);",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('content_id', body.id);",
@@ -466,7 +487,7 @@
           "response": []
         },
         {
-          "name": "Listar Conteúdo",
+          "name": "List Content",
           "request": {
             "method": "GET",
             "header": [],
@@ -475,12 +496,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "contents"]
             },
-            "description": "`hasSummary` vira true assim que o pipeline assíncrono de categorização (RabbitMQ + Groq) termina -- nesse momento o quiz, o resumo e os flashcards da pasta filha também se regeneram automaticamente em segundo plano."
+            "description": "`hasSummary` flips to true once the async categorization pipeline (RabbitMQ + Groq) finishes -- at that point the child folder's quiz, summary, and flashcards all regenerate automatically in the background too."
           },
           "response": []
         },
         {
-          "name": "Obter URL de Download",
+          "name": "Get Download URL",
           "request": {
             "method": "GET",
             "header": [],
@@ -493,7 +514,7 @@
           "response": []
         },
         {
-          "name": "Sugerir Pasta para Conteúdo",
+          "name": "Suggest Folder for Content",
           "request": {
             "method": "POST",
             "header": [],
@@ -509,7 +530,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "contents", "folder-suggestion"]
             },
-            "description": "Síncrono, não persiste nada. Compara o arquivo com as pastas existentes de quem chama, ou sugere um novo par de nomes quando nada corresponde."
+            "description": "Synchronous, persists nothing. Matches the file against the caller's existing folders, or suggests a new name pair when nothing matches."
           },
           "response": []
         }
@@ -519,7 +540,7 @@
       "name": "Quiz",
       "item": [
         {
-          "name": "Gerar Quiz",
+          "name": "Generate Quiz",
           "request": {
             "method": "POST",
             "header": [],
@@ -529,12 +550,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "quiz", "generate"]
             },
-            "description": "Opcional -- enviar conteúdo já dispara a regeneração automaticamente. Use isso para forçar um novo lote sob demanda mesmo que o quiz já esteja em dia. Assíncrono: publica uma solicitação de geração e responde 202 imediatamente. 409 se a pasta filha ainda não tiver conteúdo resumido -- envie conteúdo e espere hasSummary:true primeiro. Faça polling em \"List Quiz\" depois."
+            "description": "Optional -- uploading content already triggers regeneration automatically. Use this to force a fresh batch on demand even if the quiz is already up to date. Async: publishes a generation request and responds 202 immediately. 409 if the child folder has no summarized content yet -- upload content and wait for hasSummary:true first. Poll \"List Quiz\" afterward."
           },
           "response": []
         },
         {
-          "name": "Listar Quiz",
+          "name": "List Quiz",
           "request": {
             "method": "GET",
             "header": [],
@@ -543,7 +564,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "quiz"]
             },
-            "description": "correctOption é omitido de propósito -- chame Grade Quiz em vez de inspecioná-lo no cliente."
+            "description": "correctOption is intentionally omitted -- call Grade Quiz instead of inspecting it client-side."
           },
           "event": [
             {
@@ -551,7 +572,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('listado', function () {",
+                  "pm.test('listed', function () {",
                   "    pm.response.to.have.status(200);",
                   "    const body = pm.response.json();",
                   "    if (Array.isArray(body) && body.length > 0) {",
@@ -565,7 +586,7 @@
           "response": []
         },
         {
-          "name": "Corrigir Quiz",
+          "name": "Grade Quiz",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -578,17 +599,17 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "quiz", "grade"]
             },
-            "description": "O corpo é um array JSON puro, uma entrada por questão respondida. Adicione um objeto por id de questão de \"List Quiz\"; um questionId omitido é pontuado como incorreto."
+            "description": "Body is a raw JSON array, one entry per answered question. Add one object per question id from \"List Quiz\"; an omitted questionId is scored as incorrect."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Desempenho",
+      "name": "Performance",
       "item": [
         {
-          "name": "Obter Desempenho Geral",
+          "name": "Get Overall Performance",
           "request": {
             "method": "GET",
             "header": [],
@@ -597,12 +618,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "performance", "overview"]
             },
-            "description": "Precisão agregada em cada tentativa de quiz que já foi corrigida para quem chama. Todos os campos são 0 sem tentativas ainda -- não é um erro."
+            "description": "Aggregate accuracy across every quiz attempt the caller has ever had graded. All fields are 0 with no attempts yet -- not an error."
           },
           "response": []
         },
         {
-          "name": "Obter Desempenho por Disciplina",
+          "name": "Get Performance By Discipline",
           "request": {
             "method": "GET",
             "header": [],
@@ -611,7 +632,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "performance", "by-discipline"]
             },
-            "description": "Precisão agrupada por pasta mãe ('disciplina'). Uma pasta mãe com zero tentativas é omitida; uma pasta mãe excluída aparece como \"(pasta excluída)\", mas suas tentativas continuam contando."
+            "description": "Accuracy grouped by mother folder ('discipline'). A mother folder with zero attempts is omitted; a deleted mother folder shows as \"(pasta excluída)\" but its attempts still count."
           },
           "response": []
         }
@@ -621,7 +642,7 @@
       "name": "Trilha",
       "item": [
         {
-          "name": "Gerar Plano de Estudos",
+          "name": "Generate Study Plan",
           "request": {
             "method": "POST",
             "header": [],
@@ -631,12 +652,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "study-plan", "generate"]
             },
-            "description": "Assíncrono: publica uma solicitação de geração e responde 202 imediatamente. Sem corpo (ou com um motherFolderIds vazio) classifica as disciplinas (pastas mãe) de quem chama por precisão de quiz crescente, excluindo disciplinas sem tentativas e disciplinas cujas únicas pastas filhas foram excluídas; mantém as 3 mais fracas, cada uma tendo como alvo sua própria pasta filha de pior desempenho. Faça polling em \"Get Study Plan\" depois."
+            "description": "Async: publishes a generation request and responds 202 immediately. No body (or an empty motherFolderIds) ranks the caller's disciplines (mother folders) by ascending quiz accuracy, excluding zero-attempt disciplines and disciplines whose only child folders were deleted; keeps the 3 weakest, each targeting its own worst-performing child folder. Poll \"Get Study Plan\" afterward."
           },
           "response": []
         },
         {
-          "name": "Gerar Plano de Estudos (Seleção Manual)",
+          "name": "Generate Study Plan (Manual Selection)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -649,12 +670,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "study-plan", "generate"]
             },
-            "description": "Assíncrono: indica até 3 ids de pasta mãe próprios (qualquer disciplina própria, inclusive uma sem nenhuma tentativa de quiz ainda) para ter como alvo em vez da classificação automática das 3 mais fracas. Responde 202 imediatamente; faça polling em \"Get Study Plan\" depois. Erros: 400 se mais de 3 ids distintos forem informados, 404 se algum id informado não for uma pasta mãe própria — nenhum dos dois enfileira uma geração."
+            "description": "Async: names up to 3 owned mother folder ids (any owned discipline, including one with no quiz attempts yet) to target instead of the automatic weakest-3 ranking. Responds 202 immediately; poll \"Get Study Plan\" afterward. Errors: 400 if more than 3 distinct ids are named, 404 if any named id is not an owned mother folder — neither enqueues a generation."
           },
           "response": []
         },
         {
-          "name": "Obter Plano de Estudos",
+          "name": "Get Study Plan",
           "request": {
             "method": "GET",
             "header": [],
@@ -663,7 +684,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "study-plan"]
             },
-            "description": "O plano atual de quem chama. generatedAt é null com uma lista steps vazia se um plano nunca foi gerado. Cada disciplina selecionada contribui com uma sequência fixa de 3 passos (REVIEW_SUMMARY, REVIEW_FLASHCARDS, RETAKE_QUIZ) contra seu childFolderId alvo. Uma pasta mãe/filha excluída aparece como \"(pasta excluída)\", mas o passo continua sendo retornado."
+            "description": "The caller's current plan. generatedAt is null with an empty steps list if a plan was never generated. Each selected discipline contributes a fixed 3-step sequence (REVIEW_SUMMARY, REVIEW_FLASHCARDS, RETAKE_QUIZ) against its target childFolderId. A deleted mother/child folder shows as \"(pasta excluída)\" but the step still returns."
           },
           "event": [
             {
@@ -671,7 +692,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('obtido', function () {",
+                  "pm.test('fetched', function () {",
                   "    pm.response.to.have.status(200);",
                   "    const body = pm.response.json();",
                   "    if (Array.isArray(body.steps) && body.steps.length > 0) {",
@@ -685,7 +706,7 @@
           "response": []
         },
         {
-          "name": "Concluir Passo do Plano de Estudos",
+          "name": "Complete Study Plan Step",
           "request": {
             "method": "PATCH",
             "header": [],
@@ -695,17 +716,17 @@
               "host": ["{{base_url}}"],
               "path": ["api", "study-plan", "steps", "{{study_plan_step_id}}", "complete"]
             },
-            "description": "Marca um dos próprios passos do plano atual de quem chama como concluído. 204 em caso de sucesso, 404 se o passo não existir ou pertencer ao plano de outro dono. Regenerar o plano reinicia o progresso de conclusão."
+            "description": "Marks one of the caller's own current-plan steps as completed. 204 on success, 404 if the step doesn't exist or belongs to another owner's plan. Regenerating the plan resets completion progress."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Resumo da Pasta",
+      "name": "Folder Summary",
       "item": [
         {
-          "name": "Obter Resumo",
+          "name": "Get Summary",
           "request": {
             "method": "GET",
             "header": [],
@@ -714,7 +735,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "summary"]
             },
-            "description": "Resumo agregado em Markdown de tudo que está atualmente resumido na pasta filha. Regenera automaticamente em segundo plano sempre que conteúdo é enviado -- sem endpoint manual de geração/atualização. 404 se a pasta filha não pertencer a quem chama, ou se nenhum resumo tiver sido gerado ainda."
+            "description": "Aggregated Markdown summary of everything currently summarized in the child folder. Regenerates automatically in the background whenever content is uploaded -- no manual generate/refresh endpoint. 404 if the child folder isn't owned by the caller, or no summary has been generated yet."
           },
           "response": []
         }
@@ -724,7 +745,7 @@
       "name": "Flashcards",
       "item": [
         {
-          "name": "Listar Flashcards",
+          "name": "List Flashcards",
           "request": {
             "method": "GET",
             "header": [],
@@ -733,17 +754,31 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "flashcards"]
             },
-            "description": "Flashcards frente/verso gerados a partir do mesmo conteúdo e do mesmo gatilho automático do Resumo da Pasta -- sem endpoint manual de geração/atualização. 200 com um array vazio se nenhum foi gerado ainda; 404 se a pasta filha não pertencer a quem chama."
+            "description": "Front/back flashcards generated from the same content and automatic trigger as Folder Summary -- no manual generate/refresh endpoint. 200 with an empty array if none have been generated yet; 404 if the child folder isn't owned by the caller."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Flashcard Review",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/child-folders/{{child_folder_id}}/flashcards/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "child-folders", "{{child_folder_id}}", "flashcards", "complete"]
+            },
+            "description": "Records that the caller finished a flashcard review session for this folder. No body. Creates one FlashcardReview record and responds 201 -- not deduplicated, calling it again the same day creates another record. Each one counts toward Ranking's flashcard-completion XP. 404 if the child folder isn't owned by the caller."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Mapa Mental",
+      "name": "Mind Map",
       "item": [
         {
-          "name": "Obter Mapa Mental",
+          "name": "Get Mind Map",
           "request": {
             "method": "GET",
             "header": [],
@@ -752,17 +787,17 @@
               "host": ["{{base_url}}"],
               "path": ["api", "child-folders", "{{child_folder_id}}", "mind-map"]
             },
-            "description": "Uma árvore de conceitos gerada a partir do mesmo conteúdo e do mesmo gatilho automático do Resumo da Pasta/Flashcards -- sem endpoint manual de geração/atualização. 200 com raiz/generatedAt nulos se nenhum foi gerado ainda; 404 se a pasta filha não pertencer a quem chama."
+            "description": "A concept tree generated from the same content and automatic trigger as Folder Summary/Flashcards -- no manual generate/refresh endpoint. 200 with a null raiz/generatedAt if none has been generated yet; 404 if the child folder isn't owned by the caller."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Ofensiva",
+      "name": "Streak",
       "item": [
         {
-          "name": "Obter Ofensiva",
+          "name": "Get Streak",
           "request": {
             "method": "GET",
             "header": [],
@@ -771,12 +806,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "streak"]
             },
-            "description": "Ofensiva atual de dias consecutivos (corte de dia fixo em America/Sao_Paulo, sem contador persistido -- calculado na leitura), recordStreak, daysThisMonth, daysActiveThisWeek e o checklist de hoje. Rode isso depois de Upload Content, Get Summary, List Flashcards e Grade Quiz para ver o checklist de hoje se preencher e todayIsGold virar true quando as quatro ações forem feitas. Sem verificação de posse (é por conta, não por pasta) e sem caso de 404 -- uma conta sem atividade simplesmente reporta currentStreak: 0."
+            "description": "Current consecutive-day streak (fixed America/Sao_Paulo day boundary, no persisted counter -- computed on read), recordStreak, daysThisMonth, daysActiveThisWeek, and today's checklist. Run this after Upload Content, Get Summary, List Flashcards, and Grade Quiz to see today's checklist fill in and todayIsGold flip to true once all four are done. No ownership check (per-account, not per-folder) and no 404 case -- an account with no activity just reports currentStreak: 0."
           },
           "response": []
         },
         {
-          "name": "Obter Calendário da Ofensiva",
+          "name": "Get Streak Calendar",
           "request": {
             "method": "GET",
             "header": [],
@@ -786,7 +821,94 @@
               "path": ["api", "streak", "calendar"],
               "query": [{ "key": "month", "value": "2026-08" }]
             },
-            "description": "Status de atividade dia a dia (NONE/PARTIAL/GOLD/FROZEN) para um mês do calendário. `month` (YYYY-MM) é opcional e assume o mês atual por padrão; um mês futuro retorna um array vazio."
+            "description": "Day-by-day activity status (NONE/PARTIAL/GOLD/FROZEN) for a calendar month. `month` (YYYY-MM) is optional and defaults to the current month; a future month returns an empty array."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ranking",
+      "item": [
+        {
+          "name": "Get Season Summary (global)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ranking/summary?scope=global",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ranking", "summary"],
+              "query": [{ "key": "scope", "value": "global" }]
+            },
+            "description": "Current season's id/window/countdown for scope=global. XP is computed on read, never stored -- see docs/API.md's Ranking section for the weight-configuration note."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Leaderboard (global)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ranking?scope=global&page=1&pageSize=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ranking"],
+              "query": [
+                { "key": "scope", "value": "global" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Paginated leaderboard ordered by current-season XP descending (ties by username ascending). page/pageSize default to 1/20. Zero-XP entries get position: null rather than a numbered last place."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Leaderboard (friends)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ranking?scope=friends",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ranking"],
+              "query": [{ "key": "scope", "value": "friends" }]
+            },
+            "description": "Leaderboard restricted to the caller and their friends. KNOWN LIMITATION: friends isn't implemented yet on this branch, so this always returns just the caller themselves rather than a real friends list -- see docs/API.md's Ranking section."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Leaderboard (classroom) -- access-denied example",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ranking?scope=classroom&classroomId={{classroom_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ranking"],
+              "query": [
+                { "key": "scope", "value": "classroom" },
+                { "key": "classroomId", "value": "{{classroom_id}}" }
+              ]
+            },
+            "description": "Leaderboard restricted to a classroom's members. classroomId is required (400 without it). KNOWN LIMITATION: classrooms isn't implemented yet on this branch, so this always responds 404 (fail-closed -- no real membership to check against) regardless of the classroomId supplied -- run as-is to see that access-denied response, or see docs/API.md's Ranking section."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Previous Champion (global)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ranking/champions/previous?scope=global",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ranking", "champions", "previous"],
+              "query": [{ "key": "scope", "value": "global" }]
+            },
+            "description": "Top-XP user of the previous season for scope=global. Responds 200 with a literal null body if nobody in scope had any nonzero activity last season -- including the platform's first-ever season."
           },
           "response": []
         }

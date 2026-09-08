@@ -9,9 +9,17 @@ import { DifficultyButton } from "@/components/DifficultyButton";
 import { FlashCard } from "@/components/FlashCard";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
+import { useFeedback } from "@/hooks/useFeedback";
 import type { Flashcard } from "@/types/api/flashcard";
 import { difficulties, type Difficulty } from "@/utils/difficulties";
+import type { FeedbackEvent } from "@/utils/feedbackCatalog";
 import { SessionSummary } from "./components/SessionSummary";
+
+const difficultyFeedback: Record<Difficulty, FeedbackEvent> = {
+  facil: "flashcard-facil",
+  medio: "flashcard-medio",
+  dificil: "flashcard-dificil",
+};
 
 export default function FlashCardsPage() {
   const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
@@ -19,6 +27,7 @@ export default function FlashCardsPage() {
     assuntoId: string;
   };
   const navigate = useNavigate();
+  const feedback = useFeedback();
 
   const [flashcards, setFlashcards] = useState<Flashcard[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,10 +73,15 @@ export default function FlashCardsPage() {
       [difficulty]: previous[difficulty] + 1,
     }));
 
+    // A última carta encerra a sessão pelo mesmo clique que avançaria — é o
+    // único sinal que distingue os dois desfechos.
     if (currentIndex === total - 1) {
+      feedback("flashcards-concluido");
       setIsFinished(true);
       return;
     }
+
+    feedback(difficultyFeedback[difficulty]);
 
     setIsAnswerRevealed(false);
     setCurrentIndex((previous) => previous + 1);
@@ -150,7 +164,10 @@ export default function FlashCardsPage() {
                 <Button
                   fullWidth
                   size="lg"
-                  onClick={() => setIsAnswerRevealed(true)}
+                  onClick={() => {
+                    feedback("flashcard-virar");
+                    setIsAnswerRevealed(true);
+                  }}
                 >
                   <Zap />
                   Revelar resposta

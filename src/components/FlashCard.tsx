@@ -32,7 +32,7 @@ export function FlashCard({
           <p className="opacity-90">{counter}</p>
         </div>
 
-        <div className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl shadow-surface text-center px-4 py-8 flex flex-col justify-between bg-white">
+        <div className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl shadow-surface text-center px-4 py-8 flex flex-col justify-between bg-surface">
           <h2>{question}</h2>
           <h3 className="text-2xl font-semibold">{answer}</h3>
           <p className="opacity-90">{counter}</p>

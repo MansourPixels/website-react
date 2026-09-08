@@ -120,7 +120,7 @@ export default function PathPage() {
         <>
           <div className="grid bg-accent-soft p-4 rounded-3xl items-center gap-4 sm:grid-cols-2">
             <h2 className="grid min-w-0">
-              <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
+              <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-background dark:bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
                 {Math.round(overview.accuracyPercentage)}%
               </span>
               <span className="text-2xl text-accent font-semibold text-balance">

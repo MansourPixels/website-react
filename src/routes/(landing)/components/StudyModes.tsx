@@ -34,7 +34,7 @@ export function StudyModes() {
       </header>
 
       <div className="mt-10 grid gap-4 lg:grid-cols-12 lg:gap-5">
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-5 lg:row-span-2">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-5 lg:row-span-2">
           <ModeHeader
             icon={Zap}
             iconClass="bg-emerald-500"
@@ -65,7 +65,7 @@ export function StudyModes() {
                   key={id}
                   className="flex flex-1 flex-col items-center gap-2 text-sm font-medium"
                 >
-                  <span className="flex size-14 items-center justify-center rounded-full bg-white shadow-surface">
+                  <span className="flex size-14 items-center justify-center rounded-full bg-surface shadow-surface">
                     <img src={image} alt="" className="size-9" />
                   </span>
                   {label}
@@ -80,7 +80,7 @@ export function StudyModes() {
           </p>
         </article>
 
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-7">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-7">
           <ModeHeader
             icon={FileText}
             iconClass="bg-violet-700"
@@ -89,7 +89,7 @@ export function StudyModes() {
           />
 
           <div className="content-bg-purple-200 rounded-2xl p-4">
-            <div className="rounded-2xl bg-white p-5 text-sm leading-relaxed shadow-surface md:text-base">
+            <div className="rounded-2xl bg-surface p-5 text-sm leading-relaxed shadow-surface md:text-base">
               <p>
                 Uma equação de terceiro grau é toda sentença que pode ser
                 reduzida à forma:
@@ -111,7 +111,7 @@ export function StudyModes() {
           </p>
         </article>
 
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-7">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-7">
           <ModeHeader
             icon={ListCheck}
             iconClass="bg-orange-600"
@@ -146,7 +146,7 @@ export function StudyModes() {
           </div>
         </article>
 
-        <article className="reveal flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-surface md:p-6 lg:col-span-12">
+        <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-12">
           <ModeHeader
             icon={Network}
             iconClass="bg-cyan-600"

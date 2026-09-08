@@ -110,7 +110,7 @@ export function CaptureDesk({
       <NavMenu title={title ?? "Nova captura"} hasBackButton={Boolean(title)} />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-        <section className="bg-white rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-3">
+        <section className="bg-surface rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-3">
           <button
             type="button"
             onClick={onPickFile}
@@ -172,7 +172,7 @@ export function CaptureDesk({
           ) : null}
         </section>
 
-        <section className="bg-white rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-4">
+        <section className="bg-surface rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-4">
           <header className="flex flex-col gap-1">
             <h2 className="text-xl font-semibold">Usar a webcam</h2>
             <p className="text-sm text-muted text-balance">

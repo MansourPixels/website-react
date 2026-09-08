@@ -3,28 +3,23 @@ import { useEffect, useState } from "react";
 import { NavMenu } from "@/components/NavMenu";
 import { SessionTimer } from "@/components/SessionTimer";
 import { SpotifyStrip } from "@/components/SpotifyStrip";
-import { phaseLabels, useStudySession } from "@/hooks/useStudySession";
+import { useSession } from "@/contexts/SessionContext";
+import { useSpotify } from "@/contexts/SpotifyContext";
+import { formatCountdown, phaseLabels } from "@/hooks/useStudySession";
 import type { SessionSettings } from "@/types/StudySession";
 import { DialogSessionSettings } from "./components/DialogSessionSettings";
-import { useSpotifySync } from "./components/useSpotifySync";
-
-function formatCountdown(remainingMs: number) {
-  const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${`${minutes}`.padStart(2, "0")}:${`${seconds}`.padStart(2, "0")}`;
-}
 
 export default function SessaoPage() {
-  const session = useStudySession();
+  const session = useSession();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const spotify = useSpotifySync({
-    phase: session.phase,
-    status: session.status,
-    controlsSpotify: session.settings.controlsSpotify,
-  });
+  const spotify = useSpotify();
+
+  // O provider só consulta o que está tocando com a sessão em andamento; aqui
+  // a faixa aparece na tela mesmo parado, então a página pede o seu watcher.
+  const { watchPlayback } = spotify;
+
+  useEffect(() => watchPlayback(), [watchPlayback]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;

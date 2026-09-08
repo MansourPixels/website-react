@@ -83,10 +83,6 @@ export function sanitizeSettings(value: unknown): SessionSettings {
       DEFAULT_SESSION_SETTINGS.cyclesUntilLongBreak,
     ),
     autoStart: readBoolean(raw.autoStart, DEFAULT_SESSION_SETTINGS.autoStart),
-    soundEnabled: readBoolean(
-      raw.soundEnabled,
-      DEFAULT_SESSION_SETTINGS.soundEnabled,
-    ),
     controlsSpotify: readBoolean(
       raw.controlsSpotify,
       DEFAULT_SESSION_SETTINGS.controlsSpotify,

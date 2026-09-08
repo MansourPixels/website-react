@@ -17,7 +17,7 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
     <Button
       className={cn(
         "aspect-square h-auto p-0 rounded-xl overflow-hidden relative",
-        "bg-white text-foreground shadow-surface",
+        "bg-surface text-foreground shadow-surface",
       )}
       fullWidth
       aria-label={[

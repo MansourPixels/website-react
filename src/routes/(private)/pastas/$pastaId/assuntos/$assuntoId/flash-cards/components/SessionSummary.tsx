@@ -33,7 +33,7 @@ export function SessionSummary({
           {difficulties.map(({ id, label, image }) => (
             <div
               key={id}
-              className="bg-white rounded-2xl shadow-surface p-4 flex flex-col items-center gap-2"
+              className="bg-surface rounded-2xl shadow-surface p-4 flex flex-col items-center gap-2"
             >
               <img src={image} alt="" className="size-10" />
               <strong className="text-2xl font-semibold">{counts[id]}</strong>
@@ -43,7 +43,7 @@ export function SessionSummary({
         </div>
       </section>
 
-      <footer className="flex flex-col gap-3">
+      <footer className="flex flex-col gap-3 max-w-lg w-full mx-auto">
         <Button fullWidth size="lg" onClick={onRestart}>
           <RotateCcw />
           Refazer sessão

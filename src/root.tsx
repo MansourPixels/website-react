@@ -1,17 +1,24 @@
+import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
 import {
-  Camera,
-  Folders,
-  Route as PathIcon,
-  Timer,
-  User,
-} from "lucide-react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation } from "react-router";
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLocation,
+} from "react-router";
 
 import { cn } from "@heroui/styles";
-import { BottomNavigation } from "./components/BottomNavigation";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { SpotifyProvider } from "./contexts/SpotifyContext";
 import "./app.css";
+import { BottomNavigation } from "./components/BottomNavigation";
+import { SessionIsland } from "./components/SessionIsland";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PreferencesProvider } from "./contexts/PreferencesContext";
+import { SessionProvider, useSession } from "./contexts/SessionContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { useServiceWorker } from "./hooks/useServiceWorker";
+import { SpotifyProvider } from "./contexts/SpotifyContext";
+import { THEME_INIT_SCRIPT } from "./utils/themeInitScript";
 
 const links = [
   {
@@ -45,8 +52,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-br">
       <head>
+        {/* Antes de qualquer outra coisa no <head>: aplica o tema salvo em
+            <html> antes do primeiro paint, para não haver flash do tema errado
+            (o app roda como PWA standalone, sem chrome de navegador pra disfarçar). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta charSet="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -60,7 +74,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Libertinus+Math&family=Poppins:wght@300;400;500;600;800&display=swap"
           rel="stylesheet"
@@ -79,12 +97,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useServiceWorker();
+
   return (
-    <AuthProvider>
-      <SpotifyProvider>
-        <AppShell />
-      </SpotifyProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <PreferencesProvider>
+        <AuthProvider>
+          <SpotifyProvider>
+            <SessionProvider>
+              <AppShell />
+            </SessionProvider>
+          </SpotifyProvider>
+        </AuthProvider>
+      </PreferencesProvider>
+    </ThemeProvider>
   );
 }
 
@@ -92,26 +118,51 @@ export default function App() {
 // de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
 const extraBottomNavigationRoutes = ["/ascensao"];
 
+// A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
+// o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
+const islandFreeRoutes = ["/", "/sessao"];
+
 function AppShell() {
   const { pathname } = useLocation();
   const { status } = useAuth();
+  const session = useSession();
 
   const showBottomNavigation =
     status === "authenticated" &&
     (links.some(({ to }) => pathname === to) ||
       extraBottomNavigationRoutes.includes(pathname));
 
+  // `isReady` só vira true depois da leitura do `localStorage`, no cliente —
+  // é o que impede a ilha de divergir entre o HTML do servidor e a hidratação.
+  const showIsland =
+    status === "authenticated" &&
+    session.isReady &&
+    session.status !== "idle" &&
+    !islandFreeRoutes.includes(pathname);
+
   return (
     <>
       <div
         className={cn(
           "flex flex-col min-h-full relative",
-          showBottomNavigation && "pb-[var(--nav-inset)]",
+          showBottomNavigation && "pb-(--nav-inset)",
+          // No mobile a ilha flutua sobre o topo da página; no desktop ela mora
+          // no dock, e aí é a borda de baixo que precisa de folga.
+          showIsland && "pt-(--island-inset) md:pt-0",
+          showIsland && !showBottomNavigation && "md:pb-(--nav-inset)",
         )}
       >
         <Outlet />
       </div>
-      {showBottomNavigation ? <BottomNavigation links={links} /> : null}
+
+      {showIsland ? <SessionIsland placement="top" /> : null}
+
+      {showBottomNavigation || showIsland ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex items-end justify-center md:gap-3 md:px-4 md:pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {showIsland ? <SessionIsland placement="dock" /> : null}
+          {showBottomNavigation ? <BottomNavigation links={links} /> : null}
+        </div>
+      ) : null}
     </>
   );
 }

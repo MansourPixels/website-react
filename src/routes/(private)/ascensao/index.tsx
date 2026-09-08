@@ -6,6 +6,7 @@ import { ApiError } from "@/api/client";
 import { getStreak } from "@/api/streak";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
+import { useAchievementFeedback } from "@/hooks/useAchievementFeedback";
 import type { StreakStatus } from "@/types/api/streak";
 import { AscentionCalendar } from "./components/AscentionCalendar";
 import { MilestoneList } from "./components/MilestoneList";
@@ -14,6 +15,8 @@ import { TodayChecklist } from "./components/TodayChecklist";
 export default function Ascensao() {
   const [streak, setStreak] = useState<StreakStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  useAchievementFeedback(streak);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +59,7 @@ export default function Ascensao() {
           <div className="flex flex-col gap-8">
             <div className="grid grid-cols-[1fr_auto] items-center gap-4 bg-accent-soft p-4 rounded-3xl">
               <h2 className="grid min-w-0">
-                <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
+                <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-background dark:bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
                   {streak.currentStreak}
                 </span>
                 <span className="text-3xl text-accent font-semibold text-balance">
@@ -107,7 +110,7 @@ export default function Ascensao() {
           </div>
 
           <aside className="flex flex-col gap-8">
-            <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
+            <section className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-3">
               <h2 className="font-semibold">Calendário</h2>
               <AscentionCalendar />
             </section>

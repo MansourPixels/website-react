@@ -9,8 +9,11 @@ import { Button, cn, Spinner } from "@heroui/react";
 import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useFeedback } from "../hooks/useFeedback";
 import { useCamera } from "../hooks/useCamera";
 import { useTouchPrimary } from "../hooks/useMediaQuery";
+import { useTapToFocus } from "../hooks/useTapToFocus";
+import { CameraFocusOverlay } from "./CameraFocusOverlay";
 import { CaptureDesk } from "./CaptureDesk";
 import {
   DialogCategorizeImage,
@@ -35,12 +38,18 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     error,
     isFlashSupported,
     isFlashOn,
+    isTapFocusSupported,
+    exposureRange,
+    exposureBaseline,
     toggleFlash,
+    focusAt,
+    setExposureCompensation,
     capturePhoto,
     retry,
   } = camera;
 
   const navigate = useNavigate();
+  const feedback = useFeedback();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -53,6 +62,22 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   const [submitMaterialError, setSubmitMaterialError] = useState<
     string | null
   >(null);
+
+  const isFocusEnabled =
+    isTouchPrimary &&
+    isTapFocusSupported &&
+    status === "ready" &&
+    !reviewMaterial &&
+    !isCategorizeOpen;
+
+  const { indicator, handlers: focusHandlers } = useTapToFocus({
+    videoRef,
+    isEnabled: isFocusEnabled,
+    exposureRange,
+    exposureBaseline,
+    focusAt,
+    setExposureCompensation,
+  });
 
   useEffect(() => {
     return () => {
@@ -89,6 +114,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         previewUrlRef.current = null;
         setReviewMaterial(null);
       } catch (error) {
+        feedback("erro");
         setSubmitMaterialError(
           error instanceof ApiError
             ? error.detail
@@ -110,12 +136,23 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
   async function handleCapture() {
     const photo = await capturePhoto();
-    if (photo) showPreview(photo);
+
+    if (photo === null) {
+      feedback("erro");
+      return;
+    }
+
+    feedback("camera-obturador");
+    showPreview(photo);
   }
 
   function handleSelectFile(event: React.ChangeEvent<HTMLInputElement>) {
     const [file] = event.target.files ?? [];
-    if (file && isAcceptedMaterial(file)) showPreview(file);
+
+    if (file !== undefined) {
+      if (isAcceptedMaterial(file)) showPreview(file);
+      else feedback("erro");
+    }
 
     event.target.value = "";
   }
@@ -189,11 +226,26 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
         autoPlay
         muted
         playsInline
-        aria-label="Visualização da câmera"
+        draggable={false}
+        aria-label={
+          isFocusEnabled
+            ? "Visualização da câmera. Toque para focar e arraste para cima ou para baixo para ajustar a exposição."
+            : "Visualização da câmera"
+        }
         className={cn(
           "size-full object-cover transition-opacity",
+          // O arrasto vertical precisa chegar até aqui: sem `touch-none` o
+          // compositor do Chrome Android o converte em scroll e mata o gesto
+          // com um `pointercancel` no meio.
+          "touch-none overscroll-none select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]",
           status === "ready" ? "opacity-100" : "opacity-0",
         )}
+        {...focusHandlers}
+      />
+
+      <CameraFocusOverlay
+        indicator={indicator}
+        hasExposureControl={Boolean(exposureRange)}
       />
 
       {status === "loading" ? (
@@ -230,7 +282,12 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           {preview === null ? (
             <Images />
           ) : preview.contentType === "PDF" ? (
-            <span className="size-full flex items-center justify-center bg-white text-foreground">
+            // `bg-white`/`text-zinc-900` literais: ícone de documento sobre o
+            // visor da câmera, que é sempre escuro — não segue o tema. Antes do
+            // modo escuro `text-foreground` também era sempre escuro; agora
+            // precisa ficar fixo, ou o ícone sumiria (claro sobre claro) com o
+            // tema escuro ativo.
+            <span className="size-full flex items-center justify-center bg-white text-zinc-900">
               <FileText className="size-6" />
               <span className="sr-only">Último PDF selecionado</span>
             </span>

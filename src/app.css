@@ -15,6 +15,11 @@
   }
 }
 
+/* Substitui o `dark:` padrão do Tailwind (ligado a `prefers-color-scheme`) por
+   um amarrado ao atributo que `ThemeProvider`/o script anti-flash controlam —
+   a opção "Sistema" já resolve para um valor concreto antes de chegar aqui. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @layer base {
   :root,
   .light,
@@ -25,18 +30,24 @@
     --accent-foreground: oklch(99.11% 0 0);
     --focus: oklch(42.9% 0.2973 264.05);
     --muted: oklch(52.5% 0.0138 285.94);
+    /* O default do HeroUI é próximo mas não igual à "mesa" do DESIGN.md — fixa
+       o valor exato em vez de deixar o claro mudar de tom com o modo escuro. */
+    --background: oklch(96.7% 0.001 286.375);
   }
 
   .dark,
   [data-theme="dark"] {
     color-scheme: dark;
-    --accent: oklch(42.9% 0.2973 264.05);
+    --accent: oklch(49% 0.288 269.1);
     --accent-foreground: oklch(99.11% 0 0);
-    --focus: oklch(42.9% 0.2973 264.05);
+    --focus: oklch(49% 0.288 269.1);
+    --background: oklch(19.2% 0.004 286);
   }
 
   :root {
     --nav-inset: calc(4rem + env(safe-area-inset-bottom, 0px));
+    /* Altura da pílula (3rem) mais a folga acima e abaixo dela. */
+    --island-inset: calc(4rem + env(safe-area-inset-top, 0px));
     --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
     caret-color: var(--accent);
@@ -49,7 +60,7 @@
   }
 
   html {
-    @apply bg-zinc-100;
+    @apply bg-background;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -154,10 +165,56 @@
     }
   }
 
+  .camera-focus {
+    opacity: 1;
+    transform: scale(1);
+    transition:
+      opacity 200ms var(--ease-out-strong),
+      transform 200ms var(--ease-out-strong);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+  }
+
+  .camera-focus-fade {
+    transition: opacity 220ms var(--ease-out-strong);
+  }
+
+  /* A ilha entra do lado de onde ela mora: descendo da borda de cima no
+     mobile, subindo do dock no desktop. */
+  .island-in-top,
+  .island-in-bottom {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity 260ms var(--ease-out-strong),
+      transform 260ms var(--ease-out-strong);
+  }
+
+  .island-in-top {
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-0.75rem) scale(0.92);
+    }
+  }
+
+  .island-in-bottom {
+    @starting-style {
+      opacity: 0;
+      transform: translateY(0.75rem) scale(0.92);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .celebrate,
     .celebrate-stagger > *,
-    .mind-map-node {
+    .mind-map-node,
+    .camera-focus,
+    .camera-focus-fade,
+    .island-in-top,
+    .island-in-bottom {
       transition: none;
     }
   }
@@ -184,6 +241,9 @@
   }
 
   .preview {
+    /* `bg-white` fica literal de propósito: são pontas de página de verdade
+       (metáfora de papel), não uma superfície de interface — não acompanham
+       o tema. */
     @apply absolute top-1/2 rounded-lg p-2 bg-white max-w-1/3;
 
     width: 5.125rem;
@@ -233,7 +293,7 @@
     radial-gradient(
       100% 100% at 50% 0%,
       --value(--color-*) 0%,
-      rgba(242, 242, 244, 0.2) 100%
+      color-mix(in oklab, var(--background) 20%, transparent) 100%
     ),
-    #f4f4f5;
+    var(--background);
 }

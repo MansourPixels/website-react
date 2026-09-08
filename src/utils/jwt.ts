@@ -5,6 +5,7 @@ export interface AccessTokenClaims {
   sub: string;
   email?: string;
   preferred_username?: string;
+  email_verified?: boolean;
 }
 
 export function decodeAccessTokenClaims(
@@ -27,6 +28,10 @@ export function decodeAccessTokenClaims(
       preferred_username:
         typeof claims.preferred_username === "string"
           ? claims.preferred_username
+          : undefined,
+      email_verified:
+        typeof claims.email_verified === "boolean"
+          ? claims.email_verified
           : undefined,
     };
   } catch {

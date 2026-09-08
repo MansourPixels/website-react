@@ -22,7 +22,7 @@ interface TodayChecklistProps {
 
 export function TodayChecklist({ today, isGold }: TodayChecklistProps) {
   return (
-    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3">
+    <section className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-3">
       <header className="flex items-center justify-between gap-2">
         <h2 className="font-semibold">Checklist de hoje</h2>
         {isGold ? (
@@ -43,14 +43,14 @@ export function TodayChecklist({ today, isGold }: TodayChecklistProps) {
                 "flex items-center gap-2 rounded-xl p-2 text-sm",
                 isDone
                   ? "bg-accent-soft text-accent"
-                  : "bg-zinc-100 text-zinc-400",
+                  : "bg-zinc-100 text-zinc-400 dark:bg-zinc-800",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
                   "size-6 shrink-0 rounded-full flex items-center justify-center",
-                  isDone ? "bg-accent text-accent-foreground" : "bg-zinc-200",
+                  isDone ? "bg-accent text-accent-foreground" : "bg-default",
                 )}
               >
                 {isDone ? (
