@@ -1,0 +1,1 @@
+function e(e){return`/usuarios/${encodeURIComponent(e)}`}export{e as t};

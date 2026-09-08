@@ -1,0 +1,1 @@
+import{o as e,t}from"./jsx-runtime-DxNtrcCz.js";import{t as n}from"./compiler-runtime-VyNVN4mK.js";import{t as r}from"./Camera-BvYst9Nl.js";var i=n(),a=t(),o=e(function(){let e=(0,i.c)(1),t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,a.jsx)(r,{footerClass:`bottom-[var(--nav-inset)]`}),e[0]=t):t=e[0],t});export{o as default};
