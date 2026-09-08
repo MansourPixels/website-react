@@ -14,7 +14,7 @@ export function LandingNav() {
     <header className="sticky top-0 z-40 px-4 pt-4 md:px-6">
       <nav
         aria-label="Navegação da página"
-        className="mx-auto flex h-16 max-w-6xl items-center gap-2 rounded-full border bg-white pr-3 pl-4 shadow-surface md:pl-6"
+        className="mx-auto flex h-16 max-w-6xl items-center gap-2 rounded-full border bg-surface pr-3 pl-4 shadow-surface md:pl-6"
       >
         <a
           href="#topo"

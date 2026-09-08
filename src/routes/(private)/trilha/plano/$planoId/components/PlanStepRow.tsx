@@ -20,7 +20,7 @@ export function PlanStepRow({ planoId, step, position, isNext }: PlanStepRowProp
   return (
     <li
       className={cn(
-        "bg-white rounded-2xl shadow-surface p-4 flex flex-col gap-4 border-2",
+        "bg-surface rounded-2xl shadow-surface p-4 flex flex-col gap-4 border-2",
         isNext ? "border-accent" : "border-transparent",
       )}
     >

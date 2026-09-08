@@ -51,7 +51,7 @@ export function MindMapPreview() {
             <text
               x={cardX + 16}
               y={y + 21}
-              className="fill-foreground text-sm font-semibold"
+              className="fill-foreground dark:fill-background text-sm font-semibold"
             >
               {label}
             </text>

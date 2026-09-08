@@ -15,7 +15,7 @@ export function FolderCover({
   return (
     <div
       className={cn(
-        "bg-(--folder-color) relative w-full rounded-3xl after:content-[''] after:bg-[url('/detalhe-pasta.svg')] after:bg-no-repeat after:bg-top-right after:w-full after:h-full after:inset-0 after:flex after:absolute group-hover:after:brightness-95",
+        "bg-(--folder-color) relative w-full rounded-3xl after:content-[''] after:bg-[url('/detalhe-pasta.svg')] dark:after:bg-[url('/detalhe-pasta-dark.svg')] after:bg-no-repeat after:bg-top-right after:w-full after:h-full after:inset-0 after:flex after:absolute group-hover:after:brightness-95",
         className,
       )}
       style={{ "--folder-color": folder.color } as React.CSSProperties}

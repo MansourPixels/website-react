@@ -282,7 +282,12 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           {preview === null ? (
             <Images />
           ) : preview.contentType === "PDF" ? (
-            <span className="size-full flex items-center justify-center bg-white text-foreground">
+            // `bg-white`/`text-zinc-900` literais: ícone de documento sobre o
+            // visor da câmera, que é sempre escuro — não segue o tema. Antes do
+            // modo escuro `text-foreground` também era sempre escuro; agora
+            // precisa ficar fixo, ou o ícone sumiria (claro sobre claro) com o
+            // tema escuro ativo.
+            <span className="size-full flex items-center justify-center bg-white text-zinc-900">
               <FileText className="size-6" />
               <span className="sr-only">Último PDF selecionado</span>
             </span>

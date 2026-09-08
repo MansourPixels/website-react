@@ -15,7 +15,7 @@ export function StudyPlanCard({ group }: StudyPlanCardProps) {
     groupProgress(steps);
 
   return (
-    <article className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2 border-transparent">
+    <article className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2 border-transparent">
       <header className="flex flex-col gap-1">
         <h3 className="text-xl font-semibold text-pretty">
           {motherFolderName}

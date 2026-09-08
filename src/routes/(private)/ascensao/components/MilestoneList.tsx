@@ -8,7 +8,7 @@ interface MilestoneListProps {
 
 export function MilestoneList({ currentStreak }: MilestoneListProps) {
   return (
-    <section className="bg-white rounded-3xl shadow-surface p-4 flex flex-col gap-4">
+    <section className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-4">
       <h2 className="font-semibold">Metas de ascensão</h2>
 
       <ul className="flex flex-col gap-4">
@@ -22,7 +22,7 @@ export function MilestoneList({ currentStreak }: MilestoneListProps) {
                 className={
                   isReached
                     ? "text-success shrink-0"
-                    : "text-muted shrink-0 opacity-60"
+                    : "text-muted shrink-0 opacity-60 dark:opacity-90"
                 }
               >
                 {isReached ? (

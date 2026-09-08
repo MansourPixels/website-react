@@ -77,7 +77,7 @@ export default function SummaryPage() {
           </div>
         ) : (
           <>
-            <div className="bg-white p-4 md:p-8 rounded-2xl shadow-surface prose-sm md:prose-base [&_math]:mx-auto prose-headings:font-semibold grid prose-zinc prose-ul:list-disc prose-ol:list-decimal prose-strong:font-semibold prose-h2:mt-4 prose-h2:mb-2">
+            <div className="bg-surface p-4 md:p-8 rounded-2xl shadow-surface prose-sm md:prose-base [&_math]:mx-auto prose-headings:font-semibold grid prose-zinc prose-ul:list-disc prose-ol:list-decimal prose-strong:font-semibold prose-h2:mt-4 prose-h2:mb-2">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}

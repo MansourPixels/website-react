@@ -77,7 +77,7 @@ function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
           // atravessa o card e cai no pane.
           "mind-map-node pointer-events-auto size-full text-left rounded-xl shadow-surface px-3.5 py-3 overflow-hidden flex flex-col gap-1",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-          isRoot ? "bg-cyan-600 text-white" : "bg-white border border-cyan-200",
+          isRoot ? "bg-cyan-600 text-white" : "bg-surface border border-cyan-200",
           hasChildren && "cursor-pointer hover:brightness-105",
         )}
       >
@@ -102,7 +102,7 @@ function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
           <span
             className={cn(
               "text-xs leading-tight line-clamp-2",
-              isRoot ? "opacity-90" : "text-zinc-500",
+              isRoot ? "opacity-90" : "text-muted",
             )}
           >
             {detalhe}
@@ -255,7 +255,7 @@ function MindMapFlow({
       </ReactFlow>
 
       {isInteractive ? (
-        <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-1 rounded-xl bg-white p-1 shadow-surface">
+        <div className="absolute bottom-3 right-3 z-10 flex flex-col gap-1 rounded-xl bg-surface p-1 shadow-surface">
           <Button
             variant="ghost"
             size="sm"

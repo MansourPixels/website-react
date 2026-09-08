@@ -28,7 +28,7 @@ export default function AuthLayout() {
         <span className="sr-only">Voltar para a página inicial</span>
       </Link>
 
-      <div className="flex w-full max-w-sm flex-col gap-6 rounded-3xl bg-white p-6 shadow-surface">
+      <div className="flex w-full max-w-sm flex-col gap-6 rounded-3xl bg-surface p-6 shadow-surface">
         <Outlet />
       </div>
     </main>

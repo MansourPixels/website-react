@@ -27,7 +27,7 @@ export function StudyTypeCard({
       to={`/pastas/${pastaId}/assuntos/${assuntoId}/${id}`}
       className={buttonVariants({
         className:
-          "bg-white rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+          "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
         variant: "ghost",
       })}
     >
@@ -41,7 +41,7 @@ export function StudyTypeCard({
       </div>
       <div className="flex-1">
         <h2 className="font-semibold">{name}</h2>
-        <p className="text-xs text-zinc-500 font-normal whitespace-normal">
+        <p className="text-xs text-muted font-normal whitespace-normal">
           {description}
         </p>
       </div>

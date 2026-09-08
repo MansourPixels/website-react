@@ -1,4 +1,11 @@
-import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
+import {
+  Camera,
+  Folders,
+  Route as PathIcon,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Links,
   Meta,
@@ -15,8 +22,10 @@ import { SessionIsland } from "./components/SessionIsland";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { SessionProvider, useSession } from "./contexts/SessionContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
+import { THEME_INIT_SCRIPT } from "./utils/themeInitScript";
 
 const links = [
   {
@@ -40,6 +49,11 @@ const links = [
     icon: PathIcon,
   },
   {
+    to: "/turmas",
+    label: "Turmas",
+    icon: Users,
+  },
+  {
     to: "/perfil",
     label: "Perfil",
     icon: User,
@@ -50,6 +64,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-br">
       <head>
+        {/* Antes de qualquer outra coisa no <head>: aplica o tema salvo em
+            <html> antes do primeiro paint, para não haver flash do tema errado
+            (o app roda como PWA standalone, sem chrome de navegador pra disfarçar). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta charSet="UTF-8" />
         <link rel="icon" href="/favicon.ico" sizes="48x48" />
         <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
@@ -94,21 +112,24 @@ export default function App() {
   useServiceWorker();
 
   return (
-    <PreferencesProvider>
-      <AuthProvider>
-        <SpotifyProvider>
-          <SessionProvider>
-            <AppShell />
-          </SessionProvider>
-        </SpotifyProvider>
-      </AuthProvider>
-    </PreferencesProvider>
+    <ThemeProvider>
+      <PreferencesProvider>
+        <AuthProvider>
+          <SpotifyProvider>
+            <SessionProvider>
+              <AppShell />
+            </SessionProvider>
+          </SpotifyProvider>
+        </AuthProvider>
+      </PreferencesProvider>
+    </ThemeProvider>
   );
 }
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
-// de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
-const extraBottomNavigationRoutes = ["/ascensao"];
+// de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
+// e do Perfil), não são elas mesmas uma aba.
+const extraBottomNavigationRoutes = ["/ascensao", "/amigos", "/ranking"];
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.

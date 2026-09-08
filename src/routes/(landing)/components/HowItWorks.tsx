@@ -62,7 +62,7 @@ export function HowItWorks() {
                   />
                 )}
 
-                <span className="flex size-12 items-center justify-center rounded-full bg-white text-accent shadow-surface">
+                <span className="flex size-12 items-center justify-center rounded-full bg-surface text-accent shadow-surface">
                   <Icon className="size-5" />
                 </span>
 
