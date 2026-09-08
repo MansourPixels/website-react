@@ -12,6 +12,25 @@ interface DialogJoinByCodeProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
+function normalizeInviteCode(value: string): string {
+  const trimmed = value.trim();
+
+  // O botão de convite copia a URL completa. Aceitá-la aqui evita que a
+  // pessoa precise descobrir e extrair o código manualmente.
+  try {
+    const url = new URL(trimmed);
+    const match = url.pathname.match(/^\/turmas\/convite\/([^/]+)\/?$/);
+
+    if (match !== null) return match[1].toLowerCase();
+  } catch {
+    // Não é uma URL; trata como código simples abaixo.
+  }
+
+  // O backend gera UUIDs sem hífens em minúsculas e a busca no PostgreSQL é
+  // sensível a maiúsculas/minúsculas.
+  return trimmed.toLowerCase();
+}
+
 /**
  * Valida o código antes de navegar: mandar a pessoa para uma tela de convite
  * quebrado seria pior do que dizer o erro onde ela digitou.
@@ -34,19 +53,19 @@ export function DialogJoinByCode({
     setError(null);
   }, [isOpen]);
 
-  const trimmed = code.trim();
+  const inviteCode = normalizeInviteCode(code);
 
   async function handleSubmit() {
-    if (trimmed.length === 0 || isChecking) return;
+    if (inviteCode.length === 0 || isChecking) return;
 
     setIsChecking(true);
     setError(null);
 
     try {
-      await getInviteByCode(trimmed);
+      await getInviteByCode(inviteCode);
 
       onOpenChange(false);
-      navigate(`/turmas/convite/${trimmed.toUpperCase()}`);
+      navigate(`/turmas/convite/${inviteCode}`);
     } catch (apiError) {
       feedback("erro");
       setError(
@@ -93,7 +112,7 @@ export function DialogJoinByCode({
               <Button
                 className="w-full"
                 onPress={handleSubmit}
-                isDisabled={trimmed.length === 0 || isChecking}
+                isDisabled={inviteCode.length === 0 || isChecking}
               >
                 {isChecking ? "Verificando…" : "Continuar"}
               </Button>
