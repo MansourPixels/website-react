@@ -40,13 +40,15 @@ export interface ClassroomFolder {
 }
 
 /**
- * `flashcards | summary | quiz` são materiais gerados dentro do Revi;
- * `pdf | image` são arquivos enviados de fora.
+ * `flashcards | summary | quiz | mindmap` são materiais gerados dentro do
+ * Revi (referenciados por `reviMaterialId`); `pdf | image` são arquivos
+ * enviados de fora.
  */
 export type ClassroomContentKind =
   | "flashcards"
   | "summary"
   | "quiz"
+  | "mindmap"
   | "pdf"
   | "image";
 
@@ -58,13 +60,11 @@ export interface ClassroomContent {
   title: string;
   description: string;
   /** Autor: define quem pode editar/excluir, junto com o dono da turma. */
-  authorId: string;
-  authorUsername: string;
+  author: PublicUser;
   /** Preenchidos só para `pdf` e `image`. */
   fileName: string | null;
   fileSize: number | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 export type ClassroomInviteStatus =
@@ -88,13 +88,37 @@ export interface ClassroomInvite {
   invitedBy: PublicUser;
   invitee: PublicUser | null;
   createdAt: string;
-  /** ISO 8601 ou `null` para link sem prazo — decisão pendente do backend. */
+  /** ISO 8601, ou `null` para um link sem prazo de expiração. */
   expiresAt: string | null;
 }
 
-/** Prévia mostrada a quem abre um link de convite sem ser membro ainda. */
+/**
+ * Prévia mostrada a quem abre um convite sem ser membro ainda — mais magra
+ * que `ClassroomInvite`: sem `code`/`status`/`createdAt`/`expiresAt`/
+ * `invitedBy`, que não fazem sentido expor a alguém de fora da turma.
+ */
 export interface ClassroomInvitePreview {
-  invite: ClassroomInvite;
-  memberCount: number;
+  inviteId: string;
+  classroomId: string;
+  classroomName: string;
+  classroomColor: string;
+  role: Exclude<ClassroomRole, "owner">;
   owner: PublicUser;
+  /** Presente só em convite nominal — é o que diferencia de um convite por link. */
+  invitee: PublicUser | null;
+  memberCount: number;
+}
+
+/**
+ * Um material do Revi (flashcards/resumo/simulado/mapa mental) disponível
+ * para referenciar como conteúdo de turma. `id` identifica a combinação
+ * pasta+tipo (`reviMaterialId` é a própria pasta — uma pasta pode ter mais
+ * de um tipo de material gerado, cada um vira uma opção separada aqui).
+ */
+export interface ReviMaterial {
+  id: string;
+  reviMaterialId: string;
+  kind: Extract<ClassroomContentKind, "flashcards" | "summary" | "quiz" | "mindmap">;
+  title: string;
+  description: string;
 }

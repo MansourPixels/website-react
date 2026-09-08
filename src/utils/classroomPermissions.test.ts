@@ -14,8 +14,12 @@ import {
 const EU = "usuario-atual";
 const OUTRA_PESSOA = "outro-editor";
 
-const meuConteudo = { authorId: EU };
-const conteudoAlheio = { authorId: OUTRA_PESSOA };
+function fakeAuthor(id: string) {
+  return { id, username: id, displayName: id, avatarUrl: "", xp: 0 };
+}
+
+const meuConteudo = { author: fakeAuthor(EU) };
+const conteudoAlheio = { author: fakeAuthor(OUTRA_PESSOA) };
 
 describe("gestão da turma", () => {
   it("só o dono convida, gerencia membros e mexe nas pastas", () => {

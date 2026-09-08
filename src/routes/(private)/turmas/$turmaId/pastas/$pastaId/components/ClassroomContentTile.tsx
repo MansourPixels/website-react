@@ -6,6 +6,7 @@ import {
   FileType,
   Image as ImageIcon,
   Layers,
+  Network,
   PencilLine,
   Trash,
   type LucideIcon,
@@ -42,6 +43,11 @@ const kindMeta: Record<
     icon: ClipboardList,
     label: "Simulado",
     className: "bg-warning-soft text-warning",
+  },
+  mindmap: {
+    icon: Network,
+    label: "Mapa mental",
+    className: "bg-accent-soft text-accent",
   },
   pdf: { icon: FileType, label: "PDF", className: "bg-default text-muted" },
   image: {
@@ -149,10 +155,10 @@ export function ClassroomContentTile({
         <span>
           por{" "}
           <Link
-            to={profilePath(content.authorUsername)}
+            to={profilePath(content.author.username)}
             className="hover:underline"
           >
-            @{content.authorUsername}
+            @{content.author.username}
           </Link>
         </span>
         <span aria-hidden="true">·</span>
@@ -180,7 +186,7 @@ export function ClassroomContentTile({
       />
       <DialogContentExclusion
         content={content}
-        isOwnerModerating={role === "owner" && content.authorId !== currentUserId}
+        isOwnerModerating={role === "owner" && content.author.id !== currentUserId}
         isOpen={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
         onConfirm={onDelete}

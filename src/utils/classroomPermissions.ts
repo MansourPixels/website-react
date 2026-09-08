@@ -39,24 +39,24 @@ export function canAddContent(role: ClassroomRole): boolean {
  */
 export function canEditContent(
   role: ClassroomRole,
-  content: Pick<ClassroomContent, "authorId">,
+  content: Pick<ClassroomContent, "author">,
   userId: string,
 ): boolean {
   if (!canAddContent(role)) return false;
 
-  return content.authorId === userId;
+  return content.author.id === userId;
 }
 
 /** O dono exclui qualquer conteúdo da turma; os demais, só o próprio. */
 export function canDeleteContent(
   role: ClassroomRole,
-  content: Pick<ClassroomContent, "authorId">,
+  content: Pick<ClassroomContent, "author">,
   userId: string,
 ): boolean {
   if (role === "owner") return true;
   if (role === "viewer") return false;
 
-  return content.authorId === userId;
+  return content.author.id === userId;
 }
 
 /** O dono não sai da própria turma: excluiria a turma sem querer. */
