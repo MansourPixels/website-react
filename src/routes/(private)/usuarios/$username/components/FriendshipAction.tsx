@@ -130,7 +130,7 @@ export function FriendshipAction({
             isDisabled={requestId === null}
             onPress={() =>
               run(async () => {
-                await acceptFriendRequest(requestId ?? "");
+                await acceptFriendRequest(requestId ?? "", profile.user);
 
                 return { friendship: "friends", pendingRequestId: null };
               }, "Não foi possível aceitar a solicitação. Tente novamente.")
