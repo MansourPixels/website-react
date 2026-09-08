@@ -106,10 +106,11 @@ export default function PublicProfilePage() {
 
   const { user } = profile;
   const displayName = user.displayName || user.username;
+  const sharedClassrooms = profile.sharedClassrooms ?? [];
   const hasNothingInCommon =
     profile.friendship !== "self" &&
     profile.mutualFriends.length === 0 &&
-    profile.sharedClassrooms.length === 0;
+    sharedClassrooms.length === 0;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
@@ -122,9 +123,7 @@ export default function PublicProfilePage() {
           color="accent"
           className="size-26 shrink-0 rounded-2xl"
         >
-          {user.avatarUrl !== null ? (
-            <Avatar.Image src={user.avatarUrl} alt="" />
-          ) : null}
+          <Avatar.Image src={user.avatarUrl} alt="" />
           <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
         </Avatar>
 
@@ -152,33 +151,40 @@ export default function PublicProfilePage() {
           hint="Zera todo mês"
           icon={Sparkles}
         />
-        <StatTile
-          label="Posição global"
-          value={formatPosition(profile.globalPosition)}
-          hint={
-            profile.globalPosition === null
-              ? "Ainda não pontuou"
-              : `de ${profile.globalTotal} ${
-                  profile.globalTotal === 1 ? "pessoa" : "pessoas"
-                }`
-          }
-          icon={Trophy}
-        />
-        <StatTile
-          label="Flash cards"
-          value={profile.flashcards.toLocaleString("pt-BR")}
-          hint="Cartões respondidos"
-          icon={Layers}
-        />
-        <StatTile
-          label="Simulados"
-          value={profile.quizzes.toLocaleString("pt-BR")}
-          hint="Provas concluídas"
-          icon={ClipboardList}
-        />
+        {profile.globalPosition !== undefined &&
+        profile.globalTotal !== undefined ? (
+          <StatTile
+            label="Posição global"
+            value={formatPosition(profile.globalPosition)}
+            hint={
+              profile.globalPosition === null
+                ? "Ainda não pontuou"
+                : `de ${profile.globalTotal} ${
+                    profile.globalTotal === 1 ? "pessoa" : "pessoas"
+                  }`
+            }
+            icon={Trophy}
+          />
+        ) : null}
+        {profile.flashcards !== undefined ? (
+          <StatTile
+            label="Flash cards"
+            value={profile.flashcards.toLocaleString("pt-BR")}
+            hint="Cartões respondidos"
+            icon={Layers}
+          />
+        ) : null}
+        {profile.quizzes !== undefined ? (
+          <StatTile
+            label="Simulados"
+            value={profile.quizzes.toLocaleString("pt-BR")}
+            hint="Provas concluídas"
+            icon={ClipboardList}
+          />
+        ) : null}
       </section>
 
-      {profile.sharedClassrooms.length > 0 ? (
+      {sharedClassrooms.length > 0 ? (
         <section className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
             <h2 className="font-semibold">Turmas em comum</h2>
@@ -187,7 +193,7 @@ export default function PublicProfilePage() {
             </p>
           </header>
           <ul className="flex flex-col gap-2">
-            {profile.sharedClassrooms.map((classroom) => (
+            {sharedClassrooms.map((classroom) => (
               <li key={classroom.id}>
                 <Link
                   to={`/turmas/${classroom.id}`}

@@ -22,13 +22,18 @@ export interface PublicProfile {
   friendship: FriendshipStatus;
   /** Id da solicitação pendente, para aceitar ou cancelar direto do perfil. */
   pendingRequestId: string | null;
-  flashcards: number;
-  quizzes: number;
-  /** Posição no ranking global; `null` se ainda não pontuou na temporada. */
-  globalPosition: number | null;
-  globalTotal: number;
   friendCount: number;
   /** Vazio no próprio perfil — não faz sentido ser amigo em comum consigo. */
   mutualFriends: PublicUser[];
-  sharedClassrooms: SharedClassroom[];
+  /**
+   * Dependem das integrações de Ranking (spec `16`) e Turmas (spec `17`) —
+   * `undefined` até lá, nunca um valor inventado. As telas devem esconder as
+   * seções correspondentes quando ausentes, não mostrar `0`/vazio.
+   */
+  flashcards?: number;
+  quizzes?: number;
+  /** Posição no ranking global; `null` se ainda não pontuou na temporada. */
+  globalPosition?: number | null;
+  globalTotal?: number;
+  sharedClassrooms?: SharedClassroom[];
 }

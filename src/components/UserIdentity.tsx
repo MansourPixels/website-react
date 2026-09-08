@@ -40,9 +40,7 @@ export function UserIdentity({
           size === "sm" ? "size-9" : "size-11",
         )}
       >
-        {user.avatarUrl !== null ? (
-          <Avatar.Image src={user.avatarUrl} alt="" />
-        ) : null}
+        <Avatar.Image src={user.avatarUrl} alt="" />
         <Avatar.Fallback>
           {getInitials(user.displayName || user.username)}
         </Avatar.Fallback>
