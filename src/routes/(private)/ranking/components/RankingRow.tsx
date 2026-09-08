@@ -2,17 +2,18 @@ import { cn } from "@heroui/react";
 
 import { UserIdentity } from "@/components/UserIdentity";
 import type { RankingEntry } from "@/types/api/ranking";
-import { formatXp } from "@/utils/ranking";
+import { formatPosition, formatXp } from "@/utils/ranking";
 
 interface RankingRowProps {
   entry: RankingEntry;
 }
 
 /**
- * As três primeiras posições ganham cor; da quarta em diante o número fica
- * neutro, para o pódio não competir com a linha do próprio usuário.
+ * As três primeiras posições ganham cor; da quarta em diante — e para quem
+ * ainda não pontuou (`position: null`) — o número fica neutro, para o pódio
+ * não competir com a linha do próprio usuário.
  */
-function positionClass(position: number): string {
+function positionClass(position: number | null): string {
   if (position === 1) return "bg-warning-soft text-warning";
   if (position === 2) return "bg-default text-foreground";
   if (position === 3) return "bg-accent-soft text-accent";
@@ -35,7 +36,7 @@ export function RankingRow({ entry }: RankingRowProps) {
           positionClass(entry.position),
         )}
       >
-        {entry.position}
+        {formatPosition(entry.position)}
       </span>
 
       <UserIdentity
@@ -56,7 +57,9 @@ export function RankingRow({ entry }: RankingRowProps) {
       </strong>
 
       <span className="sr-only">
-        {entry.position}º lugar
+        {entry.position === null
+          ? "Ainda não pontuou nesta temporada"
+          : `${entry.position}º lugar`}
         {entry.isCurrentUser ? ", esta é a sua posição" : ""}
       </span>
     </li>
