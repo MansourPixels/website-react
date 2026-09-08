@@ -15,6 +15,7 @@ import {
   useLocation,
 } from "react-router";
 
+import { Spinner } from "@heroui/react";
 import { cn } from "@heroui/styles";
 import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
@@ -62,7 +63,7 @@ const links = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <head>
         {/* Antes de qualquer outra coisa no <head>: aplica o tema salvo em
             <html> antes do primeiro paint, para não haver flash do tema errado
@@ -105,6 +106,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+export function HydrateFallback() {
+  return (
+    <div
+      className="flex min-h-full flex-1 items-center justify-center p-6"
+      aria-busy="true"
+    >
+      <Spinner size="lg" />
+      <span className="sr-only">Carregando</span>
+    </div>
   );
 }
 

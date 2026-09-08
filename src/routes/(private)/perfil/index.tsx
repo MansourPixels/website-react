@@ -1,4 +1,4 @@
-import { Avatar, Button, Spinner } from "@heroui/react";
+import { Avatar, Button, Label, NumberField, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import {
   CalendarCheck,
@@ -26,6 +26,8 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isHapticsSupported } from "@/utils/haptics";
+import { isSpeechSupported } from "@/utils/speech";
+import { SPEECH_RATE_LIMITS } from "@/utils/preferencesStorage";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
@@ -39,8 +41,12 @@ export default function PerfilPage() {
   // evita divergência entre o HTML do servidor e o primeiro render.
   const [hasHaptics, setHasHaptics] = useState(true);
 
+  // Mesma razão do `hasHaptics`: `speechSynthesis` não existe no servidor.
+  const [hasSpeech, setHasSpeech] = useState(true);
+
   useEffect(() => {
     setHasHaptics(isHapticsSupported());
+    setHasSpeech(isSpeechSupported());
   }, []);
 
   const [streak, setStreak] = useState<{
@@ -306,6 +312,43 @@ export default function PerfilPage() {
           isSelected={preferences.hapticsEnabled}
           onChange={(value) => setPreference("hapticsEnabled", value)}
         />
+
+        <SettingToggle
+          label="Ler em voz alta automaticamente"
+          description={
+            hasSpeech
+              ? "Lê sozinho o próximo flash card e a próxima pergunta do simulado."
+              : "Este navegador não oferece leitura em voz alta."
+          }
+          isDisabled={!hasSpeech}
+          isSelected={preferences.speechAutoPlay}
+          onChange={(value) => setPreference("speechAutoPlay", value)}
+        />
+
+        <NumberField
+          value={preferences.speechRate}
+          minValue={SPEECH_RATE_LIMITS.min}
+          maxValue={SPEECH_RATE_LIMITS.max}
+          step={0.1}
+          isDisabled={!hasSpeech}
+          formatOptions={{ minimumFractionDigits: 1 }}
+          onChange={(value) => setPreference("speechRate", value)}
+          className="w-full"
+        >
+          <Label htmlFor="velocidade-leitura">Velocidade da leitura</Label>
+          <NumberField.Group>
+            <NumberField.DecrementButton />
+            <NumberField.Input
+              id="velocidade-leitura"
+              className="tabular-nums"
+            />
+            <NumberField.IncrementButton />
+          </NumberField.Group>
+          <p className="text-muted text-xs">
+            1,0 é a velocidade normal da voz. Abaixo disso a leitura fica mais
+            devagar, o que ajuda quem está aprendendo a ler.
+          </p>
+        </NumberField>
       </section>
 
       <div className="flex flex-col gap-2 sm:flex-row">

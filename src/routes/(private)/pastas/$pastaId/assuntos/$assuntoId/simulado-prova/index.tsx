@@ -8,13 +8,16 @@ import { gradeQuiz, listQuiz } from "@/api/quiz";
 import { AlternativeOption } from "@/components/AlternativeOption";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
+import { SpeakButton } from "@/components/SpeakButton";
 import { useFeedback } from "@/hooks/useFeedback";
+import { useSpeech } from "@/hooks/useSpeech";
 import type {
   GradeRequestItem,
   GradeResponse,
   QuizOption,
   QuizQuestion,
 } from "@/types/api/quiz";
+import { quizSpeech } from "@/utils/speechText";
 import { TestSummary } from "./components/TestSummary";
 
 // Enquanto a lista vier vazia (quiz ainda não gerado), reconsulta a cada
@@ -32,6 +35,17 @@ function optionText(question: QuizQuestion, option: QuizOption) {
     C: question.optionC,
     D: question.optionD,
   }[option];
+}
+
+/** Enunciado e as quatro alternativas — nunca qual é a correta. */
+function questionSpeech(question: QuizQuestion) {
+  return quizSpeech({
+    question: question.question,
+    options: OPTION_LETTERS.map((letter) => ({
+      letter,
+      text: optionText(question, letter),
+    })),
+  });
 }
 
 export default function PracticeTestPage() {
@@ -108,6 +122,22 @@ export default function PracticeTestPage() {
   const isLastQuestion = currentIndex === total - 1;
   const answeredCount = result !== null ? total : currentIndex;
 
+  const { autoPlay, speak, stop } = useSpeech();
+
+  // A frase entra na dependência como string, não como objeto: a lista é
+  // reescrita a cada poll, e depender de `currentQuestion` reiniciaria a
+  // leitura a cada 3 segundos. Mesma pergunta produz o mesmo texto.
+  const questionText =
+    currentQuestion === null ? null : questionSpeech(currentQuestion);
+
+  useEffect(() => {
+    if (!autoPlay || questionText === null || result !== null) return;
+
+    speak(questionText);
+
+    return stop;
+  }, [autoPlay, questionText, result, speak, stop]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -167,7 +197,15 @@ export default function PracticeTestPage() {
           <NavMenu
             title="Simulado de prova"
             hasBackButton
-            className="text-center pr-12 mb-3"
+            className="mb-3"
+            action={
+              currentQuestion !== null && result === null ? (
+                <SpeakButton
+                  label="a pergunta e as alternativas"
+                  text={() => questionSpeech(currentQuestion)}
+                />
+              ) : null
+            }
           />
           {questions !== null && questions.length > 0 ? (
             <ProgressBar
