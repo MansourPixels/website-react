@@ -8,6 +8,7 @@ import {
   Pencil,
   Trophy,
   Unplug,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -170,6 +171,44 @@ export default function PerfilPage() {
           <h3 className="font-semibold">Ver a sua ascensão</h3>
           <p className="text-xs text-muted font-normal whitespace-normal">
             Calendário, marcos e congelamentos da sua sequência.
+          </p>
+        </div>
+      </Link>
+
+      <Link
+        to="/amigos"
+        className={buttonVariants({
+          variant: "ghost",
+          className:
+            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+        })}
+      >
+        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+          <UserPlus className="size-5" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold">Amigos</h3>
+          <p className="text-xs text-muted font-normal whitespace-normal">
+            Busque colegas pelo username e responda solicitações.
+          </p>
+        </div>
+      </Link>
+
+      <Link
+        to="/ranking"
+        className={buttonVariants({
+          variant: "ghost",
+          className:
+            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+        })}
+      >
+        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+          <Trophy className="size-5" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold">Ranking</h3>
+          <p className="text-xs text-muted font-normal whitespace-normal">
+            Seu XP no geral, entre amigos e por turma.
           </p>
         </div>
       </Link>
