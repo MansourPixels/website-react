@@ -313,7 +313,7 @@ export function flashcardSpeech(card: {
     return question;
   }
 
-  return `Resposta: ${speakableSymbols(card.back)}`;
+  return `${question}. Resposta: ${speakableSymbols(card.back)}`;
 }
 
 export function quizSpeech(question: {
@@ -324,8 +324,7 @@ export function quizSpeech(question: {
 
   const alternativas = question.options
     .map(
-      ({ letter, text }, index) =>
-        `${index === question.options.length - 1 ? "Ou, " : ""} Alternativa ${letter}: ${speakableSymbols(text)}`,
+      ({ letter, text }) => `Alternativa ${letter}: ${speakableSymbols(text)}`,
     )
     .join(". ");
 
