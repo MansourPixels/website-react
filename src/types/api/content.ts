@@ -21,8 +21,7 @@ export interface DownloadUrlResponse {
 }
 
 /**
- * Texto extraído de um conteúdo por OCR. O backend já roda OCR no pipeline de
- * categorização; isto é o que falta expor. Ver `OCR.md`.
+ * Texto extraído de um conteúdo pelo pipeline de categorização. Ver `OCR.md`.
  */
 export interface ContentText {
   contentId: string;

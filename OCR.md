@@ -1,34 +1,33 @@
 # OCR, busca por conteúdo e leitura em voz alta
 
-Documento para o time de backend. O frontend já está implementado e funcionando —
-contra um **fallback mockado**, porque os dois endpoints descritos aqui ainda não
-existem no `revi_back`. Assim que eles subirem, o fallback deixa de ser acionado
-sozinho: nenhuma tela precisa mudar.
+O frontend já consome `GET /api/contents/{id}/text` do `revi_back`. A busca por
+texto extraído ainda usa um fallback mockado demonstrativo, porque o backend ainda
+não filtra `GET /api/child-folders/{id}/contents?search=` pelo texto persistido.
 
 **Motivação**: o Revi devolve tudo em texto — flash cards, resumo, simulado, mapa
 mental. Isso exclui quem não lê: uma criança em alfabetização, alguém com
 dislexia, um aluno com baixa visão. Estas funcionalidades existem para que o app
 seja usável **de ouvido**.
 
-> **Nota importante**: o backend **já roda OCR** hoje. O `docs/API.md` registra que
-> o pipeline assíncrono de categorização usa Groq para OCR antes de o OpenAI gerar
-> o resumo. O texto extraído simplesmente não é exposto por nenhum endpoint — é
-> isso que este documento pede.
+> **Nota importante**: imagens usam extração por visão OpenAI e PDFs usam a camada
+> textual extraída pelo PDFBox. O texto extraído é persistido e exposto pelo endpoint
+> de conteúdo; PDFs escaneados sem camada de texto continuam fora deste fluxo.
 
 ---
 
 ## 1. O que já está implementado no frontend
 
-### Painel com o texto da imagem
+### Painel com o texto extraído
 `src/components/OcrSheet.tsx`, dentro de `src/components/MaterialViewer.tsx`.
 Ao abrir um material na tela do assunto, um painel nasce **espiando** na borda de
-baixo, com o título "Texto da imagem", um botão de áudio e as duas primeiras
+baixo, com o título "Texto extraído", um botão de áudio e as duas primeiras
 linhas. Toca para expandir até 70% da tela, com o texto rolável.
 
-Estados cobertos: carregando, **extraindo** (`extractedAt: null`), sem texto,
-erro, e texto disponível. O painel só aparece quando há um `contentId` — o
-`PhotoReview` (prévia local, antes do upload) usa o mesmo visualizador e não tem
-conteúdo no servidor para consultar.
+Estados cobertos: carregando, **processando** (`extractedAt: null`), extração
+concluída sem texto, erro e texto disponível. Enquanto está processando, consulta
+novamente a cada 3 s por no máximo 60 s, cancelando ao fechar ou trocar de material.
+O painel só aparece quando há um `contentId` — o `PhotoReview` (prévia local, antes
+do upload) usa o mesmo visualizador e não tem conteúdo no servidor para consultar.
 
 ### Busca por conteúdo dentro do assunto
 `src/routes/(private)/pastas/$pastaId/assuntos/$assuntoId/index.tsx`.
@@ -45,7 +44,7 @@ de **velocidade** (0,5× a 2×) no Perfil.
 
 | Onde | O que é falado |
 | --- | --- |
-| Painel de OCR | O texto extraído da imagem. |
+| Painel de OCR | O texto extraído do material. |
 | Flash cards | A pergunta; a resposta entra depois de revelada. |
 | Resumo | O markdown convertido para texto falável. |
 | Simulado | Enunciado e as quatro alternativas, numeradas. **Nunca** qual é a correta. |
@@ -53,9 +52,9 @@ de **velocidade** (0,5× a 2×) no Perfil.
 
 ---
 
-## 2. Endpoints a implementar
+## 2. Contratos de backend
 
-### 2.1 Texto extraído de um conteúdo
+### 2.1 Texto extraído de um conteúdo (entregue)
 
 | Método | Caminho | Descrição |
 |---|---|---|
@@ -70,21 +69,23 @@ de **velocidade** (0,5× a 2×) no Perfil.
 }
 ```
 
-**Semântica de `extractedAt`** — é o contrato que a interface já respeita:
+**Semântica de `extractedAt`**:
 - **preenchido**: extração concluída, `text` é o resultado final;
-- **`null`**: o pipeline ainda está rodando. O front mostra "O Revi IA ainda está
-  lendo esta imagem" em vez de tratar como erro. Se preferir devolver `404`
-  enquanto não terminou, também funciona — o front trata `404` como "ainda não
-  disponível", igual faz com `GET /api/child-folders/{id}/summary`.
+- **`null`**: o pipeline ainda está rodando. O front consulta novamente por até
+  60 s e mostra que o material está em processamento;
+- **`text` vazio com timestamp preenchido**: a extração terminou, mas nenhum texto
+  legível foi encontrado. Não há botão de fala.
 
 **Formato do `text`**: texto puro com `\n` preservando as quebras de linha e os
 parágrafos da página. O front renderiza com `whitespace-pre-line` e passa o mesmo
 texto para a fala. Markdown é aceito (o conversor de fala já lida com ele), mas não
 é necessário.
 
-Erros: `403`/`404` conteúdo que não pertence a quem chama · `401` não autenticado.
+Erros: `404` conteúdo inexistente ou que não pertence a quem chama · `401` não
+autenticado. O frontend sempre exibe esses erros reais; eles nunca viram texto
+fictício.
 
-### 2.2 Busca de conteúdo dentro do assunto
+### 2.2 Busca de conteúdo dentro do assunto (aguarda backend)
 
 | Método | Caminho | Descrição |
 |---|---|---|
@@ -145,7 +146,7 @@ Os services correspondentes, em `src/api/content.ts`:
 export function getContentText(
   contentId: string,
   signal?: AbortSignal,
-): Promise<ContentText | null>;
+): Promise<ContentText>;
 
 export function searchContent(
   childFolderId: string,
@@ -154,11 +155,10 @@ export function searchContent(
 ): Promise<Content[]>;
 ```
 
-**O fallback e como removê-lo.** `src/mocks/contentOcr.ts` é o arquivo inteiro a
-ser apagado. Ele é acionado apenas por `isMissingEndpoint(error)` — `404` ou `501`.
-Qualquer outro erro (`403`, `500`, rede) **é propagado**, de propósito: um 500 não
-pode virar dado falso silenciosamente. Isso está travado por teste em
-`src/mocks/contentOcr.test.ts`.
+**Fallback de busca.** `src/mocks/contentSearch.ts` existe apenas enquanto a busca
+no texto OCR não chega ao backend. `getContentText` não tem fallback: `401`, `404`,
+`500` e falhas de rede são sempre propagados. O fallback de busca continua acionado
+somente para `404` ou `501` do endpoint de busca.
 
 ---
 
