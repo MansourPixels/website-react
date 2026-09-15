@@ -1,1 +1,0 @@
-import{G as e,J as t}from"./jsx-runtime-DxNtrcCz.js";import{bt as n}from"./button-DOzovitJ.js";var r=t(e(),1);function i(e,t,i,a){let o=n(i),s=i==null;(0,r.useEffect)(()=>{if(s||!e.current)return;let n=e.current;return n.addEventListener(t,o,a),()=>{n.removeEventListener(t,o,a)}},[e,t,a,s])}export{i as t};

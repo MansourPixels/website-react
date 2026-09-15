@@ -1,1 +1,0 @@
-import{G as e,J as t}from"./jsx-runtime-DxNtrcCz.js";import{D as n}from"./button-DOzovitJ.js";var r=t(e(),1);function i(e={}){let{isReadOnly:t}=e,[i,a]=n(e.isSelected,e.defaultSelected||!1,e.onChange),[o]=(0,r.useState)(i);function s(e){t||a(e)}function c(){t||a(!i)}return{isSelected:i,defaultSelected:e.defaultSelected??o,setSelected:s,toggle:c}}export{i as t};

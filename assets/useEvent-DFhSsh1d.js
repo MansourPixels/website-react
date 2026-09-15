@@ -1,0 +1,1 @@
+import{K as e,Y as t}from"./jsx-runtime-D5CpcogK.js";import{bt as n}from"./button-Dy_CJa1H.js";var r=t(e(),1);function i(e,t,i,a){let o=n(i),s=i==null;(0,r.useEffect)(()=>{if(s||!e.current)return;let n=e.current;return n.addEventListener(t,o,a),()=>{n.removeEventListener(t,o,a)}},[e,t,a,s])}export{i as t};
