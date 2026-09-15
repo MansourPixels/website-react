@@ -9,8 +9,10 @@ import remarkMath from "remark-math";
 import { ApiError } from "@/api/client";
 import { getSummary } from "@/api/summary";
 import { NavMenu } from "@/components/NavMenu";
+import { SpeakButton } from "@/components/SpeakButton";
 import type { FolderSummary } from "@/types/api/summary";
 import { normalizeLatexDelimiters } from "@/utils/markdown";
+import { markdownToSpeech } from "@/utils/speechText";
 import { formatUploadDate } from "@/utils/time";
 
 export default function SummaryPage() {
@@ -53,7 +55,19 @@ export default function SummaryPage() {
   return (
     <main className="content-bg-purple-200 flex-1 flex flex-col">
       <div className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-3xl mx-auto">
-        <NavMenu title="Resumo" hasBackButton className="text-center pr-12" />
+        <NavMenu
+          title="Resumo"
+          hasBackButton
+          action={
+            summary !== null && summary !== undefined ? (
+              <SpeakButton
+                label="o resumo"
+                // Função: converter o markdown inteiro só vale a pena no clique.
+                text={() => markdownToSpeech(summary.markdown)}
+              />
+            ) : null
+          }
+        />
 
         {loadError !== null ? (
           <p className="text-danger text-center py-8">{loadError}</p>

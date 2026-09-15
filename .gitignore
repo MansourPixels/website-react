@@ -32,3 +32,6 @@ build
 
 # Documentos de planejamento local (não versionados)
 docs/
+
+# Artefatos locais do Playwright MCP (snapshots, logs e arquivos de teste)
+.playwright-mcp/
