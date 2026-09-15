@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/api/client";
 import { getContentText } from "@/api/content";
 import type { ContentText } from "@/types/api/content";
+import { getContentTextStatus } from "@/utils/contentTextStatus";
 
 import { SpeakButton } from "./SpeakButton";
 
@@ -12,49 +13,75 @@ interface OcrSheetProps {
   contentId: string;
 }
 
+const POLL_INTERVAL_MS = 3_000;
+const POLL_MAX_DURATION_MS = 60_000;
+
 /**
- * O texto que está dentro da imagem, num painel na borda de baixo do
+ * O texto extraído do material, num painel na borda de baixo do
  * visualizador.
  *
  * Nasce espiando, não escondido: para quem não lê, o botão de ouvir precisa
  * estar visível sem depender de descobrir um gesto.
  */
 export function OcrSheet({ contentId }: OcrSheetProps) {
-  const [content, setContent] = useState<ContentText | null | undefined>(
-    undefined,
-  );
+  const [content, setContent] = useState<ContentText | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
+    const startedAt = Date.now();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let controller: AbortController | undefined;
+    let isStopped = false;
 
     setContent(undefined);
     setLoadError(null);
     setIsExpanded(false);
 
-    getContentText(contentId, controller.signal)
-      .then(setContent)
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
+    const loadContentText = () => {
+      controller = new AbortController();
 
-        setLoadError(
-          error instanceof ApiError
-            ? error.detail
-            : "Não foi possível ler o texto desta imagem.",
-        );
-      });
+      getContentText(contentId, controller.signal)
+        .then((nextContent) => {
+          if (isStopped) return;
 
-    return () => controller.abort();
+          setContent(nextContent);
+
+          const elapsed = Date.now() - startedAt;
+          if (
+            nextContent.extractedAt === null &&
+            elapsed + POLL_INTERVAL_MS <= POLL_MAX_DURATION_MS
+          ) {
+            timeoutId = setTimeout(loadContentText, POLL_INTERVAL_MS);
+          }
+        })
+        .catch((error: unknown) => {
+          if (isStopped || controller?.signal.aborted) return;
+
+          setLoadError(
+            error instanceof ApiError
+              ? error.detail
+              : "Não foi possível ler o texto deste material.",
+          );
+        });
+    };
+
+    loadContentText();
+
+    return () => {
+      isStopped = true;
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      controller?.abort();
+    };
   }, [contentId]);
 
   const text = content?.text.trim() ?? "";
-  const isExtracting = content !== null && content !== undefined && text.length === 0;
-  const hasText = text.length > 0;
+  const contentStatus = content === undefined ? null : getContentTextStatus(content);
+  const hasText = contentStatus === "available";
 
   return (
     <section
-      aria-label="Texto da imagem"
+      aria-label="Texto extraído do material"
       className={cn(
         "sheet-in bg-surface pointer-events-auto absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 rounded-t-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-surface",
         isExpanded ? "max-h-[70svh]" : "max-h-48",
@@ -64,7 +91,9 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
       <button
         type="button"
         aria-expanded={isExpanded}
-        aria-label={isExpanded ? "Recolher o texto" : "Expandir o texto"}
+        aria-label={
+          isExpanded ? "Recolher o texto extraído" : "Expandir o texto extraído"
+        }
         className="-mt-1 flex w-full shrink-0 justify-center py-1"
         onClick={() => setIsExpanded((previous) => !previous)}
       >
@@ -80,23 +109,25 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <h2 className="font-semibold">Texto da imagem</h2>
+          <h2 className="font-semibold">Texto extraído</h2>
           <p className="text-muted text-xs">
             {hasText
-              ? "Lido pelo Revi IA a partir da foto."
-              : "Reconhecimento de texto do Revi IA."}
+              ? "Extraído do material pelo Revi IA."
+              : "Leitura de texto do material pelo Revi IA."}
           </p>
         </div>
 
         {hasText ? (
-          <SpeakButton label="o texto da imagem" text={text} />
+          <SpeakButton label="o texto extraído deste material" text={text} />
         ) : null}
 
         <Button
           isIconOnly
           variant="ghost"
           size="lg"
-          aria-label={isExpanded ? "Recolher o texto" : "Expandir o texto"}
+          aria-label={
+            isExpanded ? "Recolher o texto extraído" : "Expandir o texto extraído"
+          }
           onPress={() => setIsExpanded((previous) => !previous)}
         >
           {isExpanded ? (
@@ -114,12 +145,16 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
       ) : content === undefined ? (
         <div className="flex shrink-0 items-center gap-2 py-1" aria-busy="true">
           <Spinner size="sm" />
-          <span className="text-muted text-sm">Lendo a imagem…</span>
+          <span className="text-muted text-sm">Lendo o texto do material…</span>
         </div>
-      ) : isExtracting || content === null ? (
+      ) : contentStatus === "pending" ? (
         <p className="text-muted flex shrink-0 items-center gap-2 text-sm text-pretty">
           <Sparkles className="size-4 shrink-0" aria-hidden="true" />
-          O Revi IA ainda está lendo esta imagem. Volte em instantes.
+          O Revi IA ainda está processando este material.
+        </p>
+      ) : contentStatus === "empty" ? (
+        <p className="text-muted shrink-0 text-sm text-pretty">
+          Nenhum texto legível foi encontrado neste material.
         </p>
       ) : (
         <div

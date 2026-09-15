@@ -234,6 +234,7 @@ and the underlying MinIO objects. Returns `204 No Content`.
 | `POST` | `/api/child-folders/{childFolderId}/contents` | Upload a PDF or image (`multipart/form-data`) |
 | `GET` | `/api/child-folders/{childFolderId}/contents` | List a child folder's content items |
 | `GET` | `/api/contents/{id}/download-url` | Get a short-lived presigned download URL |
+| `GET` | `/api/contents/{id}/text` | Get the text extracted from a content item |
 | `POST` | `/api/contents/folder-suggestion` | Suggest a folder pairing for a loose file, before uploading (`multipart/form-data`) |
 
 **Upload** — multipart fields:
@@ -250,19 +251,32 @@ and the underlying MinIO objects. Returns `204 No Content`.
   "hasSummary": false
 }
 ```
-`hasSummary` flips to `true` once the async categorization pipeline (RabbitMQ + Groq for
-OCR, OpenAI for the text summarization itself) finishes summarizing the file — usually
-within a few seconds. The moment that happens, the child folder's quiz, aggregated summary,
-flashcards, and mind map (see below) all regenerate automatically in the background — no
-separate call is needed to refresh any of them.
+`hasSummary` flips to `true` once the async categorization pipeline finishes summarizing the
+file — usually within a few seconds. Images use OpenAI vision to extract text; PDFs use PDFBox
+to extract their text layer, before OpenAI generates the summary. The moment that happens, the
+child folder's quiz, aggregated summary, flashcards, and mind map (see below) all regenerate
+automatically in the background — no separate call is needed to refresh any of them.
 
 **Download URL response**
 ```json
 { "url": "http://localhost:9000/revi-content/owners/.../notes.pdf?X-Amz-..." }
 ```
 
+**Extracted text response**
+```json
+{
+  "contentId": "0198...",
+  "text": "Text extracted from the material.",
+  "extractedAt": "2026-09-15T12:34:56Z"
+}
+```
+While categorization is pending, the endpoint returns `200` with `text: ""` and
+`extractedAt: null`. A completed extraction without readable text also returns `text: ""`,
+but has a non-null `extractedAt` value.
+
 Errors: `400` file extension doesn't match `contentType` · `404` child folder not owned by
-caller (upload/list) or content not owned by caller (download-url).
+caller (upload/list) or content not owned by caller (download-url/text) · `401`
+unauthenticated.
 
 **Folder suggestion** — synchronous, persists nothing (not an upload). Multipart fields are
 the same as upload (`file`, `contentType`). OCRs/extracts the file's text and matches it

@@ -1,4 +1,4 @@
-import { mockContentText, mockSearchContents } from "@/mocks/contentOcr";
+import { mockSearchContents } from "@/mocks/contentSearch";
 import type {
   Content,
   ContentText,
@@ -49,10 +49,10 @@ export function suggestFolder(
 }
 
 /**
- * Sinaliza que o endpoint ainda não existe no backend, em oposição a um erro de
- * verdade. Ver `OCR.md` — enquanto isso, o fallback mockado responde.
+ * A busca por OCR ainda não foi implementada pelo backend. Enquanto isso, apenas
+ * esse fluxo pode usar o fallback demonstrativo.
  */
-export function isMissingEndpoint(error: unknown): boolean {
+function isMissingEndpoint(error: unknown): boolean {
   return (
     error instanceof ApiError && (error.status === 404 || error.status === 501)
   );
@@ -61,23 +61,16 @@ export function isMissingEndpoint(error: unknown): boolean {
 /**
  * Texto extraído do conteúdo por OCR.
  *
- * `null` significa "ainda não extraído" — um estado válido, não um erro, mesma
- * convenção de `getSummary`. Como o endpoint ainda não existe, um 404/501 cai
- * no fallback de `src/mocks/contentOcr.ts`.
+ * `extractedAt: null` significa "ainda não extraído" — um estado válido, não um
+ * erro, mesma convenção de `getSummary`.
  */
-export async function getContentText(
+export function getContentText(
   contentId: string,
   signal?: AbortSignal,
-): Promise<ContentText | null> {
-  try {
-    return await apiFetch<ContentText>(`/api/contents/${contentId}/text`, {
-      signal,
-    });
-  } catch (error) {
-    if (isMissingEndpoint(error)) return mockContentText(contentId);
-
-    throw error;
-  }
+): Promise<ContentText> {
+  return apiFetch<ContentText>(`/api/contents/${contentId}/text`, {
+    signal,
+  });
 }
 
 /**

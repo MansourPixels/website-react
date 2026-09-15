@@ -1,12 +1,9 @@
-import type { Content, ContentText } from "@/types/api/content";
+import type { Content } from "@/types/api/content";
 import { normalizeText } from "@/utils/text";
 
 /**
- * Fallback de OCR e de busca, usado **somente** enquanto os endpoints descritos
- * em `OCR.md` não existirem no `revi_back`.
- *
- * Este é o arquivo inteiro a ser apagado depois: `src/api/content.ts` só o
- * chama quando a API responde 404/501, e nenhuma tela o conhece.
+ * Fallback demonstrativo da busca por OCR, enquanto o backend não aceita
+ * `search` na listagem de conteúdos.
  */
 
 /** Páginas fictícias de caderno, atribuídas de forma estável por conteúdo. */
@@ -75,12 +72,8 @@ function seedIndex(contentId: string, length: number): number {
   return hash % length;
 }
 
-export function mockContentText(contentId: string): ContentText {
-  return {
-    contentId,
-    text: SAMPLE_PAGES[seedIndex(contentId, SAMPLE_PAGES.length)],
-    extractedAt: new Date().toISOString(),
-  };
+function sampleTextForContent(contentId: string): string {
+  return SAMPLE_PAGES[seedIndex(contentId, SAMPLE_PAGES.length)];
 }
 
 /**
@@ -98,6 +91,6 @@ export function mockSearchContents(
   return contents.filter((content) => {
     if (normalizeText(content.name).includes(normalized)) return true;
 
-    return normalizeText(mockContentText(content.id).text).includes(normalized);
+    return normalizeText(sampleTextForContent(content.id)).includes(normalized);
   });
 }
