@@ -9,10 +9,13 @@ import { DifficultyButton } from "@/components/DifficultyButton";
 import { FlashCard } from "@/components/FlashCard";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
+import { SpeakButton } from "@/components/SpeakButton";
 import { useFeedback } from "@/hooks/useFeedback";
+import { useSpeech } from "@/hooks/useSpeech";
 import type { Flashcard } from "@/types/api/flashcard";
 import { difficulties, type Difficulty } from "@/utils/difficulties";
 import type { FeedbackEvent } from "@/utils/feedbackCatalog";
+import { flashcardSpeech } from "@/utils/speechText";
 import { SessionSummary } from "./components/SessionSummary";
 
 const difficultyFeedback: Record<Difficulty, FeedbackEvent> = {
@@ -67,6 +70,20 @@ export default function FlashCardsPage() {
   const currentCard = flashcards?.[currentIndex] ?? null;
   const answeredCount = isFinished ? total : currentIndex;
 
+  const { autoPlay, speak, stop } = useSpeech();
+
+  // Leitura automática do card que entrou. Depende só da pergunta: ler a
+  // resposta antes de revelá-la entregaria o card.
+  const front = currentCard?.front ?? null;
+
+  useEffect(() => {
+    if (!autoPlay || front === null || isFinished) return;
+
+    speak(flashcardSpeech({ front }));
+
+    return stop;
+  }, [autoPlay, front, isFinished, speak, stop]);
+
   function handleDifficulty(difficulty: Difficulty) {
     setCounts((previous) => ({
       ...previous,
@@ -105,7 +122,20 @@ export default function FlashCardsPage() {
           <NavMenu
             title="Flash Cards"
             hasBackButton
-            className="text-center pr-12 mb-3"
+            className="mb-3"
+            action={
+              currentCard !== null && !isFinished ? (
+                <SpeakButton
+                  label={isAnswerRevealed ? "a resposta" : "a pergunta"}
+                  text={() =>
+                    flashcardSpeech({
+                      front: currentCard.front,
+                      back: isAnswerRevealed ? currentCard.back : null,
+                    })
+                  }
+                />
+              ) : null
+            }
           />
           {flashcards !== null && flashcards.length > 0 ? (
             <ProgressBar

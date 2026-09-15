@@ -1,4 +1,4 @@
-import { Avatar, Button, Spinner } from "@heroui/react";
+import { Avatar, Button, Label, NumberField, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import {
   CalendarCheck,
@@ -8,6 +8,7 @@ import {
   Pencil,
   Trophy,
   Unplug,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -25,6 +26,8 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isHapticsSupported } from "@/utils/haptics";
+import { isSpeechSupported } from "@/utils/speech";
+import { SPEECH_RATE_LIMITS } from "@/utils/preferencesStorage";
 import { getInitials } from "@/utils/text";
 
 export default function PerfilPage() {
@@ -38,8 +41,12 @@ export default function PerfilPage() {
   // evita divergência entre o HTML do servidor e o primeiro render.
   const [hasHaptics, setHasHaptics] = useState(true);
 
+  // Mesma razão do `hasHaptics`: `speechSynthesis` não existe no servidor.
+  const [hasSpeech, setHasSpeech] = useState(true);
+
   useEffect(() => {
     setHasHaptics(isHapticsSupported());
+    setHasSpeech(isSpeechSupported());
   }, []);
 
   const [streak, setStreak] = useState<{
@@ -174,6 +181,44 @@ export default function PerfilPage() {
         </div>
       </Link>
 
+      <Link
+        to="/amigos"
+        className={buttonVariants({
+          variant: "ghost",
+          className:
+            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+        })}
+      >
+        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+          <UserPlus className="size-5" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold">Amigos</h3>
+          <p className="text-xs text-muted font-normal whitespace-normal">
+            Busque colegas pelo username e responda solicitações.
+          </p>
+        </div>
+      </Link>
+
+      <Link
+        to="/ranking"
+        className={buttonVariants({
+          variant: "ghost",
+          className:
+            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+        })}
+      >
+        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+          <Trophy className="size-5" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold">Ranking</h3>
+          <p className="text-xs text-muted font-normal whitespace-normal">
+            Seu XP no geral, entre amigos e por turma.
+          </p>
+        </div>
+      </Link>
+
       <section className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-surface">
         <header className="flex items-center gap-3">
           <SpotifyMark />
@@ -267,6 +312,43 @@ export default function PerfilPage() {
           isSelected={preferences.hapticsEnabled}
           onChange={(value) => setPreference("hapticsEnabled", value)}
         />
+
+        <SettingToggle
+          label="Ler em voz alta automaticamente"
+          description={
+            hasSpeech
+              ? "Lê sozinho o próximo flash card e a próxima pergunta do simulado."
+              : "Este navegador não oferece leitura em voz alta."
+          }
+          isDisabled={!hasSpeech}
+          isSelected={preferences.speechAutoPlay}
+          onChange={(value) => setPreference("speechAutoPlay", value)}
+        />
+
+        <NumberField
+          value={preferences.speechRate}
+          minValue={SPEECH_RATE_LIMITS.min}
+          maxValue={SPEECH_RATE_LIMITS.max}
+          step={0.1}
+          isDisabled={!hasSpeech}
+          formatOptions={{ minimumFractionDigits: 1 }}
+          onChange={(value) => setPreference("speechRate", value)}
+          className="w-full"
+        >
+          <Label htmlFor="velocidade-leitura">Velocidade da leitura</Label>
+          <NumberField.Group>
+            <NumberField.DecrementButton />
+            <NumberField.Input
+              id="velocidade-leitura"
+              className="tabular-nums"
+            />
+            <NumberField.IncrementButton />
+          </NumberField.Group>
+          <p className="text-muted text-xs">
+            1,0 é a velocidade normal da voz. Abaixo disso a leitura fica mais
+            devagar, o que ajuda quem está aprendendo a ler.
+          </p>
+        </NumberField>
       </section>
 
       <div className="flex flex-col gap-2 sm:flex-row">

@@ -1,12 +1,20 @@
 export interface Preferences {
   soundEnabled: boolean;
   hapticsEnabled: boolean;
+  /** Multiplicador de velocidade da leitura em voz alta. */
+  speechRate: number;
+  /** Lê sozinho o próximo flash card / pergunta ao aparecer. */
+  speechAutoPlay: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
   soundEnabled: true,
   hapticsEnabled: true,
+  speechRate: 1,
+  speechAutoPlay: false,
 };
+
+export const SPEECH_RATE_LIMITS = { min: 0.5, max: 2 } as const;
 
 const PREFERENCES_KEY = "revi:preferencias";
 
@@ -38,6 +46,22 @@ function readBoolean(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback;
 }
 
+/**
+ * Clampa sem arredondar — o `clampNumber` do Pomodoro faz `Math.round`, que
+ * transformaria uma velocidade de 1,25 em 1. Uma casa decimal é o passo do
+ * controle na tela.
+ */
+function clampRate(value: unknown, fallback: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+
+  const clamped = Math.min(
+    SPEECH_RATE_LIMITS.max,
+    Math.max(SPEECH_RATE_LIMITS.min, value),
+  );
+
+  return Math.round(clamped * 10) / 10;
+}
+
 export function sanitizePreferences(value: unknown): Preferences {
   const raw = (value ?? {}) as Partial<Preferences>;
 
@@ -49,6 +73,11 @@ export function sanitizePreferences(value: unknown): Preferences {
     hapticsEnabled: readBoolean(
       raw.hapticsEnabled,
       DEFAULT_PREFERENCES.hapticsEnabled,
+    ),
+    speechRate: clampRate(raw.speechRate, DEFAULT_PREFERENCES.speechRate),
+    speechAutoPlay: readBoolean(
+      raw.speechAutoPlay,
+      DEFAULT_PREFERENCES.speechAutoPlay,
     ),
   };
 }

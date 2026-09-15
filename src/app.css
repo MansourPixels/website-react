@@ -207,6 +207,19 @@
     }
   }
 
+  /* O painel de texto da imagem sobe da borda de baixo, e a altura anima entre
+     espiando e expandido — o salto seco esconde de onde o conteúdo veio. */
+  .sheet-in {
+    translate: 0 0;
+    transition:
+      translate 260ms var(--ease-out-strong),
+      max-height 260ms var(--ease-out-strong);
+
+    @starting-style {
+      translate: 0 100%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .celebrate,
     .celebrate-stagger > *,
@@ -214,7 +227,8 @@
     .camera-focus,
     .camera-focus-fade,
     .island-in-top,
-    .island-in-bottom {
+    .island-in-bottom,
+    .sheet-in {
       transition: none;
     }
   }

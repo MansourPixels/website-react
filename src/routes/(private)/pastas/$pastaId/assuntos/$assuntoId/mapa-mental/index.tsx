@@ -7,8 +7,10 @@ import { ApiError } from "@/api/client";
 import { getMindMap } from "@/api/mindMap";
 import { MindMapCanvas } from "@/components/MindMapCanvas";
 import { NavMenu } from "@/components/NavMenu";
+import { SpeakButton } from "@/components/SpeakButton";
 import { useMindMap } from "@/hooks/useMindMap";
 import type { MindMap } from "@/types/api/mindMap";
+import { mindMapSpeech } from "@/utils/speechText";
 import { MindMapSummary } from "./components/MindMapSummary";
 
 // Enquanto o mapa ainda não foi gerado (raiz: null), reconsulta a cada ~3s;
@@ -92,7 +94,17 @@ export default function MindMapPage() {
           <NavMenu
             title="Mapa Mental"
             hasBackButton
-            className="text-center pr-12 mb-3"
+            className="mb-3"
+            action={
+              map?.raiz != null ? (
+                <SpeakButton
+                  label="o mapa"
+                  // A árvore inteira em ordem de leitura — o mesmo conteúdo do
+                  // índice `sr-only` que o canvas já expõe.
+                  text={() => mindMapSpeech(map.raiz)}
+                />
+              ) : null
+            }
           />
           <ProgressBar
             aria-label="Progresso"

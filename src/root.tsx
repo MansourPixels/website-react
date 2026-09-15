@@ -1,4 +1,11 @@
-import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
+import {
+  Camera,
+  Folders,
+  Route as PathIcon,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Links,
   Meta,
@@ -8,6 +15,7 @@ import {
   useLocation,
 } from "react-router";
 
+import { Spinner } from "@heroui/react";
 import { cn } from "@heroui/styles";
 import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
@@ -42,6 +50,11 @@ const links = [
     icon: PathIcon,
   },
   {
+    to: "/turmas",
+    label: "Turmas",
+    icon: Users,
+  },
+  {
     to: "/perfil",
     label: "Perfil",
     icon: User,
@@ -50,7 +63,7 @@ const links = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <head>
         {/* Antes de qualquer outra coisa no <head>: aplica o tema salvo em
             <html> antes do primeiro paint, para não haver flash do tema errado
@@ -96,6 +109,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function HydrateFallback() {
+  return (
+    <div
+      className="flex min-h-full flex-1 items-center justify-center p-6"
+      aria-busy="true"
+    >
+      <Spinner size="lg" />
+      <span className="sr-only">Carregando</span>
+    </div>
+  );
+}
+
 export default function App() {
   useServiceWorker();
 
@@ -115,8 +140,9 @@ export default function App() {
 }
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
-// de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
-const extraBottomNavigationRoutes = ["/ascensao"];
+// de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
+// e do Perfil), não são elas mesmas uma aba.
+const extraBottomNavigationRoutes = ["/ascensao", "/amigos", "/ranking"];
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
