@@ -234,7 +234,7 @@ and the underlying MinIO objects. Returns `204 No Content`.
 | `POST` | `/api/child-folders/{childFolderId}/contents` | Upload a PDF or image (`multipart/form-data`) |
 | `GET` | `/api/child-folders/{childFolderId}/contents` | List a child folder's content items |
 | `GET` | `/api/contents/{id}/download-url` | Get a short-lived presigned download URL |
-| `GET` | `/api/contents/{id}/text` | Get the text extracted from a content item |
+| `GET` | `/api/contents/{contentId}/text` | Get the content's extracted text and processing state |
 | `POST` | `/api/contents/folder-suggestion` | Suggest a folder pairing for a loose file, before uploading (`multipart/form-data`) |
 
 **Upload** — multipart fields:
@@ -251,11 +251,11 @@ and the underlying MinIO objects. Returns `204 No Content`.
   "hasSummary": false
 }
 ```
-`hasSummary` flips to `true` once the async categorization pipeline finishes summarizing the
-file — usually within a few seconds. Images use OpenAI vision to extract text; PDFs use PDFBox
-to extract their text layer, before OpenAI generates the summary. The moment that happens, the
-child folder's quiz, aggregated summary, flashcards, and mind map (see below) all regenerate
-automatically in the background — no separate call is needed to refresh any of them.
+`hasSummary` flips to `true` once the async categorization pipeline (RabbitMQ + Groq for
+OCR, OpenAI for the text summarization itself) finishes summarizing the file — usually
+within a few seconds. The moment that happens, the child folder's quiz, aggregated summary,
+flashcards, and mind map (see below) all regenerate automatically in the background — no
+separate call is needed to refresh any of them.
 
 **Download URL response**
 ```json
@@ -266,17 +266,18 @@ automatically in the background — no separate call is needed to refresh any of
 ```json
 {
   "contentId": "0198...",
-  "text": "Text extracted from the material.",
+  "text": "Função do 1º grau\n\nToda função do 1º grau pode ser escrita como f(x) = ax + b...",
   "extractedAt": "2026-09-15T12:34:56Z"
 }
 ```
-While categorization is pending, the endpoint returns `200` with `text: ""` and
-`extractedAt: null`. A completed extraction without readable text also returns `text: ""`,
-but has a non-null `extractedAt` value.
+While categorization is in progress, the endpoint returns `200` with the requested `contentId`,
+`text: ""`, and `extractedAt: null`. A completed extraction with no text also has `text: ""`,
+but has a non-null timestamp. Images use vision OCR; PDFs use PDFBox to extract their existing
+text layer only, so scanned PDFs without a text layer can complete with empty text.
 
 Errors: `400` file extension doesn't match `contentType` · `404` child folder not owned by
-caller (upload/list) or content not owned by caller (download-url/text) · `401`
-unauthenticated.
+caller (upload/list) or content not owned by caller (download-url/text) · `401` missing or
+invalid authentication (download-url/text).
 
 **Folder suggestion** — synchronous, persists nothing (not an upload). Multipart fields are
 the same as upload (`file`, `contentType`). OCRs/extracts the file's text and matches it
@@ -808,6 +809,16 @@ Note this shape has no `xp` — it's classrooms' own resolution, not `friends`' 
 | `GET` | `/api/me/materials` | The caller's own generated material, as `{childFolderId, kinds}[]` — `kinds` is a subset of `flashcards`/`summary`/`quiz`/`mindmap`; use `childFolderId` as `reviMaterialId` below |
 | `GET`/`POST` | `/api/classrooms/{id}/folders/{folderId}/contents` | List/add content (reference or upload) |
 | `PATCH`/`DELETE` | `.../contents/{contentId}` | Edit (author only) / delete (author or owner) |
+| `GET` | `.../contents/{contentId}/processing` | Read an uploaded file's extraction status; any member |
+| `GET` | `.../contents/{contentId}/text` | Read an uploaded file's extracted text; any member |
+| `GET` | `.../contents/{contentId}/download-url` | Get a short-lived uploaded-file download URL; any member |
+| `GET` | `.../contents/search?q={query}` | Search uploaded-file title, filename, and completed OCR text; any member |
+| `GET` | `/api/classrooms/{id}/folders/{folderId}/summary` | Read generated classroom summary; any member |
+| `GET` | `.../flashcards` | Read generated classroom flashcards; any member |
+| `GET` | `.../quiz` | Read generated classroom quiz; any member |
+| `GET` | `.../mind-map` | Read generated classroom mind map; any member |
+| `POST` | `.../contents/snapshots` | Copy the caller's personal generated material into a classroom snapshot; owner/editor |
+| `GET` | `.../contents/{contentId}/snapshot` | Read a durable material snapshot; any member |
 | `POST` | `/api/classrooms/{id}/invites` | Invite a specific user by username; owner only |
 | `POST` | `/api/classrooms/{id}/invites/link` | Generate a reusable link invite; owner only |
 | `GET`/`DELETE` | `/api/classrooms/{id}/invites` / `/{inviteId}` | List/revoke pending invites; owner only |
@@ -849,6 +860,61 @@ content stays attributed to them. For a *reference* content (`kind` one of `flas
 (from `GET /api/me/materials`) that actually has generated material of that `kind`; a `pdf`/
 `image` content is created via the separate multipart upload endpoint instead (no
 `reviMaterialId`).
+
+#### Classroom AI Content
+
+Uploaded classroom `pdf`/`image` content starts with processing status `pending` and is
+extracted asynchronously. Poll these member-only routes; none exposes an internal storage key:
+
+| Method | Path | Response / behavior |
+|---|---|---|
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/processing` | `{ "status": "pending\|processing\|completed\|failed", "textExtractedAt": null, "error": null }` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/text` | `{ "text": "extracted OCR text", "extractedAt": "2026-09-16T12:00:00Z" }`; pending/failed files have null text/timestamp |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/download-url` | `{ "url": "http://localhost:9000/...", "expiresAt": "2026-09-16T12:15:00Z" }` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/search?q={query}` | Matching uploaded content, by title, original filename, or completed extracted text |
+
+Pending and failed uploads remain searchable by title/filename but cannot match unavailable OCR
+text. A completed extraction automatically queues a classroom-owned summary, flashcards, quiz,
+and mind map for that folder:
+
+| Method | Path | Not-ready representation |
+|---|---|---|
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/summary` | `204 No Content` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/flashcards` | `200 OK` with `[]` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/quiz` | `200 OK` with `[]` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/mind-map` | `204 No Content` |
+
+Generated responses use the existing classroom-owned shapes: summary has `markdown` and
+`generatedAt`; each flashcard has `position`, `front`, and `back`; quiz questions include
+`position`, `question`, `optionA` through `optionD`, and `correctOption`; and a mind map has
+`raiz`, `sourceVersion`, and `generatedAt`. These are shared classroom artifacts, never the
+caller's personal-folder artifacts.
+
+**Material snapshots** copy all currently available generated material from one of the caller's
+own personal child folders. The copied values remain readable if that personal source later
+changes or is deleted.
+
+```json
+POST /api/classrooms/{classroomId}/folders/{folderId}/contents/snapshots
+{ "sourceChildFolderId": "0198...", "title": "Cálculo - revisão", "description": "Material da semana" }
+```
+
+The `201` response, and `GET .../contents/{contentId}/snapshot`, return source attribution and
+the copied payload:
+
+```json
+{
+  "contentId": "0198...", "sourceOwnerId": "0198...", "sourceChildFolderId": "0198...",
+  "summary": "# Resumo", "flashcards": [{ "position": 0, "front": "...", "back": "..." }],
+  "quizQuestions": [{ "position": 0, "question": "...", "optionA": "...", "optionB": "...", "optionC": "...", "optionD": "...", "correctOption": "A" }],
+  "mindMapRoot": null, "snapshottedAt": "2026-09-16T12:00:00Z"
+}
+```
+
+Errors: `401` missing/invalid token · `404` caller is not a classroom member, the folder/content
+does not belong to the classroom, or the snapshot is absent · `403` viewer attempts snapshot
+creation, or the personal source folder is not owned by the caller · `400` missing snapshot
+title/source id or missing search `q` · `409` no generated personal material exists to copy.
 
 **Response** (invite, `200`/`201`)
 ```json

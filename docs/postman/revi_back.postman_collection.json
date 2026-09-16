@@ -27,7 +27,11 @@
     { "key": "content_id", "value": "", "type": "string" },
     { "key": "question_id", "value": "", "type": "string" },
     { "key": "study_plan_step_id", "value": "", "type": "string" },
-    { "key": "classroom_id", "value": "", "type": "string" }
+    { "key": "classroom_id", "value": "", "type": "string" },
+    { "key": "classroom_folder_id", "value": "", "type": "string" },
+    { "key": "classroom_content_id", "value": "", "type": "string" },
+    { "key": "personal_child_folder_id", "value": "", "type": "string" },
+    { "key": "non_member_access_token", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -823,6 +827,73 @@
             },
             "description": "Day-by-day activity status (NONE/PARTIAL/GOLD/FROZEN) for a calendar month. `month` (YYYY-MM) is optional and defaults to the current month; a future month returns an empty array."
           },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Classroom AI Content",
+      "description": "Set `classroom_id`, `classroom_folder_id`, and an uploaded `classroom_content_id` from the Classrooms requests before running these. For the non-member example, register/login a second account and put its token in `non_member_access_token`. All successful routes require classroom membership and never return a storage key.",
+      "item": [
+        {
+          "name": "Get Upload Processing Status",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/processing", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "processing"] }, "description": "Member success example. Poll after upload; status is pending, processing, completed, or failed. The response never includes storageKey." },
+          "response": []
+        },
+        {
+          "name": "Get Extracted Text",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/text", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "text"] }, "description": "Member success example. Text and extractedAt are null until extraction completes." },
+          "response": []
+        },
+        {
+          "name": "Get Upload Download URL",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/download-url", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "download-url"] }, "description": "Member success example. Returns a short-lived URL and expiresAt only after membership authorization." },
+          "response": []
+        },
+        {
+          "name": "Search Uploaded Content",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/search?q=mitocondria", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "search"], "query": [{ "key": "q", "value": "mitocondria" }] }, "description": "Member success example. Searches title/filename for all uploads and OCR text only once extraction is complete." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Summary",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/summary", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "summary"] }, "description": "Member success example. Returns 204 until the async classroom summary is ready." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Flashcards",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/flashcards", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "flashcards"] }, "description": "Member success example. Returns an empty array until generated." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Quiz",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/quiz", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "quiz"] }, "description": "Member success example. Returns an empty array until generated; classroom quiz data is not gradeable through the personal quiz route." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Mind Map",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/mind-map", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "mind-map"] }, "description": "Member success example. Returns 204 until the async mind map is ready." },
+          "response": []
+        },
+        {
+          "name": "Create Personal Material Snapshot",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"sourceChildFolderId\": \"{{personal_child_folder_id}}\",\n  \"title\": \"Cálculo - revisão\",\n  \"description\": \"Material da semana\"\n}" }, "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/snapshots", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "snapshots"] }, "description": "Owner/editor success example. Copies all available generated material from the caller-owned personal child folder into a durable classroom snapshot. 403 for a viewer or another user's source; 409 if the source has no generated material." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('snapshot created', function () {", "    pm.response.to.have.status(201);", "    pm.collectionVariables.set('classroom_content_id', pm.response.json().contentId);", "});"] }}],
+          "response": []
+        },
+        {
+          "name": "Get Material Snapshot",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/snapshot", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "snapshot"] }, "description": "Any-member success example. Reads copied artifacts and source attribution after the personal source has changed or been deleted." },
+          "response": []
+        },
+        {
+          "name": "Processing Status Without Token (401)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/processing", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "processing"] }, "description": "Negative authentication example: no bearer token returns 401." },
+          "response": []
+        },
+        {
+          "name": "Search As Non-member (404)",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{non_member_access_token}}", "type": "string" }] }, "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/search?q=mitocondria", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "search"], "query": [{ "key": "q", "value": "mitocondria" }] }, "description": "Negative membership-authorization example: a valid token for a non-member returns 404, without revealing classroom content." },
           "response": []
         }
       ]
