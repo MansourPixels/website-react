@@ -1,0 +1,1 @@
+function e(e){return new Date(e.getFullYear(),e.getMonth(),e.getDate()).getTime()}function t(t){let n=new Date(t);if(Number.isNaN(n.getTime()))return``;let r=Math.round((e(new Date)-e(n))/864e5);return r===0?`hoje`:r===1?`ontem`:r>1&&r<7?`há ${r} dias`:n.toLocaleDateString(`pt-BR`)}export{t};

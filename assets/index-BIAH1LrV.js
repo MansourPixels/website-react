@@ -1,0 +1,1 @@
+import{o as e,t}from"./jsx-runtime-D5CpcogK.js";import{t as n}from"./compiler-runtime-poZdspZM.js";import{t as r}from"./ClassroomStudyPage-9hiVyqj_.js";var i=n(),a=t(),o=e(function(){let e=(0,i.c)(1),t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,a.jsx)(r,{mode:`map`}),e[0]=t):t=e[0],t});export{o as default};

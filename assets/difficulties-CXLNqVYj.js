@@ -1,0 +1,1 @@
+var e=[{id:`facil`,label:`Fácil`,image:`/dificuldades/facil.svg`},{id:`medio`,label:`Médio`,image:`/dificuldades/medio.svg`},{id:`dificil`,label:`Difícil`,image:`/dificuldades/dificil.svg`}];export{e as t};
