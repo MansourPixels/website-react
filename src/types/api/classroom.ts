@@ -52,8 +52,18 @@ export type ClassroomContentKind =
   | "flashcards"
   | "summary"
   | "quiz"
+  | "mindmap"
+  | "snapshot"
   | "pdf"
   | "image";
+
+/** Modalidades que podem ser publicadas como referência de uma pasta pessoal. */
+export type ClassroomReferenceKind = "flashcards" | "summary" | "quiz" | "mindmap";
+
+export interface OwnerMaterial {
+  childFolderId: string;
+  kinds: ClassroomReferenceKind[];
+}
 
 export interface ClassroomContent {
   id: string;
@@ -66,6 +76,39 @@ export interface ClassroomContent {
   fileSize: number | null;
   reviMaterialId: string | null;
   createdAt: string;
+}
+
+export interface ClassroomSnapshotFlashcard {
+  front: string;
+  back: string;
+}
+
+export interface ClassroomSnapshotQuizQuestion {
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: ClassroomQuizOption;
+}
+
+/** Nós de snapshot não reutilizam ids de artefatos pessoais. */
+export interface ClassroomSnapshotMindMapBranch {
+  label: string;
+  detalhe?: string;
+  formula?: string;
+  children?: ClassroomSnapshotMindMapBranch[];
+}
+
+export interface ClassroomMaterialSnapshot {
+  contentId: string;
+  sourceOwnerId: string;
+  sourceChildFolderId: string;
+  summary: string | null;
+  flashcards: ClassroomSnapshotFlashcard[];
+  quizQuestions: ClassroomSnapshotQuizQuestion[];
+  mindMapRoot: ClassroomSnapshotMindMapBranch | null;
+  snapshottedAt: string;
 }
 
 export interface ClassroomContentProcessing {

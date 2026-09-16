@@ -1,6 +1,7 @@
 import { Button, ButtonGroup, Popover } from "@heroui/react";
 import {
   ClipboardList,
+  Copy,
   Ellipsis,
   FileText,
   FileType,
@@ -28,6 +29,7 @@ import type { ViewableFile } from "@/types/capture";
 
 import { DialogContentExclusion } from "./DialogContentExclusion";
 import { DialogFormContent } from "./DialogFormContent";
+import { ClassroomSnapshotViewer } from "./ClassroomSnapshotViewer";
 
 const kindMeta: Record<ClassroomContentKind,
   { icon: LucideIcon; label: string; className: string }
@@ -47,6 +49,8 @@ const kindMeta: Record<ClassroomContentKind,
     label: "Simulado",
     className: "bg-warning-soft text-warning",
   },
+  mindmap: { icon: FileText, label: "Mapa mental", className: "bg-info-soft text-info" },
+  snapshot: { icon: Copy, label: "Cópia da pasta", className: "bg-accent-soft text-accent" },
   pdf: { icon: FileType, label: "PDF", className: "bg-default text-muted" },
   image: {
     icon: ImageIcon,
@@ -87,10 +91,12 @@ export function ClassroomContentTile({
   const [material, setMaterial] = useState<ViewableFile | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [snapshotContentId, setSnapshotContentId] = useState<string | null>(null);
 
   const canEdit = canEditContent(role, content, currentUserId);
   const canDelete = canDeleteContent(role, content, currentUserId);
   const isFile = content.kind === "pdf" || content.kind === "image";
+  const isSnapshot = content.kind === "snapshot";
   const meta = kindMeta[content.kind];
   const Icon = meta.icon;
 
@@ -221,6 +227,7 @@ export function ClassroomContentTile({
           <Button className="min-h-11" variant="secondary" onPress={() => requestFile(false)}><Download className="size-4" />Baixar</Button>
         </div>
       ) : null}
+      {isSnapshot ? <Button className="min-h-11" variant="secondary" onPress={() => setSnapshotContentId(content.id)}>Abrir cópia</Button> : null}
       {actionError !== null ? <p role="alert" className="text-danger text-sm">{actionError}</p> : null}
 
       <DialogFormContent
@@ -251,6 +258,7 @@ export function ClassroomContentTile({
           }}
         />
       ) : null}
+      {isSnapshot ? <ClassroomSnapshotViewer classroomId={classroomId} folderId={folderId} contentId={snapshotContentId} onClose={() => setSnapshotContentId(null)} /> : null}
     </article>
   );
 }

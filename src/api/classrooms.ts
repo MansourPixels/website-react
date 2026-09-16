@@ -13,7 +13,10 @@ import type {
   ClassroomMember,
   ClassroomQuizQuestion,
   ClassroomRole,
+  ClassroomMaterialSnapshot,
+  ClassroomReferenceKind,
   ClassroomSummary,
+  OwnerMaterial,
 } from "@/types/api/classroom";
 
 import { ApiError, apiFetch } from "./client";
@@ -159,6 +162,49 @@ export function listContents(
   return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents`, {
     signal,
   });
+}
+
+export function listReviMaterials(signal?: AbortSignal): Promise<OwnerMaterial[]> {
+  return apiFetch("/api/me/materials", { signal });
+}
+
+export function createClassroomReference(
+  classroomId: string,
+  folderId: string,
+  payload: {
+    kind: ClassroomReferenceKind;
+    title: string;
+    description: string;
+    reviMaterialId: string;
+  },
+): Promise<ClassroomContent> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents`, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function createClassroomMaterialSnapshot(
+  classroomId: string,
+  folderId: string,
+  payload: { sourceChildFolderId: string; title: string; description: string },
+): Promise<ClassroomContent> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents/snapshots`, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function getClassroomMaterialSnapshot(
+  classroomId: string,
+  folderId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomMaterialSnapshot> {
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}/snapshot`,
+    { signal },
+  );
 }
 
 export interface UploadClassroomContentPayload {
