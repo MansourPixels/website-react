@@ -37,7 +37,7 @@ export function UserIdentity({
         color="accent"
         className={cn(
           "shrink-0 rounded-xl",
-          size === "sm" ? "size-9" : "size-11",
+          size === "sm" ? "size-9" : "size-24",
         )}
       >
         <Avatar.Image src={user.avatarUrl} alt="" />
@@ -66,7 +66,7 @@ export function UserIdentity({
 
   // O `className` que vem do chamador (com frequência `flex-1`) precisa cair na
   // raiz, seja ela `div` ou `Link`, senão o layout da linha desanda.
-  const rootClassName = cn("flex min-w-0 items-center gap-3", className);
+  const rootClassName = cn("flex min-w-0 items-center gap-3", size !== 'sm' && 'mr-auto', className);
 
   if (!linkToProfile) {
     return <div className={rootClassName}>{content}</div>;

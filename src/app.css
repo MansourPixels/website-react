@@ -107,6 +107,17 @@
     .button--icon-only {
       min-width: 44px;
     }
+
+    /* Um botão ancorado dentro de um campo não pode crescer para 44px: ele
+       vira o item mais alto do flex, estica o campo e vaza pelos cantos
+       arredondados — o `.input-group` não tem overflow-hidden para esconder
+       isso. Quem devolve o alvo de toque é o próprio botão, com um `::after`
+       transparente (veja PasswordField). */
+    .input-group__prefix > .button,
+    .input-group__suffix > .button {
+      min-height: 0;
+      min-width: 0;
+    }
   }
 }
 

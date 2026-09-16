@@ -57,7 +57,8 @@ export function DialogSignOut({ isOpen, onOpenChange }: DialogSignOutProps) {
             <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
                 Você vai precisar entrar de novo para continuar estudando. Se
-                houver uma sessão de estudo em andamento, ela é encerrada.
+                houver uma sessão de estudo em andamento, ela é encerrada. A
+                conexão com o Google também é encerrada neste aparelho.
               </p>
               {error !== null ? (
                 <p

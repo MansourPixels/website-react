@@ -1,0 +1,102 @@
+import { Spinner } from "@heroui/react";
+import { buttonVariants } from "@heroui/styles";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+
+import { useGoogle } from "@/contexts/GoogleContext";
+import {
+  clearGoogleHandshake,
+  readGoogleHandshake,
+} from "@/utils/googleStorage";
+
+const errorMessages = {
+  denied: "Você cancelou a conexão com o Google.",
+  invalidState:
+    "Não foi possível confirmar a origem do pedido. Tente conectar de novo.",
+  exchangeFailed:
+    "Não foi possível concluir a conexão com o Google. Tente de novo.",
+};
+
+/**
+ * Retorno do modo backend (`VITE_GOOGLE_BACKEND=true`). O `revi-back` já trocou
+ * o código pelo refresh token antes de redirecionar para cá; aqui só
+ * confirmamos que a conexão existe e devolvemos o aluno de onde ele saiu.
+ *
+ * No modo navegador esta rota nunca é alcançada: o consentimento acontece num
+ * pop-up e a página nunca sai do lugar.
+ */
+export default function GoogleCallbackPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { completeConnection } = useGoogle();
+
+  const [error, setError] = useState<string | null>(null);
+
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+
+    hasRun.current = true;
+
+    const authError = searchParams.get("error");
+    const state = searchParams.get("state");
+    const handshake = readGoogleHandshake();
+    const returnTo = handshake.returnTo ?? "/perfil";
+
+    async function finish() {
+      try {
+        if (authError !== null) {
+          setError(errorMessages.denied);
+
+          return;
+        }
+
+        // O `state` é opcional aqui porque quem o valida de verdade é o
+        // backend, antes da troca; esta conferência só pega uma volta que
+        // chegou noutra aba.
+        if (state !== null && handshake.state !== null && state !== handshake.state) {
+          setError(errorMessages.invalidState);
+
+          return;
+        }
+
+        if (!(await completeConnection())) {
+          setError(errorMessages.exchangeFailed);
+
+          return;
+        }
+
+        void navigate(returnTo, { replace: true });
+      } finally {
+        clearGoogleHandshake();
+      }
+    }
+
+    void finish();
+  }, [searchParams, navigate, completeConnection]);
+
+  return (
+    <main className="flex flex-1 items-center justify-center p-6">
+      {error === null ? (
+        <div className="flex flex-col items-center gap-3" aria-busy="true">
+          <Spinner size="lg" />
+          <p className="text-muted text-sm">Conectando ao Google…</p>
+        </div>
+      ) : (
+        <section className="flex max-w-sm flex-col items-center gap-4 rounded-3xl bg-surface p-6 text-center shadow-surface">
+          <h1 className="text-xl font-semibold">Conexão não concluída</h1>
+          <p className="text-muted text-sm text-pretty" role="alert">
+            {error}
+          </p>
+          <Link
+            to="/perfil"
+            className={buttonVariants({ variant: "secondary" })}
+          >
+            Voltar para o perfil
+          </Link>
+        </section>
+      )}
+    </main>
+  );
+}

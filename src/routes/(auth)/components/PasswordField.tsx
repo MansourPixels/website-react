@@ -41,12 +41,16 @@ export function PasswordField({
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur}
         />
-        <InputGroup.Suffix>
+        <InputGroup.Suffix className="px-1">
+          {/* O botão sai do raio `rounded-3xl` padrão (que num quadrado de
+              44px vira círculo e vaza pelos cantos do campo) e recupera os
+              44px de alvo de toque por um `::after` transparente. */}
           <Button
             type="button"
             isIconOnly
             variant="ghost"
             size="sm"
+            className="rounded-field after:absolute after:-inset-1 after:content-['']"
             aria-label={isVisible ? "Ocultar senha" : "Mostrar senha"}
             onPress={() => setIsVisible(!isVisible)}
           >

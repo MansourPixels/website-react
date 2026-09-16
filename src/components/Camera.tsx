@@ -1,12 +1,25 @@
 import { ApiError } from "@/api/client";
+import { useGoogle } from "@/contexts/GoogleContext";
 import type { CapturedFile } from "@/types/capture";
+import { DRIVE_SCOPE, GoogleError, hasScope } from "@/utils/googleAuth";
+import { DriveFileTypeError, downloadDriveFile } from "@/utils/googleDrive";
+import { googleIssueMessage } from "@/utils/googleIssues";
+import { openDrivePicker } from "@/utils/googlePicker";
+import { readGoogleToken } from "@/utils/googleStorage";
 import {
   ACCEPTED_MATERIAL_TYPES,
   contentTypeOf,
   isAcceptedMaterial,
 } from "@/utils/materials";
 import { Button, cn, Spinner } from "@heroui/react";
-import { CameraOff, FileText, Images, Zap, ZapOff } from "lucide-react";
+import {
+  CameraOff,
+  FileText,
+  HardDriveDownload,
+  Images,
+  Zap,
+  ZapOff,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useFeedback } from "../hooks/useFeedback";
@@ -21,6 +34,9 @@ import {
 } from "./DialogCategorizeImage";
 import { NavMenu } from "./NavMenu";
 import { PhotoReview } from "./PhotoReview";
+
+const DRIVE_GENERIC_ERROR =
+  "Não foi possível trazer o arquivo do Google Drive. Tente de novo.";
 
 interface CameraProps {
   title?: string;
@@ -51,6 +67,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
   const navigate = useNavigate();
   const feedback = useFeedback();
+  const google = useGoogle();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -63,6 +80,8 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   const [submitMaterialError, setSubmitMaterialError] = useState<
     string | null
   >(null);
+  const [isImportingDrive, setIsImportingDrive] = useState(false);
+  const [driveError, setDriveError] = useState<string | null>(null);
 
   const isFocusEnabled =
     isTouchPrimary &&
@@ -160,6 +179,66 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     event.target.value = "";
   }
 
+  /**
+   * Um gesto, duas etapas: sem token válido o mesmo clique pede o
+   * consentimento e só então abre o Picker — nenhuma tela intermediária. O
+   * consentimento precisa nascer *dentro* do clique, ou o pop-up é bloqueado.
+   *
+   * O arquivo escolhido entra exatamente onde entra um arquivo do disco:
+   * `showPreview` → PhotoReview → DialogCategorizeImage → uploadContent.
+   */
+  async function handleImportFromDrive() {
+    if (isImportingDrive) return;
+
+    setDriveError(null);
+    setIsImportingDrive(true);
+
+    try {
+      // Sem conexão anterior vamos direto ao consentimento: esperar por uma
+      // renovação silenciosa que não tem como dar certo gastaria a janela de
+      // ativação do clique, e aí o pop-up seria bloqueado.
+      const stored = readGoogleToken();
+      let token = stored === null ? null : await google.ensureToken();
+
+      // Escopo lido do token guardado, não do estado do contexto: logo depois
+      // de conectar o estado ainda não chegou neste closure.
+      if (
+        token === null ||
+        !hasScope(readGoogleToken()?.scope ?? "", DRIVE_SCOPE)
+      ) {
+        if (!(await google.connect())) return;
+
+        token = await google.ensureToken();
+
+        if (token === null) return;
+
+        if (!hasScope(readGoogleToken()?.scope ?? "", DRIVE_SCOPE)) {
+          setDriveError(googleIssueMessage("scopeMissing"));
+
+          return;
+        }
+      }
+
+      const reference = await openDrivePicker(token);
+
+      // Fechar o Picker sem escolher nada não é erro.
+      if (reference === null) return;
+
+      showPreview(await downloadDriveFile(reference));
+    } catch (importError) {
+      feedback("erro");
+      setDriveError(
+        importError instanceof DriveFileTypeError
+          ? `O Revi só analisa imagem e PDF, então ${importError.fileName} não pode ser enviado.`
+          : importError instanceof GoogleError
+            ? (googleIssueMessage(importError.issue) ?? DRIVE_GENERIC_ERROR)
+            : DRIVE_GENERIC_ERROR,
+      );
+    } finally {
+      setIsImportingDrive(false);
+    }
+  }
+
   const fileInput = (
     <input
       ref={fileInputRef}
@@ -204,6 +283,10 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           onReceiveFile={showPreview}
           onCapture={handleCapture}
           isPasteEnabled={!reviewMaterial && !isCategorizeOpen}
+          isDriveAvailable={google.isDriveConfigured}
+          isImportingDrive={isImportingDrive}
+          driveError={driveError}
+          onImportFromDrive={() => void handleImportFromDrive()}
         />
         {overlays}
       </>
@@ -285,68 +368,94 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
       <footer
         className={cn(
-          "px-6 py-8 short:py-4 flex items-center justify-between gap-4 fixed bottom-0 inset-x-0",
+          "px-6 py-8 short:py-4 flex flex-col gap-4 fixed bottom-0 inset-x-0",
           "pb-[max(2rem,env(safe-area-inset-bottom))] short:pb-[max(1rem,env(safe-area-inset-bottom))]",
           footerClass,
         )}
       >
-        {fileInput}
-        <Button
-          id="galeria"
-          aria-label="Escolher imagem ou PDF do dispositivo"
-          className="size-13 rounded-lg p-0 overflow-hidden bg-black/35 text-white"
-          onPress={() => fileInputRef.current?.click()}
-        >
-          {preview === null ? (
-            <Images />
-          ) : preview.contentType === "PDF" ? (
-            // `bg-white`/`text-zinc-900` literais: ícone de documento sobre o
-            // visor da câmera, que é sempre escuro — não segue o tema. Antes do
-            // modo escuro `text-foreground` também era sempre escuro; agora
-            // precisa ficar fixo, ou o ícone sumiria (claro sobre claro) com o
-            // tema escuro ativo.
-            <span className="size-full flex items-center justify-center bg-white text-zinc-900">
-              <FileText className="size-6" />
-              <span className="sr-only">Último PDF selecionado</span>
-            </span>
-          ) : (
-            <img
-              id="galeria-thumb"
-              src={preview.url}
-              alt="Última imagem selecionada"
-              className="size-full object-cover"
-            />
-          )}
-        </Button>
+        {/* Fora da fileira do obturador de propósito: o vão entre galeria e
+            flash é o que mantém o obturador centralizado. */}
+        {google.isDriveConfigured ? (
+          <div className="flex flex-col items-center gap-2">
+            {driveError !== null ? (
+              <p
+                role="alert"
+                className="max-w-80 rounded-2xl bg-black/50 px-4 py-2 text-center text-sm text-white text-pretty"
+              >
+                {driveError}
+              </p>
+            ) : null}
 
-        <Button
-          id="capturar"
-          isIconOnly
-          aria-label="Capturar foto"
-          isDisabled={status !== "ready"}
-          className="size-17 rounded-full border-4 border-white bg-black/50 p-1"
-          onPress={handleCapture}
-        >
-          <span className="size-full rounded-full border-2 border-amber-500" />
-        </Button>
+            <Button
+              className="h-10 px-4 rounded-full bg-black/35 text-white"
+              isPending={isImportingDrive}
+              onPress={() => void handleImportFromDrive()}
+            >
+              <HardDriveDownload className="size-4" />
+              Importar do Google Drive
+            </Button>
+          </div>
+        ) : null}
 
-        {/* Aparelho sem lanterna esconde o controle, como já faz a mesa de
+        <div className="flex items-center justify-between gap-4">
+          {fileInput}
+          <Button
+            id="galeria"
+            aria-label="Escolher imagem ou PDF do dispositivo"
+            className="size-13 rounded-lg p-0 overflow-hidden bg-black/35 text-white"
+            onPress={() => fileInputRef.current?.click()}
+          >
+            {preview === null ? (
+              <Images />
+            ) : preview.contentType === "PDF" ? (
+              // `bg-white`/`text-zinc-900` literais: ícone de documento sobre o
+              // visor da câmera, que é sempre escuro — não segue o tema. Antes do
+              // modo escuro `text-foreground` também era sempre escuro; agora
+              // precisa ficar fixo, ou o ícone sumiria (claro sobre claro) com o
+              // tema escuro ativo.
+              <span className="size-full flex items-center justify-center bg-white text-zinc-900">
+                <FileText className="size-6" />
+                <span className="sr-only">Último PDF selecionado</span>
+              </span>
+            ) : (
+              <img
+                id="galeria-thumb"
+                src={preview.url}
+                alt="Última imagem selecionada"
+                className="size-full object-cover"
+              />
+            )}
+          </Button>
+
+          <Button
+            id="capturar"
+            isIconOnly
+            aria-label="Capturar foto"
+            isDisabled={status !== "ready"}
+            className="size-17 rounded-full border-4 border-white bg-black/50 p-1"
+            onPress={handleCapture}
+          >
+            <span className="size-full rounded-full border-2 border-amber-500" />
+          </Button>
+
+          {/* Aparelho sem lanterna esconde o controle, como já faz a mesa de
             captura no desktop — um botão desabilitado sem explicação só
             levanta a pergunta. O vão preserva o obturador centralizado. */}
-        {isFlashSupported ? (
-          <Button
-            id="flash"
-            isIconOnly
-            size="lg"
-            aria-label={isFlashOn ? "Desligar flash" : "Ligar flash"}
-            className={isFlashOn ? "bg-amber-500" : "bg-black/35"}
-            onPress={toggleFlash}
-          >
-            {isFlashOn ? <Zap /> : <ZapOff />}
-          </Button>
-        ) : (
-          <span className="size-13" aria-hidden="true" />
-        )}
+          {isFlashSupported ? (
+            <Button
+              id="flash"
+              isIconOnly
+              size="lg"
+              aria-label={isFlashOn ? "Desligar flash" : "Ligar flash"}
+              className={isFlashOn ? "bg-amber-500" : "bg-black/35"}
+              onPress={toggleFlash}
+            >
+              {isFlashOn ? <Zap /> : <ZapOff />}
+            </Button>
+          ) : (
+            <span className="size-13" aria-hidden="true" />
+          )}
+        </div>
       </footer>
 
       {overlays}

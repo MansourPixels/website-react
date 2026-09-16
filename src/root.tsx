@@ -22,6 +22,7 @@ import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { SessionIsland } from "./components/SessionIsland";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { GoogleProvider } from "./contexts/GoogleContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -130,9 +131,11 @@ export default function App() {
       <PreferencesProvider>
         <AuthProvider>
           <SpotifyProvider>
-            <SessionProvider>
-              <AppShell />
-            </SessionProvider>
+            <GoogleProvider>
+              <SessionProvider>
+                <AppShell />
+              </SessionProvider>
+            </GoogleProvider>
           </SpotifyProvider>
         </AuthProvider>
       </PreferencesProvider>
@@ -142,11 +145,13 @@ export default function App() {
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
 // de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
-// e do Perfil; pasta e assunto a partir de Pastas), não são elas mesmas uma aba.
+// e do Perfil; Tarefas a partir da Trilha e do Perfil; pasta e assunto a partir
+// de Pastas), não são elas mesmas uma aba.
 // Casadas com `matchPath`, que é exato por padrão: a pasta e o assunto entram,
 // mas as telas de estudo e a câmera abaixo deles continuam sem a barra.
 const extraBottomNavigationRoutes = [
   "/ascensao",
+  "/tarefas",
   "/amigos",
   "/ranking",
   "/pastas/:pastaId",
