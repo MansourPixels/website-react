@@ -6,6 +6,8 @@ import { Link } from "react-router";
 
 import { listClassrooms, listMyInvites } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Classroom, ClassroomInvite } from "@/types/api/classroom";
@@ -37,11 +39,13 @@ export default function ClassroomsPage() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     setClassrooms(null);
+    setInvites([]);
     setLoadError(null);
 
     Promise.all([listClassrooms(), listMyInvites()])
@@ -64,7 +68,7 @@ export default function ClassroomsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   function handleAdd(classroom: Classroom) {
     setClassrooms((current) =>
@@ -98,10 +102,10 @@ export default function ClassroomsPage() {
             className={buttonVariants({
               variant: "ghost",
               className:
-                "bg-surface shadow-surface flex h-auto w-full items-center gap-4 rounded-xl px-5 py-4",
+                "bg-surface shadow-surface flex h-auto w-full items-center gap-3 rounded-xl p-3",
             })}
           >
-            <span className="bg-accent flex size-9 shrink-0 items-center justify-center rounded-xl text-white">
+            <span className="bg-accent text-accent-foreground flex size-9 shrink-0 items-center justify-center rounded-xl">
               <Icon className="size-5" />
             </span>
             <span className="flex-1 text-left">
@@ -157,18 +161,28 @@ export default function ClassroomsPage() {
             <span className="sr-only">Carregando suas turmas</span>
           </div>
         ) : loadError !== null ? (
-          <p className="text-danger py-8 text-center">{loadError}</p>
+          <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+            {loadError}
+          </ErrorState>
         ) : (classrooms ?? []).length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+          <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
             {(classrooms ?? []).map((classroom) => (
-              <ClassroomCard key={classroom.id} classroom={classroom} />
+              <li key={classroom.id}>
+                <ClassroomCard classroom={classroom} />
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <p className="text-muted py-8 text-center text-pretty">
-            Você ainda não participa de nenhuma turma. Crie a primeira no botão
-            + ou entre com um código de convite.
-          </p>
+          <EmptyState
+            action={
+              <Button variant="secondary" onPress={() => setIsAddOpen(true)}>
+                Criar turma
+              </Button>
+            }
+          >
+            Você ainda não participa de nenhuma turma. Crie a primeira ou entre
+            com um código de convite.
+          </EmptyState>
         )}
       </section>
 

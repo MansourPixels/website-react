@@ -15,28 +15,28 @@ export function StudyPlanCard({ group }: StudyPlanCardProps) {
     groupProgress(steps);
 
   return (
-    <article className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2 border-transparent">
+    <article className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-3 border-2 border-transparent dark:border-border">
       <header className="flex flex-col gap-1">
         <h3 className="text-xl font-semibold text-pretty">
           {motherFolderName}
         </h3>
-        <p className="flex items-start gap-2 text-sm text-accent">
+        <p className="flex items-start gap-2 text-sm text-muted">
           <Target className="size-4 shrink-0 mt-0.5" />
           <span className="text-pretty">Reforçar esta disciplina</span>
         </p>
       </header>
 
       {isComplete ? (
-        <p className="flex items-start gap-2 text-sm flex-1">
+        <p className="flex items-start gap-2 text-sm flex-1 text-muted">
           <Flame className="size-4 shrink-0 mt-0.5 text-accent" />
           <span className="text-pretty">
             Plano concluído. Refazer em alguns dias é o que fixa o conteúdo.
           </span>
         </p>
       ) : (
-        <p className="text-sm flex-1 text-pretty">
-          Um plano de {total} etapas para reforçar seu domínio nesta
-          disciplina.
+        <p className="text-sm flex-1 text-pretty text-muted">
+          Um plano de <span className="tabular-nums">{total}</span> etapas para
+          reforçar seu domínio nesta disciplina.
         </p>
       )}
 
@@ -51,7 +51,7 @@ export function StudyPlanCard({ group }: StudyPlanCardProps) {
           <Meter
             value={completed}
             maxValue={total}
-            color={isComplete ? "success" : "accent"}
+            color="accent"
             aria-label={`${motherFolderName}: ${completed} de ${total} etapas concluídas`}
           >
             <Meter.Track>
@@ -80,7 +80,7 @@ export function StudyPlanCard({ group }: StudyPlanCardProps) {
           })}
         >
           <ListChecks />
-          Ver as {total} etapas
+          Ver as <span className="tabular-nums">{total}</span> etapas
         </Link>
       </div>
     </article>

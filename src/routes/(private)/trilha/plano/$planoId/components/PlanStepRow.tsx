@@ -21,7 +21,9 @@ export function PlanStepRow({ planoId, step, position, isNext }: PlanStepRowProp
     <li
       className={cn(
         "bg-surface rounded-2xl shadow-surface p-4 flex flex-col gap-4 border-2",
-        isNext ? "border-accent" : "border-transparent",
+        // O slot de 2px é do estado "próxima". No escuro, sem sombra, a linha
+        // não selecionada ficaria sem nada que a separasse do fundo.
+        isNext ? "border-accent" : "border-transparent dark:border-border",
       )}
     >
       <div className="flex items-start gap-3">
@@ -49,8 +51,14 @@ export function PlanStepRow({ planoId, step, position, isNext }: PlanStepRowProp
         </div>
       </div>
 
+      {/* Rever uma etapa concluída abre a etapa em si, não a tela de
+          celebração que ela já viu — daí o `rever`. */}
       <Link
-        to={`/trilha/plano/${planoId}/etapa/${step.id}`}
+        to={
+          isDone
+            ? `/trilha/plano/${planoId}/etapa/${step.id}?rever=1`
+            : `/trilha/plano/${planoId}/etapa/${step.id}`
+        }
         className={buttonVariants({
           variant: isNext ? "primary" : "tertiary",
           fullWidth: true,

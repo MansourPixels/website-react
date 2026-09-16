@@ -12,6 +12,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  matchPath,
   useLocation,
 } from "react-router";
 
@@ -141,8 +142,16 @@ export default function App() {
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
 // de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
-// e do Perfil), não são elas mesmas uma aba.
-const extraBottomNavigationRoutes = ["/ascensao", "/amigos", "/ranking"];
+// e do Perfil; pasta e assunto a partir de Pastas), não são elas mesmas uma aba.
+// Casadas com `matchPath`, que é exato por padrão: a pasta e o assunto entram,
+// mas as telas de estudo e a câmera abaixo deles continuam sem a barra.
+const extraBottomNavigationRoutes = [
+  "/ascensao",
+  "/amigos",
+  "/ranking",
+  "/pastas/:pastaId",
+  "/pastas/:pastaId/assuntos/:assuntoId",
+];
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
@@ -156,7 +165,9 @@ function AppShell() {
   const showBottomNavigation =
     status === "authenticated" &&
     (links.some(({ to }) => pathname === to) ||
-      extraBottomNavigationRoutes.includes(pathname));
+      extraBottomNavigationRoutes.some(
+        (pattern) => matchPath(pattern, pathname) !== null,
+      ));
 
   // `isReady` só vira true depois da leitura do `localStorage`, no cliente —
   // é o que impede a ilha de divergir entre o HTML do servidor e a hidratação.

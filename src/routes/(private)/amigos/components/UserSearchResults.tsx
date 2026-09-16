@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { ApiError } from "@/api/client";
 import { sendFriendRequest } from "@/api/friends";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { UserIdentity } from "@/components/UserIdentity";
 import { useFeedback } from "@/hooks/useFeedback";
 import type {
@@ -20,6 +22,8 @@ interface UserSearchResultsProps {
   error: string | null;
   /** Reflete o envio na lista de solicitações da página, sem recarregar tudo. */
   onRequestSent: (request: FriendRequest) => void;
+  /** Refaz a busca do termo atual depois de uma falha. */
+  onRetry: () => void;
 }
 
 function SearchResultRow({
@@ -114,12 +118,13 @@ export function UserSearchResults({
   isSearching,
   error,
   onRequestSent,
+  onRetry,
 }: UserSearchResultsProps) {
   if (term.trim().length < 2) {
     return (
-      <p className="text-muted text-sm text-pretty">
+      <EmptyState isCompact>
         Digite pelo menos duas letras do username para buscar.
-      </p>
+      </EmptyState>
     );
   }
 
@@ -133,14 +138,18 @@ export function UserSearchResults({
   }
 
   if (error !== null) {
-    return <p className="text-danger py-4 text-center">{error}</p>;
+    return (
+      <ErrorState isCompact onRetry={onRetry}>
+        {error}
+      </ErrorState>
+    );
   }
 
   if (results === null || results.length === 0) {
     return (
-      <p className="text-muted py-4 text-center text-pretty">
+      <EmptyState isCompact>
         Nenhum usuário encontrado para “{term.trim()}”.
-      </p>
+      </EmptyState>
     );
   }
 

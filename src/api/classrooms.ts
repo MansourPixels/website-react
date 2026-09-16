@@ -2,53 +2,31 @@ import type {
   Classroom,
   ClassroomContent,
   ClassroomContentKind,
+  ClassroomContentProcessing,
+  ClassroomContentText,
+  ClassroomDownloadUrl,
   ClassroomFolder,
+  ClassroomFlashcard,
   ClassroomInvite,
   ClassroomInvitePreview,
+  ClassroomMindMap,
   ClassroomMember,
+  ClassroomQuizQuestion,
   ClassroomRole,
-  ReviMaterial,
+  ClassroomMaterialSnapshot,
+  ClassroomReferenceKind,
+  ClassroomSummary,
+  OwnerMaterial,
 } from "@/types/api/classroom";
 
-import { apiFetch } from "./client";
-import { listChildFolders, listMotherFolders } from "./folders";
-
-/**
- * Turmas: pastas, conteúdo, convites e membros.
- *
- * As regras de permissão continuam vividas em `src/utils/classroomPermissions.ts`
- * só para decidir o que a interface mostra — a autorização de verdade é do
- * servidor.
- */
-
-interface ContentResponse extends Omit<ClassroomContent, "classroomId" | "folderId"> {
-  classroomFolderId: string;
-  reviMaterialId: string | null;
-}
-
-function toContent(classroomId: string, response: ContentResponse): ClassroomContent {
-  return {
-    id: response.id,
-    classroomId,
-    folderId: response.classroomFolderId,
-    kind: response.kind,
-    title: response.title,
-    description: response.description,
-    author: response.author,
-    fileName: response.fileName,
-    fileSize: response.fileSize,
-    createdAt: response.createdAt,
-  };
-}
-
-// --- Turmas -----------------------------------------------------------------
+import { ApiError, apiFetch } from "./client";
 
 export function listClassrooms(): Promise<Classroom[]> {
-  return apiFetch<Classroom[]>("/api/classrooms");
+  return apiFetch("/api/classrooms");
 }
 
 export function getClassroom(classroomId: string): Promise<Classroom> {
-  return apiFetch<Classroom>(`/api/classrooms/${classroomId}`);
+  return apiFetch(`/api/classrooms/${classroomId}`);
 }
 
 export function createClassroom(payload: {
@@ -56,33 +34,29 @@ export function createClassroom(payload: {
   description: string;
   color: string;
 }): Promise<Classroom> {
-  return apiFetch<Classroom>("/api/classrooms", { method: "POST", body: payload });
+  return apiFetch("/api/classrooms", { method: "POST", body: payload });
 }
 
 export function updateClassroom(
   classroomId: string,
   payload: { name: string; description: string; color: string },
 ): Promise<Classroom> {
-  return apiFetch<Classroom>(`/api/classrooms/${classroomId}`, {
+  return apiFetch(`/api/classrooms/${classroomId}`, {
     method: "PATCH",
     body: payload,
   });
 }
 
-/** Exclui a turma inteira: pastas, conteúdos, convites e associações. */
 export function deleteClassroom(classroomId: string): Promise<void> {
-  return apiFetch<void>(`/api/classrooms/${classroomId}`, { method: "DELETE" });
+  return apiFetch(`/api/classrooms/${classroomId}`, { method: "DELETE" });
 }
 
-/** Sair da turma: perde o acesso a tudo, mas o conteúdo criado permanece. */
 export function leaveClassroom(classroomId: string): Promise<void> {
-  return apiFetch<void>(`/api/classrooms/${classroomId}/leave`, { method: "POST" });
+  return apiFetch(`/api/classrooms/${classroomId}/leave`, { method: "POST" });
 }
-
-// --- Membros ----------------------------------------------------------------
 
 export function listMembers(classroomId: string): Promise<ClassroomMember[]> {
-  return apiFetch<ClassroomMember[]>(`/api/classrooms/${classroomId}/members`);
+  return apiFetch(`/api/classrooms/${classroomId}/members`);
 }
 
 export function updateMemberRole(
@@ -90,41 +64,71 @@ export function updateMemberRole(
   memberId: string,
   role: Exclude<ClassroomRole, "owner">,
 ): Promise<ClassroomMember> {
-  return apiFetch<ClassroomMember>(
-    `/api/classrooms/${classroomId}/members/${memberId}`,
-    { method: "PATCH", body: { role } },
-  );
+  return apiFetch(`/api/classrooms/${classroomId}/members/${memberId}`, {
+    method: "PATCH",
+    body: { role },
+  });
 }
 
 export function removeMember(
   classroomId: string,
   memberId: string,
 ): Promise<void> {
-  return apiFetch<void>(`/api/classrooms/${classroomId}/members/${memberId}`, {
+  return apiFetch(`/api/classrooms/${classroomId}/members/${memberId}`, {
     method: "DELETE",
   });
 }
 
-// --- Pastas -----------------------------------------------------------------
-
 export function listFolders(classroomId: string): Promise<ClassroomFolder[]> {
-  return apiFetch<ClassroomFolder[]>(`/api/classrooms/${classroomId}/folders`);
+  return apiFetch(`/api/classrooms/${classroomId}/folders`);
 }
 
 export function getFolder(
   classroomId: string,
   folderId: string,
 ): Promise<ClassroomFolder> {
-  return apiFetch<ClassroomFolder>(
-    `/api/classrooms/${classroomId}/folders/${folderId}`,
-  );
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}`);
+}
+
+export async function getClassroomSummary(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomSummary | null> {
+  const result = await apiFetch<ClassroomSummary | undefined>(`/api/classrooms/${classroomId}/folders/${folderId}/summary`, { signal });
+  return result ?? null;
+}
+
+export function listClassroomFlashcards(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomFlashcard[]> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/flashcards`, { signal });
+}
+
+export function listClassroomQuiz(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomQuizQuestion[]> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/quiz`, { signal });
+}
+
+export async function getClassroomMindMap(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomMindMap | null> {
+  const result = await apiFetch<ClassroomMindMap | undefined>(`/api/classrooms/${classroomId}/folders/${folderId}/mind-map`, { signal });
+  return result ?? null;
 }
 
 export function createFolder(
   classroomId: string,
   payload: { name: string; color: string },
 ): Promise<ClassroomFolder> {
-  return apiFetch<ClassroomFolder>(`/api/classrooms/${classroomId}/folders`, {
+  return apiFetch(`/api/classrooms/${classroomId}/folders`, {
     method: "POST",
     body: payload,
   });
@@ -135,76 +139,155 @@ export function updateFolder(
   folderId: string,
   payload: { name: string; color: string },
 ): Promise<ClassroomFolder> {
-  return apiFetch<ClassroomFolder>(
-    `/api/classrooms/${classroomId}/folders/${folderId}`,
-    { method: "PATCH", body: payload },
-  );
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}`, {
+    method: "PATCH",
+    body: payload,
+  });
 }
 
 export function deleteFolder(
   classroomId: string,
   folderId: string,
 ): Promise<void> {
-  return apiFetch<void>(`/api/classrooms/${classroomId}/folders/${folderId}`, {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}`, {
     method: "DELETE",
   });
-}
-
-// --- Conteúdo ---------------------------------------------------------------
-
-function contentUrl(classroomId: string, folderId: string): string {
-  return `/api/classrooms/${classroomId}/folders/${folderId}/contents`;
 }
 
 export function listContents(
   classroomId: string,
   folderId: string,
+  signal?: AbortSignal,
 ): Promise<ClassroomContent[]> {
-  return apiFetch<ContentResponse[]>(contentUrl(classroomId, folderId)).then(
-    (entries) => entries.map((entry) => toContent(classroomId, entry)),
-  );
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents`, {
+    signal,
+  });
 }
 
-export interface CreateContentPayload {
-  kind: ClassroomContentKind;
-  title: string;
-  description: string;
-  /** Obrigatório para `flashcards`/`summary`/`quiz`/`mindmap` — é o `childFolderId` do material. */
-  reviMaterialId?: string;
+export function listReviMaterials(signal?: AbortSignal): Promise<OwnerMaterial[]> {
+  return apiFetch("/api/me/materials", { signal });
 }
 
-export function createContent(
-  classroomId: string,
-  folderId: string,
-  payload: CreateContentPayload,
-): Promise<ClassroomContent> {
-  return apiFetch<ContentResponse>(contentUrl(classroomId, folderId), {
-    method: "POST",
-    body: payload,
-  }).then((response) => toContent(classroomId, response));
-}
-
-export function uploadContent(
+export function createClassroomReference(
   classroomId: string,
   folderId: string,
   payload: {
-    kind: Extract<ClassroomContentKind, "pdf" | "image">;
+    kind: ClassroomReferenceKind;
     title: string;
     description: string;
-    file: File;
+    reviMaterialId: string;
   },
 ): Promise<ClassroomContent> {
-  const body = new FormData();
-
-  body.set("file", payload.file);
-  body.set("title", payload.title);
-  body.set("description", payload.description);
-  body.set("kind", payload.kind);
-
-  return apiFetch<ContentResponse>(`${contentUrl(classroomId, folderId)}/upload`, {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents`, {
     method: "POST",
-    body,
-  }).then((response) => toContent(classroomId, response));
+    body: payload,
+  });
+}
+
+export function createClassroomMaterialSnapshot(
+  classroomId: string,
+  folderId: string,
+  payload: { sourceChildFolderId: string; title: string; description: string },
+): Promise<ClassroomContent> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/contents/snapshots`, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function getClassroomMaterialSnapshot(
+  classroomId: string,
+  folderId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomMaterialSnapshot> {
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}/snapshot`,
+    { signal },
+  );
+}
+
+export interface UploadClassroomContentPayload {
+  file: File;
+  title: string;
+  description?: string;
+}
+
+export function uploadClassroomContent(
+  classroomId: string,
+  folderId: string,
+  payload: UploadClassroomContentPayload,
+): Promise<ClassroomContent> {
+  const extension = payload.file.name.split(".").pop()?.toLowerCase();
+  const kind: ClassroomContentKind =
+    extension === "pdf"
+      ? "pdf"
+      : extension === "jpg" || extension === "jpeg" || extension === "png"
+        ? "image"
+        : (() => {
+            throw new ApiError(400, "Envie um arquivo PDF, JPG, JPEG ou PNG.");
+          })();
+  const formData = new FormData();
+  formData.append("file", payload.file, payload.file.name);
+  formData.append("kind", kind);
+  formData.append("title", payload.title);
+  if (payload.description !== undefined && payload.description.length > 0) {
+    formData.append("description", payload.description);
+  }
+
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/upload`,
+    { method: "POST", body: formData },
+  );
+}
+
+export function getClassroomDownloadUrl(
+  classroomId: string,
+  folderId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomDownloadUrl> {
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}/download-url`,
+    { signal },
+  );
+}
+
+export function getClassroomContentProcessing(
+  classroomId: string,
+  folderId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomContentProcessing> {
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}/processing`,
+    { signal },
+  );
+}
+
+export function getClassroomContentText(
+  classroomId: string,
+  folderId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomContentText> {
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}/text`,
+    { signal },
+  );
+}
+
+export function searchClassroomContent(
+  classroomId: string,
+  folderId: string,
+  query: string,
+  signal?: AbortSignal,
+): Promise<ClassroomContent[]> {
+  const params = new URLSearchParams({ q: query });
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/search?${params.toString()}`,
+    { signal },
+  );
 }
 
 export function updateContent(
@@ -213,10 +296,10 @@ export function updateContent(
   contentId: string,
   payload: { title: string; description: string },
 ): Promise<ClassroomContent> {
-  return apiFetch<ContentResponse>(
-    `${contentUrl(classroomId, folderId)}/${contentId}`,
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}`,
     { method: "PATCH", body: payload },
-  ).then((response) => toContent(classroomId, response));
+  );
 }
 
 export function deleteContent(
@@ -224,62 +307,14 @@ export function deleteContent(
   folderId: string,
   contentId: string,
 ): Promise<void> {
-  return apiFetch<void>(`${contentUrl(classroomId, folderId)}/${contentId}`, {
-    method: "DELETE",
-  });
-}
-
-const materialKindLabels: Record<ReviMaterial["kind"], string> = {
-  flashcards: "Flash cards gerados no Revi",
-  summary: "Resumo gerado no Revi",
-  quiz: "Simulado gerado no Revi",
-  mindmap: "Mapa mental gerado no Revi",
-};
-
-interface OwnerMaterialResponse {
-  childFolderId: string;
-  kinds: ReviMaterial["kind"][];
-}
-
-/**
- * Catálogo do que o usuário já gerou no Revi, para a aba "Do Revi". O backend
- * só sabe dizer "esta pasta tem flashcards/resumo/simulado/mapa mental" — o
- * nome de cada pasta vem de uma segunda consulta (pastas-mãe → pastas), já
- * que não existe um "buscar pasta por id" direto para isso.
- */
-export async function listReviMaterials(): Promise<ReviMaterial[]> {
-  const [materials, motherFolders] = await Promise.all([
-    apiFetch<OwnerMaterialResponse[]>("/api/me/materials"),
-    listMotherFolders(),
-  ]);
-
-  if (materials.length === 0) return [];
-
-  const childFolderLists = await Promise.all(
-    motherFolders.map((mother) => listChildFolders(mother.id)),
-  );
-  const folderNameById = new Map<string, string>();
-
-  for (const folders of childFolderLists) {
-    for (const folder of folders) folderNameById.set(folder.id, folder.name);
-  }
-
-  return materials.flatMap((material) =>
-    material.kinds.map((kind) => ({
-      id: `${material.childFolderId}:${kind}`,
-      reviMaterialId: material.childFolderId,
-      kind,
-      title: folderNameById.get(material.childFolderId) ?? "Pasta",
-      description: materialKindLabels[kind],
-    })),
+  return apiFetch(
+    `/api/classrooms/${classroomId}/folders/${folderId}/contents/${contentId}`,
+    { method: "DELETE" },
   );
 }
 
-// --- Convites ---------------------------------------------------------------
-
-/** Convites pendentes da turma — nominais e por link. Só o dono enxerga. */
 export function listInvites(classroomId: string): Promise<ClassroomInvite[]> {
-  return apiFetch<ClassroomInvite[]>(`/api/classrooms/${classroomId}/invites`);
+  return apiFetch(`/api/classrooms/${classroomId}/invites`);
 }
 
 export function inviteByUsername(
@@ -287,52 +322,43 @@ export function inviteByUsername(
   username: string,
   role: Exclude<ClassroomRole, "owner">,
 ): Promise<ClassroomInvite> {
-  return apiFetch<ClassroomInvite>(`/api/classrooms/${classroomId}/invites`, {
+  return apiFetch(`/api/classrooms/${classroomId}/invites`, {
     method: "POST",
     body: { username, role },
   });
 }
 
-/** Gera um convite por link: vale para qualquer pessoa que chegar com o código. */
 export function createInviteLink(
   classroomId: string,
   role: Exclude<ClassroomRole, "owner">,
 ): Promise<ClassroomInvite> {
-  return apiFetch<ClassroomInvite>(
-    `/api/classrooms/${classroomId}/invites/link`,
-    { method: "POST", body: { role } },
-  );
+  return apiFetch(`/api/classrooms/${classroomId}/invites/link`, {
+    method: "POST",
+    body: { role },
+  });
 }
 
 export function revokeInvite(
   classroomId: string,
   inviteId: string,
 ): Promise<void> {
-  return apiFetch<void>(`/api/classrooms/${classroomId}/invites/${inviteId}`, {
+  return apiFetch(`/api/classrooms/${classroomId}/invites/${inviteId}`, {
     method: "DELETE",
   });
 }
 
-/** Convites nominais pendentes recebidos pelo usuário atual. */
 export function listMyInvites(): Promise<ClassroomInvite[]> {
-  return apiFetch<ClassroomInvite[]>("/api/me/invites");
+  return apiFetch("/api/me/invites");
 }
 
-/** Prévia de um convite por código, antes de aceitar. */
-export function getInviteByCode(
-  code: string,
-): Promise<ClassroomInvitePreview> {
-  return apiFetch<ClassroomInvitePreview>(
-    `/api/invites/${encodeURIComponent(code)}`,
-  );
+export function getInviteByCode(code: string): Promise<ClassroomInvitePreview> {
+  return apiFetch(`/api/invites/${encodeURIComponent(code.trim())}`);
 }
 
 export function acceptInvite(inviteId: string): Promise<Classroom> {
-  return apiFetch<Classroom>(`/api/invites/${inviteId}/accept`, {
-    method: "POST",
-  });
+  return apiFetch(`/api/invites/${inviteId}/accept`, { method: "POST" });
 }
 
 export function declineInvite(inviteId: string): Promise<void> {
-  return apiFetch<void>(`/api/invites/${inviteId}/decline`, { method: "POST" });
+  return apiFetch(`/api/invites/${inviteId}/decline`, { method: "POST" });
 }

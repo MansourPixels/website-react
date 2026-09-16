@@ -1,11 +1,13 @@
-import { Spinner, buttonVariants } from "@heroui/react";
-import { cn } from "@heroui/styles";
+import { Spinner } from "@heroui/react";
+import { buttonVariants, cn } from "@heroui/styles";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { completeStep, getStudyPlan } from "@/api/studyPlan";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
+import { useCanGoBack } from "@/hooks/useCanGoBack";
 import type { StudyPlan } from "@/types/api/studyPlan";
 import {
   groupProgress,
@@ -24,9 +26,15 @@ export default function PlanStepPage() {
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const canGoBack = useCanGoBack();
 
   useEffect(() => {
     let cancelled = false;
+
+    setPlan(null);
+    setLoadError(null);
 
     getStudyPlan()
       .then((result) => {
@@ -45,13 +53,15 @@ export default function PlanStepPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loadError !== null) {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-2xl mx-auto">
         <NavMenu title="Trilha" hasBackButton />
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       </main>
     );
   }
@@ -91,6 +101,7 @@ export default function PlanStepPage() {
 
   const { label, tint } = studyPlanStepKinds[step.stepType];
   const progress = groupProgress(group.steps);
+  const planSteps = group.steps;
 
   async function handleComplete() {
     await completeStep(etapaId);
@@ -107,22 +118,35 @@ export default function PlanStepPage() {
         ),
       };
     });
+
+    // Quem fecha a etapa precisa saber, no mesmo tique, se o plano acabou —
+    // a prop `isPlanComplete` só se atualiza no render seguinte.
+    return planSteps.every((item) => item.id === etapaId || item.completed);
   }
 
   return (
     <main className={cn(tint, "flex-1 flex flex-col")}>
       <div className="p-6 md:p-8 gap-4 flex flex-col flex-1 w-full max-w-2xl mx-auto">
         <div className="flex flex-col gap-3">
-          <NavMenu title={label} hasBackButton className="text-center pr-12" />
+          {/* O `pr-12` compensa a largura do botão de voltar para o título
+              ficar centrado; sem botão, ele desloca o título. */}
+          <NavMenu
+            title={label}
+            hasBackButton
+            className={cn("text-center", canGoBack && "pr-12")}
+          />
           <PlanSpine
             position={stepIndex + 1}
-            total={group.steps.length}
             disciplineName={group.motherFolderName}
-            completedCount={progress.completed}
+            steps={group.steps}
           />
         </div>
 
+        {/* Trocar de etapa é a mesma rota: sem a chave, o estado interno
+            (inclusive o "pronto para confirmar") vazaria de uma para a
+            outra. */}
         <StepRunner
+          key={step.id}
           planoId={planoId}
           disciplineName={group.motherFolderName}
           step={step}

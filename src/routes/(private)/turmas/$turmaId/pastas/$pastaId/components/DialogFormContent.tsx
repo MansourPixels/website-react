@@ -8,6 +8,8 @@ import { useFeedback } from "@/hooks/useFeedback";
 import type { ClassroomContent } from "@/types/api/classroom";
 
 interface DialogFormContentProps {
+  classroomId: string;
+  folderId: string;
   content: ClassroomContent;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -16,6 +18,8 @@ interface DialogFormContentProps {
 
 /** Só título e descrição: o material em si é gerado ou enviado, não editado aqui. */
 export function DialogFormContent({
+  classroomId,
+  folderId,
   content,
   isOpen,
   onOpenChange,
@@ -46,12 +50,10 @@ export function DialogFormContent({
     setError(null);
 
     try {
-      const result = await updateContent(
-        content.classroomId,
-        content.folderId,
-        content.id,
-        { title: trimmedTitle, description: description.trim() },
-      );
+      const result = await updateContent(classroomId, folderId, content.id, {
+        title: trimmedTitle,
+        description: description.trim(),
+      });
 
       feedback("sucesso");
       onSubmit(result);

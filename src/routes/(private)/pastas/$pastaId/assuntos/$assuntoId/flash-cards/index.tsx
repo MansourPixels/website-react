@@ -6,6 +6,8 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { listFlashcards } from "@/api/flashcards";
 import { DifficultyButton } from "@/components/DifficultyButton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FlashCard } from "@/components/FlashCard";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
@@ -34,6 +36,7 @@ export default function FlashCardsPage() {
 
   const [flashcards, setFlashcards] = useState<Flashcard[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
@@ -46,6 +49,9 @@ export default function FlashCardsPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    setFlashcards(null);
+    setLoadError(null);
 
     listFlashcards(assuntoId)
       .then((result) => {
@@ -64,7 +70,7 @@ export default function FlashCardsPage() {
     return () => {
       cancelled = true;
     };
-  }, [assuntoId]);
+  }, [assuntoId, reloadKey]);
 
   const total = flashcards?.length ?? 0;
   const currentCard = flashcards?.[currentIndex] ?? null;
@@ -117,7 +123,7 @@ export default function FlashCardsPage() {
 
   return (
     <main className="content-bg-emerald-200 flex-1 flex flex-col">
-      <div className="p-6 md:p-8 gap-8 flex flex-col flex-1 justify-between w-full max-w-2xl mx-auto">
+      <div className="p-6 md:p-8 gap-8 flex flex-col flex-1 justify-between w-full max-w-3xl mx-auto">
         <div>
           <NavMenu
             title="Flash Cards"
@@ -151,7 +157,9 @@ export default function FlashCardsPage() {
         </div>
 
         {loadError !== null ? (
-          <p className="text-danger text-center py-8">{loadError}</p>
+          <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+            {loadError}
+          </ErrorState>
         ) : flashcards === null ? (
           <div
             className="flex flex-1 items-center justify-center p-6"
@@ -161,15 +169,19 @@ export default function FlashCardsPage() {
             <span className="sr-only">Carregando flash cards</span>
           </div>
         ) : flashcards.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 py-8 text-center">
-            <p className="text-muted">
-              Ainda não há flash cards para este assunto. Envie conteúdo
-              primeiro para que o Revi IA possa gerá-los.
-            </p>
-            <Link to="/capturar" className={buttonVariants({})}>
-              Capturar material
-            </Link>
-          </div>
+          <EmptyState
+            action={
+              <Link
+                to="/capturar"
+                className={buttonVariants({ variant: "secondary" })}
+              >
+                Capturar material
+              </Link>
+            }
+          >
+            Ainda não há flash cards para este assunto. Envie conteúdo primeiro
+            para que o Revi IA possa gerá-los.
+          </EmptyState>
         ) : isFinished ? (
           <SessionSummary
             total={total}
@@ -194,7 +206,7 @@ export default function FlashCardsPage() {
                 <Button
                   fullWidth
                   size="lg"
-                  onClick={() => {
+                  onPress={() => {
                     feedback("flashcard-virar");
                     setIsAnswerRevealed(true);
                   }}

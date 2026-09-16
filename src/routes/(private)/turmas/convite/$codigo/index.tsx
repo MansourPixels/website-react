@@ -1,11 +1,11 @@
 import { Button, Spinner } from "@heroui/react";
-import { buttonVariants } from "@heroui/styles";
 import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { acceptInvite, declineInvite, getInviteByCode } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { UserIdentity } from "@/components/UserIdentity";
 import { useFeedback } from "@/hooks/useFeedback";
@@ -20,6 +20,7 @@ export default function ClassroomInvitePage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const feedback = useFeedback();
 
@@ -27,6 +28,9 @@ export default function ClassroomInvitePage() {
     if (codigo === undefined) return;
 
     let cancelled = false;
+
+    setPreview(null);
+    setLoadError(null);
 
     getInviteByCode(codigo)
       .then((result) => {
@@ -45,7 +49,7 @@ export default function ClassroomInvitePage() {
     return () => {
       cancelled = true;
     };
-  }, [codigo]);
+  }, [codigo, reloadKey]);
 
   async function handleAccept() {
     if (preview === null || isBusy) return;
@@ -105,22 +109,16 @@ export default function ClassroomInvitePage() {
       <NavMenu title="Convite" hasBackButton backHref="/turmas" />
 
       {loadError !== null ? (
-        <div className="flex flex-col items-center gap-4 py-8">
-          <p className="text-danger text-center text-pretty">{loadError}</p>
-          <Link
-            to="/turmas"
-            className={buttonVariants({ variant: "secondary" })}
-          >
-            Voltar para turmas
-          </Link>
-        </div>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : preview === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
           <span className="sr-only">Abrindo o convite</span>
         </div>
       ) : (
-        <section className="bg-surface shadow-surface mx-auto flex w-full max-w-lg flex-col gap-6 rounded-3xl p-6">
+        <section className="bg-surface shadow-surface mx-auto flex w-full max-w-lg flex-col gap-6 rounded-3xl p-4">
           <header className="flex items-start gap-3">
             <span
               aria-hidden="true"
@@ -140,7 +138,7 @@ export default function ClassroomInvitePage() {
           </header>
 
           <div className="flex flex-col gap-2">
-            {/* Só o dono convida (nominal ou por link) — owner e "quem convidou" são sempre a mesma pessoa. */}
+{/* Só o dono convida (nominal ou por link) — owner e "quem convidou" são sempre a mesma pessoa. */}
             <p className="text-muted text-xs">Convite enviado por</p>
             <UserIdentity user={preview.owner} size="sm" linkToProfile />
           </div>

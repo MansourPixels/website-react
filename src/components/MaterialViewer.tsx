@@ -17,6 +17,8 @@ interface MaterialViewerProps {
    * local, antes do upload — não existe conteúdo no servidor para consultar.
    */
   contentId?: string;
+  classroomContent?: { classroomId: string; folderId: string; contentId: string };
+  onContentUnavailable?: () => void;
 }
 
 export function MaterialViewer({
@@ -24,11 +26,16 @@ export function MaterialViewer({
   onClose,
   footer,
   contentId,
+  classroomContent,
+  onContentUnavailable,
 }: MaterialViewerProps) {
   const isPdf = material?.contentType === "PDF";
   // Guardar a própria URL (em vez de um boolean) evita precisar de um efeito
   // para "resetar" o erro quando o material muda: a comparação já não bate.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  // Imagem que falha cai num placeholder de acervo, e não num estado de erro:
+  // decisão do usuário, para a demonstração não exibir imagem quebrada. O
+  // `alt` continua sendo o nome do material.
   const imageSrc =
     material &&
     (material.url === failedUrl ? pickImageForSeed(material.name) : material.url);
@@ -79,7 +86,7 @@ export function MaterialViewer({
                 <iframe
                   src={material.url}
                   title={material.name}
-                  className="size-full min-h-0 rounded-2xl bg-white"
+                  className="size-full min-h-0 rounded-2xl bg-surface"
                 />
               ) : (
                 <img
@@ -91,8 +98,12 @@ export function MaterialViewer({
               )}
             </Modal.Body>
 
-            {contentId !== undefined && material !== null ? (
-              <OcrSheet contentId={contentId} />
+            {(contentId !== undefined || classroomContent !== undefined) && material !== null ? (
+              <OcrSheet
+                contentId={classroomContent?.contentId ?? contentId!}
+                classroomContent={classroomContent}
+                onContentUnavailable={onContentUnavailable}
+              />
             ) : null}
 
             {footer ? <Modal.Footer>{footer}</Modal.Footer> : null}

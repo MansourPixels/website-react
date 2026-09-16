@@ -25,7 +25,8 @@ interface DialogInviteMemberProps {
   classroomId: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onInvited: (invite: ClassroomInvite) => void;
+  /** Só quem exibe a lista de convites precisa disto. */
+  onInvited?: (invite: ClassroomInvite) => void;
 }
 
 function RolePicker({
@@ -66,6 +67,9 @@ export function DialogInviteMember({
   onOpenChange,
   onInvited,
 }: DialogInviteMemberProps) {
+  // O molde dos diálogos põe a ação no rodapé — com abas, o rodapé precisa
+  // saber qual delas está aberta.
+  const [tab, setTab] = useState<"username" | "link">("username");
   const [username, setUsername] = useState("");
   const [usernameRole, setUsernameRole] = useState<InvitableRole>("viewer");
   const [usernameError, setUsernameError] = useState<string | null>(null);
@@ -83,6 +87,7 @@ export function DialogInviteMember({
   useEffect(() => {
     if (!isOpen) return;
 
+    setTab("username");
     setUsername("");
     setUsernameError(null);
     setUsernameSuccess(null);
@@ -110,7 +115,7 @@ export function DialogInviteMember({
       feedback("sucesso");
       setUsername("");
       setUsernameSuccess(`Convite enviado para @${trimmed}.`);
-      onInvited(invite);
+      onInvited?.(invite);
     } catch (apiError) {
       feedback("erro");
       setUsernameError(
@@ -135,7 +140,7 @@ export function DialogInviteMember({
 
       feedback("sucesso");
       setLink(invite);
-      onInvited(invite);
+      onInvited?.(invite);
     } catch (apiError) {
       feedback("erro");
       setLinkError(
@@ -179,7 +184,12 @@ export function DialogInviteMember({
               <Modal.Heading>Convidar para a turma</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-4">
-              <Tabs defaultSelectedKey="username">
+              <Tabs
+                selectedKey={tab}
+                onSelectionChange={(key) =>
+                  setTab(key as "username" | "link")
+                }
+              >
                 <Tabs.ListContainer>
                   <Tabs.List aria-label="Formas de convidar">
                     <Tabs.Tab id="username">
@@ -206,14 +216,6 @@ export function DialogInviteMember({
 
                   <RolePicker value={usernameRole} onChange={setUsernameRole} />
 
-                  <Button
-                    className="w-full"
-                    isDisabled={username.trim().length === 0 || isInviting}
-                    onPress={handleInviteByUsername}
-                  >
-                    {isInviting ? "Enviando…" : "Enviar convite"}
-                  </Button>
-
                   {usernameSuccess !== null ? (
                     <p role="status" className="text-success text-sm text-pretty">
                       {usernameSuccess}
@@ -228,20 +230,6 @@ export function DialogInviteMember({
 
                 <Tabs.Panel id="link" className="flex flex-col gap-4 pt-4">
                   <RolePicker value={linkRole} onChange={setLinkRole} />
-
-                  <Button
-                    variant={link === null ? "primary" : "secondary"}
-                    className="w-full"
-                    isDisabled={isGenerating}
-                    onPress={handleGenerateLink}
-                  >
-                    <Link2 className="size-4" />
-                    {isGenerating
-                      ? "Gerando…"
-                      : link === null
-                        ? "Gerar link de convite"
-                        : "Gerar outro link"}
-                  </Button>
 
                   {link !== null ? (
                     <div className="flex flex-col gap-2">
@@ -279,6 +267,31 @@ export function DialogInviteMember({
                 </Tabs.Panel>
               </Tabs>
             </Modal.Body>
+            <Modal.Footer>
+              {tab === "username" ? (
+                <Button
+                  className="w-full"
+                  isDisabled={username.trim().length === 0 || isInviting}
+                  onPress={handleInviteByUsername}
+                >
+                  {isInviting ? "Enviando…" : "Enviar convite"}
+                </Button>
+              ) : (
+                <Button
+                  variant={link === null ? "primary" : "secondary"}
+                  className="w-full"
+                  isDisabled={isGenerating}
+                  onPress={handleGenerateLink}
+                >
+                  <Link2 className="size-4" />
+                  {isGenerating
+                    ? "Gerando…"
+                    : link === null
+                      ? "Gerar link de convite"
+                      : "Gerar outro link"}
+                </Button>
+              )}
+            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

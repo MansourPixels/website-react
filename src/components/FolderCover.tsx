@@ -12,6 +12,8 @@ export function FolderCover({
   titleAs: Title = "h2",
   className,
 }: FolderCoverProps) {
+  const subjectCount = folder.amount ?? 0;
+
   return (
     <div
       className={cn(
@@ -21,7 +23,7 @@ export function FolderCover({
       style={{ "--folder-color": folder.color } as React.CSSProperties}
     >
       <div className="relative flex overflow-hidden h-20">
-        {Array.from({ length: Math.min(folder.amount, 4) }).map((_, index) => (
+        {Array.from({ length: Math.min(subjectCount, 4) }).map((_, index) => (
           <div
             className="preview md:nth-of-type-[4]:hidden md:scale-90"
             key={`${folder.id}-preview-${index}`}
@@ -32,9 +34,13 @@ export function FolderCover({
           </div>
         ))}
       </div>
-      <div className="relative flex flex-col justify-center h-20 bg-black/15 px-4 py-1 rounded-b-3xl text-white">
-        <Title className="text-2xl font-semibold">{folder.name}</Title>
-        <span className="opacity-75 tabular-nums">{folder.amount || 0}</span>
+      <div className="relative flex flex-col justify-center h-20 overflow-hidden bg-black/15 px-4 py-1 rounded-b-3xl text-white">
+        <Title className="text-2xl font-semibold line-clamp-1 break-words">
+          {folder.name}
+        </Title>
+        <span className="opacity-75 tabular-nums">
+          {subjectCount} {subjectCount === 1 ? "assunto" : "assuntos"}
+        </span>
       </div>
     </div>
   );

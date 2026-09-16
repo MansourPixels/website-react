@@ -1,11 +1,13 @@
-import { Button, ProgressBar, Spinner } from "@heroui/react";
+import { Button, ProgressBar, Spinner, buttonVariants } from "@heroui/react";
 import { ChevronRight, ListCheck } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { gradeQuiz, listQuiz } from "@/api/quiz";
 import { AlternativeOption } from "@/components/AlternativeOption";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { Math } from "@/components/Math";
 import { NavMenu } from "@/components/NavMenu";
 import { SpeakButton } from "@/components/SpeakButton";
@@ -175,8 +177,11 @@ export default function PracticeTestPage() {
           ? error.detail
           : "Não foi possível enviar o simulado. Tente novamente.",
       );
-      // Volta para a última pergunta para o usuário poder tentar de novo.
+      // Volta para a última pergunta para o usuário poder tentar de novo — e
+      // devolve a alternativa que ele já tinha marcado, senão o envio parece
+      // ter apagado a resposta e o botão nasce desabilitado.
       setCurrentIndex(total - 1);
+      setSelectedOption(nextAnswers.get(currentQuestion.id) ?? null);
     } finally {
       setIsSubmitting(false);
     }
@@ -192,7 +197,7 @@ export default function PracticeTestPage() {
 
   return (
     <main className="content-bg-orange-200 flex-1 flex flex-col">
-      <div className="p-6 md:p-8 gap-8 flex flex-col flex-1 justify-between w-full max-w-2xl mx-auto">
+      <div className="p-6 md:p-8 gap-8 flex flex-col flex-1 justify-between w-full max-w-3xl mx-auto">
         <div>
           <NavMenu
             title="Simulado de prova"
@@ -221,24 +226,42 @@ export default function PracticeTestPage() {
         </div>
 
         {loadError !== null ? (
-          <p className="text-danger text-center py-8">{loadError}</p>
+          <ErrorState onRetry={loadQuiz}>{loadError}</ErrorState>
         ) : questions === null ? (
           <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
             <Spinner size="lg" />
             <span className="sr-only">Carregando simulado</span>
           </div>
         ) : questions.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <p className="text-muted">
-              {isGenerating
-                ? "O simulado ainda está sendo gerado a partir do conteúdo desta pasta. Isso costuma levar poucos segundos."
-                : "Ainda não há simulado para este assunto. Envie conteúdo primeiro para que o Revi IA possa gerar as perguntas."}
-            </p>
-            {isGenerating ? <Spinner size="lg" /> : null}
-            <Button variant="secondary" onPress={loadQuiz}>
-              Tentar novamente
-            </Button>
-          </div>
+          isGenerating ? (
+            // Ainda gerando: esperar (ou reconsultar) resolve.
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+              <p className="text-muted text-pretty">
+                O simulado ainda está sendo gerado a partir do conteúdo desta
+                pasta. Isso costuma levar poucos segundos.
+              </p>
+              <Spinner size="lg" />
+              <Button variant="secondary" onPress={loadQuiz}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : (
+            // Vazio de verdade: recarregar não cria conteúdo — a saída é
+            // capturar material, como nos flash cards e no resumo.
+            <EmptyState
+              action={
+                <Link
+                  to="/capturar"
+                  className={buttonVariants({ variant: "secondary" })}
+                >
+                  Capturar material
+                </Link>
+              }
+            >
+              Ainda não há simulado para este assunto. Envie conteúdo primeiro
+              para que o Revi IA possa gerar as perguntas.
+            </EmptyState>
+          )
         ) : result !== null ? (
           <TestSummary
             questions={questions}
@@ -256,16 +279,19 @@ export default function PracticeTestPage() {
             className="flex flex-col gap-6 flex-1 justify-between"
           >
             <fieldset className="flex flex-col gap-4">
-              <legend className="sr-only">{currentQuestion.question}</legend>
-              <div>
-                <span className="opacity-70">
+              {/* O contador vive dentro do `legend` para que quem usa leitor de
+                  tela receba a posição junto da pergunta; o `mb-4` substitui o
+                  `gap` porque o `legend` fica fora do fluxo flex do fieldset. */}
+              <legend className="mb-4">
+                <span className="text-muted tabular-nums">
                   Pergunta {String(currentIndex + 1).padStart(2, "0")} de{" "}
                   {String(total).padStart(2, "0")}
                 </span>
-                <h2 className="text-2xl font-semibold" aria-hidden>
+                <span className="sr-only">: </span>
+                <h2 className="text-2xl font-semibold">
                   <Math>{currentQuestion.question}</Math>
                 </h2>
-              </div>
+              </legend>
 
               <ul className="flex flex-col gap-3">
                 {OPTION_LETTERS.map((option) => (
@@ -281,10 +307,10 @@ export default function PracticeTestPage() {
                 ))}
               </ul>
 
+              {/* Sem retry próprio: quem tenta de novo é o botão de enviar,
+                  logo abaixo, com a alternativa já remarcada. */}
               {submitError !== null ? (
-                <p role="alert" className="text-danger text-sm text-pretty">
-                  {submitError}
-                </p>
+                <ErrorState isCompact>{submitError}</ErrorState>
               ) : null}
             </fieldset>
 

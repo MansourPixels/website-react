@@ -8,6 +8,7 @@ interface StudyTypeCard {
   description: string;
   icon: LucideIcon;
   iconClass?: string;
+  to?: string;
 }
 
 export function StudyTypeCard({
@@ -16,6 +17,7 @@ export function StudyTypeCard({
   description,
   icon: Icon,
   iconClass,
+  to,
 }: StudyTypeCard) {
   const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
     pastaId: string;
@@ -24,7 +26,7 @@ export function StudyTypeCard({
 
   return (
     <Link
-      to={`/pastas/${pastaId}/assuntos/${assuntoId}/${id}`}
+      to={to ?? `/pastas/${pastaId}/assuntos/${assuntoId}/${id}`}
       className={buttonVariants({
         className:
           "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",

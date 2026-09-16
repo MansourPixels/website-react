@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError } from "@/api/client";
 import { getStreak } from "@/api/streak";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { useAchievementFeedback } from "@/hooks/useAchievementFeedback";
@@ -15,11 +16,15 @@ import { TodayChecklist } from "./components/TodayChecklist";
 export default function Ascensao() {
   const [streak, setStreak] = useState<StreakStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useAchievementFeedback(streak);
 
   useEffect(() => {
     let cancelled = false;
+
+    setStreak(null);
+    setLoadError(null);
 
     getStreak()
       .then((result) => {
@@ -38,14 +43,16 @@ export default function Ascensao() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   return (
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu title="Ascensão" hasBackButton backHref="/perfil" />
 
       {loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+          {loadError}
+        </ErrorState>
       ) : streak === null ? (
         <div
           className="flex flex-1 items-center justify-center p-6"
@@ -62,7 +69,7 @@ export default function Ascensao() {
                 <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-background dark:bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
                   {streak.currentStreak}
                 </span>
-                <span className="text-3xl text-accent font-semibold text-balance">
+                <span className="text-3xl text-accent-soft-foreground font-semibold text-balance">
                   Dias em ascensão
                 </span>
               </h2>
@@ -86,7 +93,7 @@ export default function Ascensao() {
 
             <section
               id="indicadores-ascensao"
-              className="grid grid-cols-2 lg:grid-cols-3 gap-3"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3"
             >
               <StatTile
                 label="Recorde"
@@ -105,6 +112,7 @@ export default function Ascensao() {
                 value={`${streak.daysActiveThisWeek}`}
                 hint="Últimos 7 dias, incluindo hoje"
                 icon={CalendarDays}
+                className="lg:col-span-2"
               />
             </section>
           </div>

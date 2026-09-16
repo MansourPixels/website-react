@@ -20,8 +20,8 @@ export function AlternativeOption({
         "flex items-center gap-3 bg-surface rounded-2xl px-4 py-3 border-2 cursor-pointer transition-colors",
         "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
         isSelected
-          ? "border-orange-600 bg-orange-700/20"
-          : "border-transparent hover:border-orange-300",
+          ? "border-orange-600 bg-orange-600/15"
+          : "border-transparent hover:border-orange-600/40",
       )}
     >
       <input
@@ -36,7 +36,7 @@ export function AlternativeOption({
       <strong
         className={cn(
           "size-8 shrink-0 rounded-full flex items-center justify-center font-semibold transition-colors",
-          isSelected ? "bg-orange-600 text-white" : "bg-zinc-100 dark:bg-zinc-700",
+          isSelected ? "bg-orange-600 text-white" : "bg-default",
         )}
       >
         {letter}

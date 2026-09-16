@@ -20,9 +20,9 @@ export function canManageMembers(role: ClassroomRole): boolean {
   return role === "owner";
 }
 
-/** Criar, renomear e excluir pastas é do dono. */
+/** Dono e editor administram as pastas compartilhadas. */
 export function canManageFolders(role: ClassroomRole): boolean {
-  return role === "owner";
+  return role === "owner" || role === "editor";
 }
 
 export function canManageClassroom(role: ClassroomRole): boolean {
@@ -38,24 +38,20 @@ export function canAddContent(role: ClassroomRole): boolean {
  * reescrevendo o material de outra pessoa.
  */
 export function canEditContent(
-  role: ClassroomRole,
-  content: Pick<ClassroomContent, "author">,
+  _role: ClassroomRole,
+  content: { author: Pick<ClassroomContent["author"], "id"> },
   userId: string,
 ): boolean {
-  if (!canAddContent(role)) return false;
-
   return content.author.id === userId;
 }
 
 /** O dono exclui qualquer conteúdo da turma; os demais, só o próprio. */
 export function canDeleteContent(
   role: ClassroomRole,
-  content: Pick<ClassroomContent, "author">,
+  content: { author: Pick<ClassroomContent["author"], "id"> },
   userId: string,
 ): boolean {
   if (role === "owner") return true;
-  if (role === "viewer") return false;
-
   return content.author.id === userId;
 }
 
@@ -73,7 +69,7 @@ export function roleLabel(role: ClassroomRole): string {
 
 export function roleDescription(role: ClassroomRole): string {
   if (role === "owner") return "Gerencia membros, pastas e todo o conteúdo.";
-  if (role === "editor") return "Adiciona conteúdo e edita o que é seu.";
+  if (role === "editor") return "Gerencia pastas e edita o que é seu.";
 
   return "Só consome o conteúdo da turma.";
 }

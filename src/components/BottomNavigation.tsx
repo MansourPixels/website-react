@@ -28,7 +28,10 @@ export function BottomNavigation({ links }: BottomNavigationProps) {
             cn(
               buttonVariants({
                 className:
-                  "h-16 w-full px-0.5 py-1 flex flex-col items-center justify-center rounded-none gap-0.5 font-medium text-xs sm:text-sm leading-tight text-center text-muted [&.active]:text-accent group",
+                  // Seis abas em 320px não cabem em 12px: "Capturar" trunca.
+                  // O degrau de 11px só existe abaixo de 360px, para não
+                  // encolher o rótulo nos aparelhos em que ele já cabia.
+                  "h-16 w-full px-0 min-[360px]:px-0.5 py-1 flex flex-col items-center justify-center rounded-none gap-0.5 font-medium text-[0.6875rem] min-[360px]:text-xs sm:text-sm leading-tight text-center text-muted [&.active]:text-accent group",
                 variant: "ghost",
               }),
               isActive && "active",

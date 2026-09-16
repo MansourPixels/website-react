@@ -35,6 +35,7 @@ export function CaptureDesk({
     videoRef,
     status,
     error,
+    errorKind,
     isFlashSupported,
     isFlashOn,
     toggleFlash,
@@ -210,9 +211,14 @@ export function CaptureDesk({
             ) : null}
 
             {status === "error" ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <div
+                role="alert"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+              >
                 <CameraOff className="size-8 text-danger" />
-                <p className="text-sm text-muted text-balance">{error}</p>
+                <p className="text-sm text-danger-soft-foreground text-balance">
+                  {error}
+                </p>
               </div>
             ) : null}
           </div>
@@ -245,15 +251,20 @@ export function CaptureDesk({
               </Button>
             </div>
           ) : (
-            <Button
-              variant="tertiary"
-              fullWidth
-              isDisabled={status === "loading"}
-              onPress={status === "error" ? retry : start}
-            >
-              <Camera />
-              {status === "error" ? "Tentar novamente" : "Ligar a webcam"}
-            </Button>
+            // Permissão bloqueada não se resolve por nova tentativa: o
+            // navegador rejeita sem perguntar de novo, então o botão sai de
+            // cena e a dropzone ao lado continua sendo o caminho.
+            errorKind === "NotAllowedError" ? null : (
+              <Button
+                variant="tertiary"
+                fullWidth
+                isDisabled={status === "loading"}
+                onPress={status === "error" ? retry : start}
+              >
+                <Camera />
+                {status === "error" ? "Tentar novamente" : "Ligar a webcam"}
+              </Button>
+            )
           )}
         </section>
       </div>
