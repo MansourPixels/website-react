@@ -175,7 +175,10 @@ function SubjectListPage({ folderId }: { folderId: string }) {
       )}
 
       {subjects !== null && loadError === null ? (
-        <FABButton onPress={() => setIsAddOpen(true)} />
+        <FABButton
+          onPress={() => setIsAddOpen(true)}
+          className="bottom-[calc(var(--nav-inset)+1rem)]"
+        />
       ) : null}
       <DialogFormSubject
         variant="add"

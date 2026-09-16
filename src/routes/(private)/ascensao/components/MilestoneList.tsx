@@ -20,7 +20,9 @@ export function MilestoneList({ currentStreak }: MilestoneListProps) {
             <li key={title} className="flex items-center gap-3">
               <span
                 className={
-                  isReached ? "text-success shrink-0" : "text-muted shrink-0"
+                  isReached
+                    ? "text-success shrink-0"
+                    : "text-muted shrink-0 opacity-60 dark:opacity-90"
                 }
               >
                 {isReached ? (
@@ -30,26 +32,29 @@ export function MilestoneList({ currentStreak }: MilestoneListProps) {
                 )}
               </span>
 
-              <div className="flex-1 grid grid-cols-[4.5rem_1fr_4.5rem] items-center gap-x-3 gap-y-1">
-                <h3 className="text-sm font-medium text-pretty">{title}</h3>
+              <div className="flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="font-medium">{title}</h3>
+                  <span className="text-xs text-muted tabular-nums">
+                    {Math.min(currentStreak, goal)}/{goal}
+                  </span>
+                </div>
+                <p className="text-sm text-muted">
+                  {isReached
+                    ? "Conquistada"
+                    : `Faltam ${remaining} ${remaining === 1 ? "dia" : "dias"} · ${description}`}
+                </p>
                 <Meter
                   value={Math.min(currentStreak, goal)}
                   maxValue={goal}
                   color={isReached ? "success" : "accent"}
                   aria-label={`Progresso da meta ${title}`}
+                  className="mt-1"
                 >
                   <Meter.Track>
                     <Meter.Fill />
                   </Meter.Track>
                 </Meter>
-                <span className="text-xs text-muted tabular-nums text-right">
-                  {Math.min(currentStreak, goal)}/{goal}
-                </span>
-                <p className="col-span-3 text-sm text-muted text-pretty">
-                  {isReached
-                    ? "Conquistada"
-                    : `Faltam ${remaining} ${remaining === 1 ? "dia" : "dias"} · ${description}`}
-                </p>
               </div>
             </li>
           );

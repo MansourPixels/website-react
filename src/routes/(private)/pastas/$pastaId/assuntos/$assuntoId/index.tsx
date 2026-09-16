@@ -280,6 +280,7 @@ export default function SubjectDetailsPage() {
         icon={Camera}
         aria-label="Capturar material para este assunto"
         onPress={() => navigate("camera")}
+        className="bottom-[calc(var(--nav-inset)+1rem)]"
       />
       <MaterialViewer
         material={selectedMaterial}
