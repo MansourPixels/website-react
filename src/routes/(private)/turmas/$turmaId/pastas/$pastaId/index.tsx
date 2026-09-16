@@ -18,8 +18,8 @@ import { canAddContent, roleLabel } from "@/utils/classroomPermissions";
 import { normalizeText } from "@/utils/text";
 
 import { ClassroomContentTile } from "./components/ClassroomContentTile";
+import { ClassroomStudyTypeCard } from "./components/ClassroomStudyTypeCard";
 import { DialogAddContent } from "./components/DialogAddContent";
-import { StudyTypeCard } from "../../../../pastas/$pastaId/assuntos/$assuntoId/components/StudyTypeCard";
 
 export default function ClassroomFolderPage() {
   const { turmaId, pastaId } = useParams();
@@ -148,6 +148,7 @@ export default function ClassroomFolderPage() {
   const displayedContents: ClassroomContent[] | null = search.trim().length >= 2
     ? searchResults
     : contents === null ? null : contents.filter((content) => normalizeText(`${content.title} ${content.fileName}`).includes(normalizedSearch));
+  const hasContent = contents !== null && contents.length > 0;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
@@ -164,12 +165,14 @@ export default function ClassroomFolderPage() {
         {classroom.name} · você é {roleLabel(classroom.role).toLowerCase()}
       </p>
 
-      <section aria-label="Modos de estudo" className="grid gap-3 sm:grid-cols-2">
-        <StudyTypeCard id="resumo" name="Resumo" description="Leia a síntese compartilhada da pasta." icon={FileText} iconClass="bg-violet-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/resumo`} />
-        <StudyTypeCard id="flash-cards" name="Flash Cards" description="Revise conceitos com cartões compartilhados." icon={PanelsTopLeft} iconClass="bg-emerald-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/flash-cards`} />
-        <StudyTypeCard id="simulado-prova" name="Simulado de prova" description="Pratique com perguntas da pasta." icon={Brain} iconClass="bg-orange-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/simulado-prova`} />
-        <StudyTypeCard id="mapa-mental" name="Mapa mental" description="Explore os conceitos em um mapa." icon={Map} iconClass="bg-cyan-600" to={`/turmas/${classroom.id}/pastas/${folder.id}/mapa-mental`} />
-      </section>
+      {hasContent ? (
+        <section aria-label="Modos de estudo" className="grid gap-3 sm:grid-cols-2">
+          <ClassroomStudyTypeCard name="Resumo" description="Leia a síntese compartilhada da pasta." icon={FileText} iconClass="bg-violet-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/resumo`} />
+          <ClassroomStudyTypeCard name="Flash Cards" description="Revise conceitos com cartões compartilhados." icon={PanelsTopLeft} iconClass="bg-emerald-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/flash-cards`} />
+          <ClassroomStudyTypeCard name="Simulado de prova" description="Pratique com perguntas da pasta." icon={Brain} iconClass="bg-orange-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/simulado-prova`} />
+          <ClassroomStudyTypeCard name="Mapa mental" description="Explore os conceitos em um mapa." icon={Map} iconClass="bg-cyan-600" to={`/turmas/${classroom.id}/pastas/${folder.id}/mapa-mental`} />
+        </section>
+      ) : null}
 
        {displayedContents === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">

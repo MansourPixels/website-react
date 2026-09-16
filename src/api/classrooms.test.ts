@@ -14,7 +14,11 @@ vi.mock("./client", () => ({ apiFetch, ApiError }));
 import {
   createClassroomMaterialSnapshot,
   createClassroomReference,
+  getClassroomMindMap,
   getClassroomMaterialSnapshot,
+  getClassroomSummary,
+  listClassroomFlashcards,
+  listClassroomQuiz,
   listReviMaterials,
 } from "./classrooms";
 
@@ -39,6 +43,37 @@ describe("classroom material sharing API", () => {
     apiFetch.mockResolvedValue({ contentId: "content-1" });
     await getClassroomMaterialSnapshot("class-1", "folder-1", "content-1");
     expect(apiFetch).toHaveBeenCalledWith("/api/classrooms/class-1/folders/folder-1/contents/content-1/snapshot", { signal: undefined });
+  });
+
+  it("loads the four shared AI artifacts using classroom endpoints", async () => {
+    apiFetch
+      .mockResolvedValueOnce({ markdown: "Resumo" })
+      .mockResolvedValueOnce([{ front: "Pergunta", back: "Resposta" }])
+      .mockResolvedValueOnce([{ question: "Questão", correctOption: "A" }])
+      .mockResolvedValueOnce({ raiz: { id: "root", label: "Raiz" } });
+
+    await expect(getClassroomSummary("class-1", "folder-1")).resolves.toEqual({ markdown: "Resumo" });
+    await expect(listClassroomFlashcards("class-1", "folder-1")).resolves.toEqual([{ front: "Pergunta", back: "Resposta" }]);
+    await expect(listClassroomQuiz("class-1", "folder-1")).resolves.toEqual([{ question: "Questão", correctOption: "A" }]);
+    await expect(getClassroomMindMap("class-1", "folder-1")).resolves.toEqual({ raiz: { id: "root", label: "Raiz" } });
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/classrooms/class-1/folders/folder-1/summary", { signal: undefined });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/classrooms/class-1/folders/folder-1/flashcards", { signal: undefined });
+    expect(apiFetch).toHaveBeenNthCalledWith(3, "/api/classrooms/class-1/folders/folder-1/quiz", { signal: undefined });
+    expect(apiFetch).toHaveBeenNthCalledWith(4, "/api/classrooms/class-1/folders/folder-1/mind-map", { signal: undefined });
+  });
+
+  it("preserves pending semantics for empty classroom artifacts", async () => {
+    apiFetch
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(undefined);
+
+    await expect(getClassroomSummary("class-1", "folder-1")).resolves.toBeNull();
+    await expect(listClassroomFlashcards("class-1", "folder-1")).resolves.toEqual([]);
+    await expect(listClassroomQuiz("class-1", "folder-1")).resolves.toEqual([]);
+    await expect(getClassroomMindMap("class-1", "folder-1")).resolves.toBeNull();
   });
 
 });

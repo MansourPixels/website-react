@@ -87,6 +87,7 @@ export function ClassroomContentTile({
   const isSnapshot = content.kind === "snapshot";
   const meta = kindMeta[content.kind];
   const Icon = meta.icon;
+  const description = content.description ?? "";
 
   useEffect(() => {
     if (!isFile) return;
@@ -171,9 +172,9 @@ export function ClassroomContentTile({
         ) : null}
       </header>
 
-      {content.description.length > 0 ? (
+      {description.length > 0 ? (
         <p className="text-muted line-clamp-3 text-sm text-pretty">
-          {content.description}
+          {description}
         </p>
       ) : null}
 
