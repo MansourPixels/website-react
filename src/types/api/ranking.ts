@@ -3,8 +3,8 @@ import type { PublicUser } from "./social";
 export type RankingScope = "global" | "friends" | "classroom";
 
 export interface RankingEntry {
-  /** Posição absoluta no escopo, começando em 1. */
-  position: number;
+  /** Posição absoluta no escopo, começando em 1; `null` se o usuário ainda não pontuou. */
+  position: number | null;
   user: PublicUser;
   xp: number;
   flashcards: number;

@@ -6,6 +6,8 @@ import { Link, useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getPublicProfile } from "@/api/profile";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { UserIdentity } from "@/components/UserIdentity";
@@ -20,6 +22,7 @@ export default function PublicProfilePage() {
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (username === undefined) return;
@@ -46,7 +49,7 @@ export default function PublicProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [username]);
+  }, [username, reloadKey]);
 
   function handleFriendshipChange(
     friendship: PublicProfile["friendship"],
@@ -75,16 +78,9 @@ export default function PublicProfilePage() {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
         <NavMenu title="Perfil" hasBackButton />
-        <p className="text-danger py-8 text-center text-pretty">{loadError}</p>
-        <Link
-          to="/amigos"
-          className={buttonVariants({
-            variant: "secondary",
-            className: "mx-auto",
-          })}
-        >
-          Buscar outra pessoa
-        </Link>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       </main>
     );
   }
@@ -106,25 +102,24 @@ export default function PublicProfilePage() {
 
   const { user } = profile;
   const displayName = user.displayName || user.username;
+  const sharedClassrooms = profile.sharedClassrooms ?? [];
   const hasNothingInCommon =
     profile.friendship !== "self" &&
     profile.mutualFriends.length === 0 &&
-    profile.sharedClassrooms.length === 0;
+    sharedClassrooms.length === 0;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
       <NavMenu title={displayName} hasBackButton />
 
-      <section className="bg-surface shadow-surface flex flex-col items-center gap-4 rounded-3xl p-6 sm:flex-row sm:items-center sm:gap-6">
+      <section className="bg-surface shadow-surface flex flex-col items-center gap-4 rounded-3xl p-4 sm:flex-row sm:items-center sm:gap-6">
         <Avatar
           size="lg"
           variant="soft"
           color="accent"
           className="size-26 shrink-0 rounded-2xl"
         >
-          {user.avatarUrl !== null ? (
-            <Avatar.Image src={user.avatarUrl} alt="" />
-          ) : null}
+          <Avatar.Image src={user.avatarUrl} alt="" />
           <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
         </Avatar>
 
@@ -152,33 +147,40 @@ export default function PublicProfilePage() {
           hint="Zera todo mês"
           icon={Sparkles}
         />
-        <StatTile
-          label="Posição global"
-          value={formatPosition(profile.globalPosition)}
-          hint={
-            profile.globalPosition === null
-              ? "Ainda não pontuou"
-              : `de ${profile.globalTotal} ${
-                  profile.globalTotal === 1 ? "pessoa" : "pessoas"
-                }`
-          }
-          icon={Trophy}
-        />
-        <StatTile
-          label="Flash cards"
-          value={profile.flashcards.toLocaleString("pt-BR")}
-          hint="Cartões respondidos"
-          icon={Layers}
-        />
-        <StatTile
-          label="Simulados"
-          value={profile.quizzes.toLocaleString("pt-BR")}
-          hint="Provas concluídas"
-          icon={ClipboardList}
-        />
+        {profile.globalPosition !== undefined &&
+        profile.globalTotal !== undefined ? (
+          <StatTile
+            label="Posição global"
+            value={formatPosition(profile.globalPosition)}
+            hint={
+              profile.globalPosition === null
+                ? "Ainda não pontuou"
+                : `de ${profile.globalTotal} ${
+                    profile.globalTotal === 1 ? "pessoa" : "pessoas"
+                  }`
+            }
+            icon={Trophy}
+          />
+        ) : null}
+        {profile.flashcards !== undefined ? (
+          <StatTile
+            label="Flash cards"
+            value={profile.flashcards.toLocaleString("pt-BR")}
+            hint="Cartões respondidos"
+            icon={Layers}
+          />
+        ) : null}
+        {profile.quizzes !== undefined ? (
+          <StatTile
+            label="Simulados"
+            value={profile.quizzes.toLocaleString("pt-BR")}
+            hint="Provas concluídas"
+            icon={ClipboardList}
+          />
+        ) : null}
       </section>
 
-      {profile.sharedClassrooms.length > 0 ? (
+      {sharedClassrooms.length > 0 ? (
         <section className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
             <h2 className="font-semibold">Turmas em comum</h2>
@@ -187,14 +189,14 @@ export default function PublicProfilePage() {
             </p>
           </header>
           <ul className="flex flex-col gap-2">
-            {profile.sharedClassrooms.map((classroom) => (
+            {sharedClassrooms.map((classroom) => (
               <li key={classroom.id}>
                 <Link
                   to={`/turmas/${classroom.id}`}
                   className={buttonVariants({
                     variant: "ghost",
                     className:
-                      "bg-surface shadow-surface flex h-auto w-full items-center gap-3 rounded-xl px-4 py-3",
+                      "bg-surface shadow-surface flex h-auto w-full items-center gap-3 rounded-xl p-3",
                   })}
                 >
                   <span
@@ -217,7 +219,9 @@ export default function PublicProfilePage() {
           <header className="flex flex-col gap-1">
             <h2 className="font-semibold">Amigos em comum</h2>
             <p className="text-muted text-xs text-balance">
-              {profile.mutualFriends.length}{" "}
+              <span className="tabular-nums">
+                {profile.mutualFriends.length}
+              </span>{" "}
               {profile.mutualFriends.length === 1
                 ? "pessoa que vocês dois conhecem"
                 : "pessoas que vocês dois conhecem"}
@@ -246,9 +250,9 @@ export default function PublicProfilePage() {
       ) : null}
 
       {hasNothingInCommon ? (
-        <p className="text-muted text-center text-pretty">
+        <EmptyState>
           Vocês ainda não têm turmas nem amigos em comum.
-        </p>
+        </EmptyState>
       ) : null}
     </main>
   );

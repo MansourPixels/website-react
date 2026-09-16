@@ -337,10 +337,6 @@ export function useStudySession({
     setSettings((current) => sanitizeSettings({ ...current, ...patch }));
   }, []);
 
-  const restoreDefaults = useCallback(() => {
-    setSettings(DEFAULT_SESSION_SETTINGS);
-  }, []);
-
   return useMemo(
     () => ({
       phase: run.phase,
@@ -359,7 +355,6 @@ export function useStudySession({
       skip,
       resetCounter,
       updateSettings,
-      restoreDefaults,
     }),
     [
       run.phase,
@@ -378,7 +373,6 @@ export function useStudySession({
       skip,
       resetCounter,
       updateSettings,
-      restoreDefaults,
     ],
   );
 }

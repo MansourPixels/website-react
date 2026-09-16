@@ -9,10 +9,10 @@ interface ClassroomCardProps {
 
 export function ClassroomCard({ classroom }: ClassroomCardProps) {
   return (
-    <article className="group">
+    <article className="group h-full hover:brightness-105">
       <Link
         to={`/turmas/${classroom.id}`}
-        className="bg-surface shadow-surface flex h-full flex-col overflow-hidden rounded-3xl"
+        className="bg-surface shadow-surface flex h-full flex-col overflow-hidden rounded-3xl transition-all active:scale-98 motion-reduce:transition-none"
       >
         <div
           className="h-20 w-full"
@@ -21,7 +21,7 @@ export function ClassroomCard({ classroom }: ClassroomCardProps) {
 
         <div className="flex flex-1 flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
-            <h2 className="line-clamp-2 font-semibold text-balance">
+            <h2 className="line-clamp-2 font-semibold break-words text-balance">
               {classroom.name}
             </h2>
             <span className="bg-default text-muted shrink-0 rounded-full px-2 py-0.5 text-xs">

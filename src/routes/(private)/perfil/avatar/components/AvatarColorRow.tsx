@@ -46,7 +46,7 @@ export function AvatarColorRow({
             <label
               key={color}
               className={cn(
-                "flex size-10 cursor-pointer items-center justify-center rounded-full border-2 transition-colors",
+                "flex size-10 cursor-pointer items-center justify-center rounded-full border-2 transition-colors pointer-coarse:size-11",
                 "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
                 isSelected ? "border-accent" : "border-transparent",
               )}
@@ -60,7 +60,10 @@ export function AvatarColorRow({
               />
               <span className="sr-only">{`${label}: #${color}`}</span>
               <span
-                className="flex size-8 items-center justify-center rounded-full shadow-inner"
+                // O anel interno delimita as cores claras sem recorrer a
+                // sombra em controle, que o sistema não usa e que some no
+                // tema escuro.
+                className="flex size-8 items-center justify-center rounded-full ring-1 ring-black/10 ring-inset"
                 style={{ backgroundColor: `#${color}` }}
               >
                 {isSelected ? (
@@ -89,12 +92,12 @@ export function AvatarColorRow({
                 : `${label}: escolher uma cor personalizada`
             }
             className={cn(
-              "flex size-10 items-center justify-center rounded-full border-2 p-0 transition-colors",
+              "flex size-10 items-center justify-center rounded-full border-2 p-0 transition-colors pointer-coarse:size-11",
               isCustom ? "border-accent" : "border-transparent",
             )}
           >
             <span
-              className="grid size-8 place-items-center rounded-full shadow-inner"
+              className="grid size-8 place-items-center rounded-full ring-1 ring-black/10 ring-inset"
               style={
                 isCustom
                   ? { backgroundColor: `#${value}` }
@@ -102,9 +105,11 @@ export function AvatarColorRow({
               }
             >
               {/* O disco branco garante que o ícone seja legível tanto sobre o
-                  arco-íris quanto sobre qualquer cor que o aluno escolher. */}
+                  arco-íris quanto sobre qualquer cor que o aluno escolher —
+                  por isso o ícone fixa a cor em vez de herdar `--foreground`,
+                  que no tema escuro seria branco sobre branco. */}
               <span className="grid size-5 place-items-center rounded-full bg-white">
-                <Pipette className="size-3" aria-hidden="true" />
+                <Pipette className="size-3 text-zinc-900" aria-hidden="true" />
               </span>
             </span>
           </ColorPickerTrigger>

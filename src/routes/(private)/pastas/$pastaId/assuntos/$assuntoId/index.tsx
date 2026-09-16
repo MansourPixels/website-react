@@ -6,6 +6,8 @@ import { useNavigate, useParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { getDownloadUrl, listContent, searchContent } from "@/api/content";
 import { listChildFolders } from "@/api/folders";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
@@ -37,6 +39,7 @@ export default function SubjectDetailsPage() {
     null,
   );
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Guardado ao lado do material: `ViewableFile` é documentado como "não
   // corresponde a um Content da API", e o painel de OCR precisa do id.
@@ -79,6 +82,9 @@ export default function SubjectDetailsPage() {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const startedAt = Date.now();
 
+    setContents(null);
+    setLoadError(null);
+
     async function poll() {
       try {
         const result = await listContent(assuntoId);
@@ -110,7 +116,7 @@ export default function SubjectDetailsPage() {
       cancelled = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
-  }, [assuntoId]);
+  }, [assuntoId, reloadKey]);
 
   useEffect(() => {
     const trimmed = search.trim();
@@ -198,7 +204,7 @@ export default function SubjectDetailsPage() {
       />
       <section
         id="tipos-estudo"
-        className="grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+        className="grid md:grid-cols-2 gap-3"
       >
         <StudyTypeCard
           id="flash-cards"
@@ -231,9 +237,7 @@ export default function SubjectDetailsPage() {
       </section>
 
       {viewerError !== null ? (
-        <p role="alert" className="text-danger text-center text-sm">
-          {viewerError}
-        </p>
+        <ErrorState isCompact>{viewerError}</ErrorState>
       ) : null}
 
       {contents === null && loadError === null ? (
@@ -242,11 +246,11 @@ export default function SubjectDetailsPage() {
           <span className="sr-only">Carregando materiais</span>
         </div>
       ) : loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+          {loadError}
+        </ErrorState>
       ) : searchError !== null ? (
-        <p role="alert" className="text-danger text-center py-8">
-          {searchError}
-        </p>
+        <ErrorState>{searchError}</ErrorState>
       ) : isSearchActive && searchResults === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
@@ -266,13 +270,18 @@ export default function SubjectDetailsPage() {
           ))}
         </section>
       ) : (
-        <p className="text-muted text-center py-8">
+        <EmptyState>
           {trimmedSearch.length > 0
             ? `Nenhum material encontrado para "${trimmedSearch}".`
             : "Este assunto ainda não tem materiais. Adicione o primeiro pela câmera."}
-        </p>
+        </EmptyState>
       )}
-      <FABButton icon={Camera} onClick={() => navigate("camera")} />
+      <FABButton
+        icon={Camera}
+        aria-label="Capturar material para este assunto"
+        onPress={() => navigate("camera")}
+        className="bottom-[calc(var(--nav-inset)+1rem)]"
+      />
       <MaterialViewer
         material={selectedMaterial}
         contentId={selectedContentId ?? undefined}

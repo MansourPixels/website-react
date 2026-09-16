@@ -1,4 +1,3 @@
-import type { SocialDatabase, SocialUserRecord } from "@/mocks/social/schema";
 import type {
   RankingEntry,
   RankingPage,
@@ -6,22 +5,13 @@ import type {
   RankingSummary,
   SeasonChampion,
 } from "@/types/api/ranking";
-import {
-  currentSeasonId,
-  previousSeasonId,
-  seasonEndsAt,
-  seasonStartsAt,
-  xpFromActivity,
-} from "@/utils/ranking";
+import { readTokens } from "@/api/tokenStorage";
+import { decodeAccessTokenClaims } from "@/utils/jwt";
 
-import { ApiError } from "./client";
-import { findUser, friendIdsOf, toPublicUser } from "./friends";
-import { mockRequest } from "./mockBackend";
+import { apiFetch } from "./client";
 
 /**
  * Ranking em três escopos, sobre o XP da temporada corrente (um mês civil).
- * A virada de temporada acontece na leitura do banco falso — ver
- * `applySeasonRollover` em `src/utils/socialStorage.ts`.
  */
 
 export interface RankingQuery {
@@ -32,140 +22,131 @@ export interface RankingQuery {
   pageSize?: number;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
+/** Id do usuário logado, lido do mesmo JWT que o `apiFetch` já manda no `Authorization`. */
+function currentUserId(): string | null {
+  const tokens = readTokens();
 
-function membersOfClassroom(
-  db: SocialDatabase,
-  classroomId: string,
-  userId: string,
-): SocialUserRecord[] {
-  const isMember = db.members.some(
-    (member) => member.classroomId === classroomId && member.userId === userId,
-  );
+  if (tokens === null) return null;
 
-  if (!isMember) {
-    throw new ApiError(403, "Você não faz parte desta turma.");
-  }
-
-  return db.members
-    .filter((member) => member.classroomId === classroomId)
-    .map((member) => findUser(db, member.userId));
+  return decodeAccessTokenClaims(tokens.accessToken)?.sub ?? null;
 }
 
-/** Universo do escopo, já com o usuário atual incluído quando faz sentido. */
-function scopedUsers(
-  db: SocialDatabase,
-  userId: string,
-  query: RankingQuery,
-): SocialUserRecord[] {
-  if (query.scope === "global") return db.users;
+function buildQueryString(query: RankingQuery): string {
+  const params = new URLSearchParams({ scope: query.scope });
 
-  if (query.scope === "friends") {
-    const ids = new Set([...friendIdsOf(db, userId), userId]);
+  if (query.classroomId !== undefined) params.set("classroomId", query.classroomId);
+  if (query.page !== undefined) params.set("page", String(query.page));
+  if (query.pageSize !== undefined) params.set("pageSize", String(query.pageSize));
 
-    return db.users.filter((user) => ids.has(user.id));
-  }
-
-  if (query.classroomId === undefined) {
-    throw new ApiError(400, "Informe a turma do ranking.");
-  }
-
-  return membersOfClassroom(db, query.classroomId, userId);
+  return params.toString();
 }
 
-/**
- * Empate resolvido pelo username, para a ordem não dançar entre dois
- * carregamentos — posição que muda sozinha lê como bug.
- *
- * Exportado porque o perfil público mostra a posição global: se ele ordenasse
- * por conta própria, dois lugares do app discordariam sobre o mesmo número.
- */
-export function rankUsers(
-  users: SocialUserRecord[],
-  userId: string,
-): RankingEntry[] {
-  return [...users]
-    .sort((a, b) => {
-      const diff = xpFromActivity(b) - xpFromActivity(a);
+interface LeaderboardEntryResponse {
+  id: string;
+  username: string;
+  avatarUrl: string;
+  xp: number;
+  flashcards: number;
+  quizzes: number;
+  position: number | null;
+}
 
-      if (diff !== 0) return diff;
+interface LeaderboardResponse {
+  entries: LeaderboardEntryResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
-      return a.username.localeCompare(b.username, "pt-BR");
-    })
-    .map((user, index) => ({
-      position: index + 1,
-      user: toPublicUser(user),
-      xp: xpFromActivity(user),
-      flashcards: user.flashcards,
-      quizzes: user.quizzes,
-      isCurrentUser: user.id === userId,
-    }));
+function toRankingEntry(
+  entry: LeaderboardEntryResponse,
+  callerId: string | null,
+): RankingEntry {
+  return {
+    position: entry.position,
+    user: { id: entry.id, username: entry.username, displayName: entry.username, avatarUrl: entry.avatarUrl, xp: entry.xp },
+    xp: entry.xp,
+    flashcards: entry.flashcards,
+    quizzes: entry.quizzes,
+    isCurrentUser: entry.id === callerId,
+  };
 }
 
 export function getRanking(query: RankingQuery): Promise<RankingPage> {
-  return mockRequest((db, userId) => {
-    const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
-    const entries = rankUsers(scopedUsers(db, userId, query), userId);
-    const start = (page - 1) * pageSize;
-    const slice = entries.slice(start, start + pageSize);
+  return apiFetch<LeaderboardResponse>(`/api/ranking?${buildQueryString(query)}`).then(
+    (response) => {
+      const callerId = currentUserId();
 
-    return {
-      entries: slice,
-      total: entries.length,
-      page,
-      pageSize,
-      hasMore: start + pageSize < entries.length,
-    };
-  });
+      return {
+        entries: response.entries.map((entry) => toRankingEntry(entry, callerId)),
+        total: response.total,
+        page: response.page,
+        pageSize: response.pageSize,
+        hasMore: response.hasMore,
+      };
+    },
+  );
+}
+
+interface RankingSummaryResponse {
+  seasonId: string;
+  startsAt: string;
+  endsAt: string;
+  remainingSeconds: number;
+  position: number | null;
+  xp: number;
+  flashcards: number;
+  quizzes: number;
+  total: number;
 }
 
 /** Cabeçalho do ranking: temporada, posição e atividade do usuário atual. */
 export function getRankingSummary(query: RankingQuery): Promise<RankingSummary> {
-  return mockRequest((db, userId) => {
-    const seasonId = currentSeasonId();
-    const entries = rankUsers(scopedUsers(db, userId, query), userId);
-    const mine = entries.find((entry) => entry.isCurrentUser) ?? null;
+  return apiFetch<RankingSummaryResponse>(
+    `/api/ranking/summary?${buildQueryString(query)}`,
+  ).then((response) => ({
+    season: {
+      id: response.seasonId,
+      startsAt: response.startsAt,
+      endsAt: response.endsAt,
+    },
+    position: response.position,
+    xp: response.xp,
+    flashcards: response.flashcards,
+    quizzes: response.quizzes,
+    total: response.total,
+  }));
+}
 
-    return {
-      season: {
-        id: seasonId,
-        startsAt: seasonStartsAt(seasonId).toISOString(),
-        endsAt: seasonEndsAt(seasonId).toISOString(),
-      },
-      position: mine?.position ?? null,
-      xp: mine?.xp ?? 0,
-      flashcards: mine?.flashcards ?? 0,
-      quizzes: mine?.quizzes ?? 0,
-      total: entries.length,
-    };
-  });
+interface ChampionResponse {
+  seasonId: string;
+  scope: RankingScope;
+  classroomId: string | null;
+  user: { id: string; username: string; avatarUrl: string; xp: number; flashcards: number; quizzes: number };
 }
 
 /** Campeão da temporada anterior no escopo pedido. `null` se não houver. */
 export function getPreviousChampion(
   query: RankingQuery,
 ): Promise<SeasonChampion | null> {
-  return mockRequest((db, userId) => {
-    // Valida o acesso ao escopo antes de devolver qualquer nome.
-    scopedUsers(db, userId, query);
-
-    const seasonId = previousSeasonId(currentSeasonId());
-    const champion = db.champions.find(
-      (item) =>
-        item.seasonId === seasonId &&
-        item.scope === query.scope &&
-        item.classroomId === (query.classroomId ?? null),
-    );
-
-    if (champion === undefined) return null;
+  return apiFetch<ChampionResponse | null>(
+    `/api/ranking/champions/previous?${buildQueryString(query)}`,
+  ).then((response) => {
+    if (response === null) return null;
 
     return {
-      seasonId: champion.seasonId,
-      scope: champion.scope,
-      classroomId: champion.classroomId,
-      user: toPublicUser(findUser(db, champion.userId)),
-      xp: champion.xp,
+      seasonId: response.seasonId,
+      scope: response.scope,
+      classroomId: response.classroomId,
+      user: {
+        id: response.user.id,
+        username: response.user.username,
+        displayName: response.user.username,
+        avatarUrl: response.user.avatarUrl,
+        xp: response.user.xp,
+      },
+      xp: response.user.xp,
     };
   });
 }

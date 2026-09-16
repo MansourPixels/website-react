@@ -7,6 +7,8 @@ import {
   listFriends,
   searchUsers,
 } from "@/api/friends";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import type {
   Friend,
@@ -26,14 +28,20 @@ export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[] | null>(null);
   const [requests, setRequests] = useState<FriendRequest[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<UserSearchResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchKey, setSearchKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setFriends(null);
+    setRequests(null);
+    setLoadError(null);
 
     Promise.all([listFriends(), listFriendRequests()])
       .then(([friendList, requestList]) => {
@@ -55,7 +63,7 @@ export default function FriendsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const trimmed = term.trim();
@@ -95,7 +103,7 @@ export default function FriendsPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [term]);
+  }, [term, searchKey]);
 
   // Recebe a solicitação que o serviço devolveu — com o id real, para o botão
   // "Cancelar" da aba de solicitações funcionar sem recarregar a página.
@@ -184,6 +192,7 @@ export default function FriendsPage() {
           isSearching={isSearching}
           error={searchError}
           onRequestSent={handleRequestSent}
+          onRetry={() => setSearchKey((key) => key + 1)}
         />
       </section>
 
@@ -193,17 +202,23 @@ export default function FriendsPage() {
           <span className="sr-only">Carregando seus amigos</span>
         </div>
       ) : loadError !== null ? (
-        <p className="text-danger py-8 text-center">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : (
         <Tabs defaultSelectedKey="amigos">
           <Tabs.ListContainer>
             <Tabs.List aria-label="Amigos e solicitações">
               <Tabs.Tab id="amigos">
-                Amigos ({(friends ?? []).length})
+                Amigos (
+                <span className="tabular-nums">{(friends ?? []).length}</span>)
                 <Tabs.Indicator />
               </Tabs.Tab>
               <Tabs.Tab id="solicitacoes">
-                Solicitações ({receivedCount})
+                {/* O painel lista recebidas E enviadas — contar só as recebidas
+                    diria "(0)" sobre um painel cheio. */}
+                Solicitações (
+                <span className="tabular-nums">{(requests ?? []).length}</span>)
                 <Tabs.Indicator />
               </Tabs.Tab>
             </Tabs.List>
@@ -211,10 +226,10 @@ export default function FriendsPage() {
 
           <Tabs.Panel id="amigos" className="pt-4">
             {(friends ?? []).length === 0 ? (
-              <p className="text-muted py-8 text-center text-pretty">
+              <EmptyState>
                 Você ainda não tem amigos no Revi. Busque por um username acima
                 para enviar a primeira solicitação.
-              </p>
+              </EmptyState>
             ) : (
               <ul className="flex flex-col gap-2">
                 {(friends ?? []).map((friend) => (
@@ -230,17 +245,15 @@ export default function FriendsPage() {
 
           <Tabs.Panel id="solicitacoes" className="flex flex-col gap-6 pt-4">
             {(requests ?? []).length === 0 ? (
-              <p className="text-muted py-8 text-center">
-                Nenhuma solicitação pendente.
-              </p>
+              <EmptyState>Nenhuma solicitação pendente.</EmptyState>
             ) : (
               <>
                 <div className="flex flex-col gap-3">
                   <h3 className="text-sm font-medium">Recebidas</h3>
                   {receivedCount === 0 ? (
-                    <p className="text-muted text-sm">
+                    <EmptyState isCompact>
                       Ninguém te convidou por enquanto.
-                    </p>
+                    </EmptyState>
                   ) : (
                     <ul className="flex flex-col gap-2">
                       {(requests ?? [])
@@ -262,9 +275,9 @@ export default function FriendsPage() {
                   {(requests ?? []).every(
                     (request) => request.direction !== "sent",
                   ) ? (
-                    <p className="text-muted text-sm">
+                    <EmptyState isCompact>
                       Você não tem solicitações aguardando resposta.
-                    </p>
+                    </EmptyState>
                   ) : (
                     <ul className="flex flex-col gap-2">
                       {(requests ?? [])

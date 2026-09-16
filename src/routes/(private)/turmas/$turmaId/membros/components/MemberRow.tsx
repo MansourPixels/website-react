@@ -1,5 +1,11 @@
-import { Button, ToggleButton, ToggleButtonGroup } from "@heroui/react";
-import { UserMinus } from "lucide-react";
+import {
+  Button,
+  ButtonGroup,
+  Popover,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@heroui/react";
+import { Ellipsis, UserMinus } from "lucide-react";
 import { useState } from "react";
 
 import { updateMemberRole } from "@/api/classrooms";
@@ -29,6 +35,7 @@ export function MemberRow({
   onChange,
   onRemove,
 }: MemberRowProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRemovalOpen, setIsRemovalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,16 +94,35 @@ export function MemberRow({
         />
 
         {showControls ? (
-          <Button
-            isIconOnly
-            variant="ghost"
-            size="sm"
-            className="text-danger shrink-0"
-            aria-label={`Remover @${member.user.username} da turma`}
-            onPress={() => setIsRemovalOpen(true)}
-          >
-            <UserMinus className="size-4" />
-          </Button>
+          // Remover é destrutivo: fica atrás do popover, como na linha de amigo.
+          <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <Button
+              isIconOnly
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              aria-label={`Opções de @${member.user.username}`}
+            >
+              <Ellipsis className="size-4" />
+            </Button>
+            <Popover.Content>
+              <Popover.Dialog className="p-0">
+                <ButtonGroup orientation="vertical" className="w-48">
+                  <Button
+                    variant="ghost"
+                    className="text-danger justify-start"
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      setIsRemovalOpen(true);
+                    }}
+                  >
+                    <UserMinus className="size-4" />
+                    Remover da turma
+                  </Button>
+                </ButtonGroup>
+              </Popover.Dialog>
+            </Popover.Content>
+          </Popover>
         ) : null}
       </div>
 

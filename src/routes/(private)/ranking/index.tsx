@@ -10,6 +10,7 @@ import {
   getRankingSummary,
   type RankingQuery,
 } from "@/api/ranking";
+import { EmptyState } from "@/components/EmptyState";
 import { NavMenu } from "@/components/NavMenu";
 import type { Classroom } from "@/types/api/classroom";
 import type {
@@ -45,6 +46,8 @@ export default function RankingPage() {
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,13 +85,20 @@ export default function RankingPage() {
       setSummary(null);
       setChampion(null);
       setHasMore(false);
+      setError(null);
+      setLoadMoreError(null);
       return;
     }
 
     let cancelled = false;
 
+    // Campeão e resumo pertencem ao escopo antigo: mantê-los na tela enquanto o
+    // novo carrega mostraria o campeão errado por alguns instantes.
     setEntries(null);
+    setSummary(null);
+    setChampion(null);
     setError(null);
+    setLoadMoreError(null);
     setPage(1);
 
     Promise.all([
@@ -117,7 +127,7 @@ export default function RankingPage() {
     return () => {
       cancelled = true;
     };
-  }, [buildQuery]);
+  }, [buildQuery, reloadKey]);
 
   async function handleLoadMore() {
     const query = buildQuery();
@@ -125,6 +135,7 @@ export default function RankingPage() {
     if (query === null || isLoadingMore) return;
 
     setIsLoadingMore(true);
+    setLoadMoreError(null);
 
     try {
       const next = await getRanking({ ...query, page: page + 1 });
@@ -133,7 +144,9 @@ export default function RankingPage() {
       setHasMore(next.hasMore);
       setPage(page + 1);
     } catch (loadError) {
-      setError(
+      // Erro próprio da paginação: o `error` da tela apagaria as posições já
+      // carregadas, que continuam válidas.
+      setLoadMoreError(
         loadError instanceof ApiError
           ? loadError.detail
           : "Não foi possível carregar mais posições. Tente novamente.",
@@ -143,30 +156,45 @@ export default function RankingPage() {
     }
   }
 
+  // O vazio de "Turma" ramifica pela existência de turma, não pela lista vazia:
+  // quem tem turma onde ninguém pontuou não recebe "você não participa de
+  // nenhuma turma".
   const emptyState =
     scope === "friends" ? (
-      <div className="flex flex-col items-center gap-3 py-8">
-        <p className="text-muted text-center text-pretty">
-          Você ainda não tem amigos para comparar. Adicione alguém e volte aqui.
-        </p>
-        <Link to="/amigos" className={buttonVariants({ variant: "secondary" })}>
-          Encontrar amigos
-        </Link>
-      </div>
+      <EmptyState
+        action={
+          <Link
+            to="/amigos"
+            className={buttonVariants({ variant: "secondary" })}
+          >
+            Encontrar amigos
+          </Link>
+        }
+      >
+        Você ainda não tem amigos para comparar. Adicione alguém e volte aqui.
+      </EmptyState>
     ) : scope === "classroom" ? (
-      <div className="flex flex-col items-center gap-3 py-8">
-        <p className="text-muted text-center text-pretty">
+      classrooms === null ? null : classrooms.length === 0 ? (
+        <EmptyState
+          action={
+            <Link
+              to="/turmas"
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              Ver turmas
+            </Link>
+          }
+        >
           Você ainda não participa de nenhuma turma. Crie ou entre em uma para
           disputar o ranking com a sua sala.
-        </p>
-        <Link to="/turmas" className={buttonVariants({ variant: "secondary" })}>
-          Ver turmas
-        </Link>
-      </div>
+        </EmptyState>
+      ) : (
+        <EmptyState>
+          Ninguém desta turma pontuou nesta temporada ainda.
+        </EmptyState>
+      )
     ) : (
-      <p className="text-muted py-8 text-center">
-        Ninguém pontuou nesta temporada ainda.
-      </p>
+      <EmptyState>Ninguém pontuou nesta temporada ainda.</EmptyState>
     );
 
   return (
@@ -219,10 +247,12 @@ export default function RankingPage() {
             <RankingList
               entries={entries}
               error={error}
+              loadMoreError={loadMoreError}
               hasMore={hasMore}
               isLoadingMore={isLoadingMore}
               emptyState={emptyState}
               onLoadMore={handleLoadMore}
+              onRetry={() => setReloadKey((key) => key + 1)}
             />
           </Tabs.Panel>
         ))}

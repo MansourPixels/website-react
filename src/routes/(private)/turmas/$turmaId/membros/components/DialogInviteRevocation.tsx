@@ -1,56 +1,64 @@
 import { Button, Modal } from "@heroui/react";
-import { RotateCcw } from "lucide-react";
+import { Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { revokeInvite } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
-import { resetMockData } from "@/api/mockBackend";
 import { useFeedback } from "@/hooks/useFeedback";
+import type { ClassroomInvite } from "@/types/api/classroom";
 
-interface DialogResetSocialDataProps {
+interface DialogInviteRevocationProps {
+  invite: ClassroomInvite;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (invite: ClassroomInvite) => void;
 }
 
-/**
- * Volta Amigos, Ranking e Turmas ao estado semeado. Some junto com o mock
- * quando o backend real entrar.
- */
-export function DialogResetSocialData({
+export function DialogInviteRevocation({
+  invite,
   isOpen,
   onOpenChange,
   onConfirm,
-}: DialogResetSocialDataProps) {
+}: DialogInviteRevocationProps) {
   const [error, setError] = useState<string | null>(null);
-  const [isResetting, setIsResetting] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
 
   useEffect(() => {
     if (isOpen) setError(null);
   }, [isOpen]);
 
   const feedback = useFeedback();
+  const isLink = invite.invitee === null;
 
   async function handleConfirm() {
-    if (isResetting) return;
+    if (isRevoking) return;
 
-    setIsResetting(true);
+    setIsRevoking(true);
     setError(null);
 
     try {
-      await resetMockData();
+      await revokeInvite(invite.classroomId, invite.id);
 
-      feedback("sucesso");
-      onConfirm();
+      feedback("exclusao");
+      onConfirm(invite);
       onOpenChange(false);
     } catch (apiError) {
+      // 404: o convite já não existe (aceito ou revogado noutra sessão) — some
+      // da lista em vez de travar num convite fantasma.
+      if (apiError instanceof ApiError && apiError.status === 404) {
+        onConfirm(invite);
+        onOpenChange(false);
+        return;
+      }
+
       feedback("erro");
       setError(
         apiError instanceof ApiError
           ? apiError.detail
-          : "Não foi possível restaurar os dados. Tente novamente.",
+          : "Não foi possível revogar o convite. Tente novamente.",
       );
     } finally {
-      setIsResetting(false);
+      setIsRevoking(false);
     }
   }
 
@@ -62,15 +70,19 @@ export function DialogResetSocialData({
             <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Icon className="bg-danger-soft text-danger">
-                <RotateCcw className="size-5" />
+                <Trash className="size-5" />
               </Modal.Icon>
-              <Modal.Heading>Restaurar dados de demonstração</Modal.Heading>
+              <Modal.Heading>
+                {isLink
+                  ? `Revogar link ${invite.code}`
+                  : `Revogar convite de @${invite.invitee?.username}`}
+              </Modal.Heading>
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
-                As turmas, pastas, conteúdos, amizades e convites criados nesta
-                demonstração voltam ao estado inicial. Esta ação não pode ser
-                desfeita.
+                {isLink
+                  ? "Quem ainda não entrou por este link deixa de conseguir entrar. Você pode gerar outro link depois."
+                  : "Esta pessoa deixa de conseguir entrar por este convite. Você pode convidá-la de novo depois."}
               </p>
               {error !== null ? (
                 <p role="alert" className="text-danger text-sm text-pretty">
@@ -90,9 +102,9 @@ export function DialogResetSocialData({
                 variant="danger"
                 className="w-full"
                 onPress={handleConfirm}
-                isDisabled={isResetting}
+                isDisabled={isRevoking}
               >
-                Restaurar
+                Revogar convite
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

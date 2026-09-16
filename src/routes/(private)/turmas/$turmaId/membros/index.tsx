@@ -1,18 +1,14 @@
-import { Button, Spinner } from "@heroui/react";
-import { Link2, Mail, UserPlus, X } from "lucide-react";
+import { Button, ButtonGroup, Popover, Spinner } from "@heroui/react";
+import { Ellipsis, Link2, Mail, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
-import {
-  getClassroom,
-  listInvites,
-  listMembers,
-  revokeInvite,
-} from "@/api/classrooms";
+import { getClassroom, listInvites, listMembers } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFeedback } from "@/hooks/useFeedback";
 import type {
   Classroom,
   ClassroomInvite,
@@ -22,6 +18,7 @@ import { canManageMembers, roleLabel } from "@/utils/classroomPermissions";
 import { profilePath } from "@/utils/profile";
 
 import { DialogInviteMember } from "../components/DialogInviteMember";
+import { DialogInviteRevocation } from "./components/DialogInviteRevocation";
 import { MemberRow } from "./components/MemberRow";
 
 function InviteRow({
@@ -31,33 +28,8 @@ function InviteRow({
   invite: ClassroomInvite;
   onRevoked: (invite: ClassroomInvite) => void;
 }) {
-  const [isRevoking, setIsRevoking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const feedback = useFeedback();
-
-  async function handleRevoke() {
-    if (isRevoking) return;
-
-    setIsRevoking(true);
-    setError(null);
-
-    try {
-      await revokeInvite(invite.classroomId, invite.id);
-
-      feedback("exclusao");
-      onRevoked(invite);
-    } catch (apiError) {
-      feedback("erro");
-      setError(
-        apiError instanceof ApiError
-          ? apiError.detail
-          : "Não foi possível revogar o convite. Tente novamente.",
-      );
-    } finally {
-      setIsRevoking(false);
-    }
-  }
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isRevokeOpen, setIsRevokeOpen] = useState(false);
 
   const isLink = invite.invitee === null;
 
@@ -89,24 +61,43 @@ function InviteRow({
           </span>
         </div>
 
-        <Button
-          isIconOnly
-          variant="ghost"
-          size="sm"
-          className="text-danger shrink-0"
-          aria-label={`Revogar convite ${isLink ? invite.code : `de @${invite.invitee?.username}`}`}
-          isDisabled={isRevoking}
-          onPress={handleRevoke}
-        >
-          <X className="size-4" />
-        </Button>
+        {/* Revogar apaga o convite: nunca exposto na linha. */}
+        <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <Button
+            isIconOnly
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            aria-label={`Opções do convite ${isLink ? invite.code : `de @${invite.invitee?.username}`}`}
+          >
+            <Ellipsis className="size-4" />
+          </Button>
+          <Popover.Content>
+            <Popover.Dialog className="p-0">
+              <ButtonGroup orientation="vertical" className="w-48">
+                <Button
+                  variant="ghost"
+                  className="text-danger justify-start"
+                  onPress={() => {
+                    setIsMenuOpen(false);
+                    setIsRevokeOpen(true);
+                  }}
+                >
+                  <X className="size-4" />
+                  Revogar convite
+                </Button>
+              </ButtonGroup>
+            </Popover.Dialog>
+          </Popover.Content>
+        </Popover>
       </div>
 
-      {error !== null ? (
-        <p role="alert" className="text-danger text-sm text-pretty">
-          {error}
-        </p>
-      ) : null}
+      <DialogInviteRevocation
+        invite={invite}
+        isOpen={isRevokeOpen}
+        onOpenChange={setIsRevokeOpen}
+        onConfirm={onRevoked}
+      />
     </li>
   );
 }
@@ -120,11 +111,17 @@ export default function ClassroomMembersPage() {
   const [invites, setInvites] = useState<ClassroomInvite[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (turmaId === undefined) return;
 
     let cancelled = false;
+
+    setClassroom(null);
+    setMembers(null);
+    setInvites([]);
+    setLoadError(null);
 
     Promise.all([getClassroom(turmaId), listMembers(turmaId)])
       .then(async ([classroomResult, memberResult]) => {
@@ -154,7 +151,7 @@ export default function ClassroomMembersPage() {
     return () => {
       cancelled = true;
     };
-  }, [turmaId]);
+  }, [turmaId, reloadKey]);
 
   function handleMemberChanged(member: ClassroomMember) {
     setMembers(
@@ -180,7 +177,9 @@ export default function ClassroomMembersPage() {
       />
 
       {loadError !== null ? (
-        <p className="text-danger py-8 text-center">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : members === null || classroom === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
@@ -190,8 +189,8 @@ export default function ClassroomMembersPage() {
         <>
           <section className="flex flex-col gap-4">
             <header className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold">
-                {members.length}{" "}
+              <h2 className="min-w-0 font-semibold break-words">
+                <span className="tabular-nums">{members.length}</span>{" "}
                 {members.length === 1 ? "membro" : "membros"} em{" "}
                 {classroom.name}
               </h2>
@@ -199,6 +198,7 @@ export default function ClassroomMembersPage() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="shrink-0"
                   onPress={() => setIsInviteOpen(true)}
                 >
                   <UserPlus className="size-4" />
@@ -231,9 +231,9 @@ export default function ClassroomMembersPage() {
               </header>
 
               {invites.length === 0 ? (
-                <p className="text-muted py-4 text-center text-sm">
+                <EmptyState isCompact>
                   Nenhum convite aguardando resposta.
-                </p>
+                </EmptyState>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {invites.map((invite) => (

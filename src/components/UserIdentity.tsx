@@ -6,9 +6,11 @@ import { Link } from "react-router";
 
 interface UserIdentityProps {
   user: {
+    id?: string;
     username: string;
     displayName: string;
     avatarUrl: string | null;
+    xp?: number;
   };
   /** Linha de apoio: XP, papel na turma, data de amizade. */
   caption?: ReactNode;
@@ -43,9 +45,7 @@ export function UserIdentity({
           size === "sm" ? "size-9" : "size-11",
         )}
       >
-        {user.avatarUrl !== null ? (
-          <Avatar.Image src={user.avatarUrl} alt="" />
-        ) : null}
+        <Avatar.Image src={user.avatarUrl ?? undefined} alt="" />
         <Avatar.Fallback>
           {getInitials(user.displayName || user.username)}
         </Avatar.Fallback>

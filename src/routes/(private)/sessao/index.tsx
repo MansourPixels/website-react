@@ -81,7 +81,6 @@ export default function SessaoPage() {
         onOpenChange={setIsSettingsOpen}
         settings={session.settings}
         onSubmit={handleSaveSettings}
-        onRestoreDefaults={session.restoreDefaults}
         isSpotifyConnected={spotify.status === "connected"}
       />
     </main>

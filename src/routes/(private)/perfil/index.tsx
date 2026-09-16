@@ -1,4 +1,4 @@
-import { Avatar, Button, Label, NumberField, Spinner } from "@heroui/react";
+import { Button, Label, NumberField, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import {
   CalendarCheck,
@@ -11,31 +11,33 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 
 import { resendVerificationEmail } from "@/api/auth";
+import { ApiError } from "@/api/client";
 import { getStreak } from "@/api/streak";
 import { getWhoami } from "@/api/user";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { SettingToggle } from "@/components/SettingToggle";
 import { SpotifyMark } from "@/components/SpotifyMark";
 import { StatTile } from "@/components/StatTile";
 import { ThemePicker } from "@/components/ThemePicker";
+import { UserIdentity } from "@/components/UserIdentity";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isHapticsSupported } from "@/utils/haptics";
-import { isSpeechSupported } from "@/utils/speech";
 import { SPEECH_RATE_LIMITS } from "@/utils/preferencesStorage";
-import { getInitials } from "@/utils/text";
+import { isSpeechSupported } from "@/utils/speech";
+import { DialogSignOut } from "./components/DialogSignOut";
 
 export default function PerfilPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const spotify = useSpotify();
   const { preferences, setPreference } = usePreferences();
   const theme = useTheme();
-  const navigate = useNavigate();
 
   // `navigator.vibrate` não existe no servidor; checar só depois de montar
   // evita divergência entre o HTML do servidor e o primeiro render.
@@ -53,23 +55,35 @@ export default function PerfilPage() {
     currentStreak: number;
     recordStreak: number;
   } | null>(null);
+  const [streakError, setStreakError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setStreak(null);
+    setStreakError(null);
 
     getStreak()
       .then((result) => {
         if (!cancelled) setStreak(result);
       })
-      .catch(() => {
-        // Estatísticas secundárias nesta tela — uma falha aqui não deve
-        // travar o resto do perfil.
+      .catch((error) => {
+        // A falha não trava o resto do perfil, mas precisa aparecer: um traço
+        // permanente nos indicadores se lê como "você não tem sequência".
+        if (cancelled) return;
+
+        setStreakError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar a sua sequência.",
+        );
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -90,16 +104,10 @@ export default function PerfilPage() {
     };
   }, []);
 
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isSignOutOpen, setIsSignOutOpen] = useState(false);
   const [verificationState, setVerificationState] = useState<
     "idle" | "sending" | "sent" | "error"
   >("idle");
-
-  async function handleSignOut() {
-    setIsSigningOut(true);
-    await signOut();
-    navigate("/", { replace: true });
-  }
 
   async function handleResendVerification() {
     setVerificationState("sending");
@@ -118,21 +126,20 @@ export default function PerfilPage() {
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6">
       <NavMenu title="Perfil" />
 
-      <section className="flex flex-col items-center gap-4 rounded-3xl bg-surface p-6 shadow-surface sm:flex-row sm:items-center sm:gap-6">
-        <Avatar size="lg" variant="soft" color="accent" className="shrink-0 size-26 rounded-2xl">
-          {/* `null` aqui só existe enquanto o `getWhoami` inicial não resolve
-              — o backend sempre entrega um avatar depois disso, então
-              `Avatar.Fallback` só aparece durante esse carregamento. */}
-          {avatarUrl !== null ? <Avatar.Image src={avatarUrl} alt="" /> : null}
-          <Avatar.Fallback>{getInitials(user.username)}</Avatar.Fallback>
-        </Avatar>
-
-        <div className="flex min-w-0 flex-col items-center gap-1 sm:items-start">
-          <h2 className="text-xl font-semibold break-words">
-            {user.username}
-          </h2>
-          <p className="text-muted text-sm break-all">{user.email}</p>
-        </div>
+      <section className="flex flex-col items-center gap-4 rounded-3xl bg-surface p-4 shadow-surface sm:flex-row sm:gap-6">
+        {/* O token de acesso não carrega nome de exibição; `UserIdentity` cai
+            no username sozinho. `avatarUrl` fica vazio enquanto o `getWhoami`
+            inicial não resolve, e aí o componente mostra as iniciais. */}
+        <UserIdentity
+          user={{
+            id: user.id,
+            username: user.username,
+            displayName: "",
+            avatarUrl: avatarUrl ?? "",
+            xp: 0,
+          }}
+          caption={user.email}
+        />
 
         <Link
           to="/perfil/avatar"
@@ -147,30 +154,36 @@ export default function PerfilPage() {
         </Link>
       </section>
 
-      <section className="grid grid-cols-2 gap-3">
-        <StatTile
-          label="Dias em ascensão"
-          value={streak !== null ? `${streak.currentStreak}` : "–"}
-          hint="Sua sequência atual"
-          icon={Flame}
-        />
-        <StatTile
-          label="Recorde"
-          value={streak !== null ? `${streak.recordStreak} dias` : "–"}
-          hint="Sua maior sequência"
-          icon={Trophy}
-        />
-      </section>
+      {streakError !== null ? (
+        <ErrorState isCompact onRetry={() => setReloadKey((k) => k + 1)}>
+          {streakError}
+        </ErrorState>
+      ) : (
+        <section className="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Dias em ascensão"
+            value={streak !== null ? `${streak.currentStreak}` : "–"}
+            hint="Sua sequência atual"
+            icon={Flame}
+          />
+          <StatTile
+            label="Recorde"
+            value={streak !== null ? `${streak.recordStreak} dias` : "–"}
+            hint="Sua maior sequência"
+            icon={Trophy}
+          />
+        </section>
+      )}
 
       <Link
         to="/ascensao"
         className={buttonVariants({
           variant: "ghost",
           className:
-            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+            "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
         })}
       >
-        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+        <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
           <CalendarCheck className="size-5" />
         </div>
         <div className="flex-1 text-left">
@@ -186,10 +199,10 @@ export default function PerfilPage() {
         className={buttonVariants({
           variant: "ghost",
           className:
-            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+            "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
         })}
       >
-        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+        <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
           <UserPlus className="size-5" />
         </div>
         <div className="flex-1 text-left">
@@ -205,10 +218,10 @@ export default function PerfilPage() {
         className={buttonVariants({
           variant: "ghost",
           className:
-            "bg-surface rounded-xl shadow-surface px-5 py-4 flex items-center gap-4 h-auto w-full",
+            "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
         })}
       >
-        <div className="size-9 rounded-xl flex items-center justify-center bg-accent text-white">
+        <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
           <Trophy className="size-5" />
         </div>
         <div className="flex-1 text-left">
@@ -219,7 +232,7 @@ export default function PerfilPage() {
         </div>
       </Link>
 
-      <section className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-surface">
+      <section className="flex flex-col gap-4 rounded-3xl bg-surface p-4 shadow-surface">
         <header className="flex items-center gap-3">
           <SpotifyMark />
           <div className="flex min-w-0 flex-col">
@@ -356,32 +369,40 @@ export default function PerfilPage() {
           <Button
             variant="secondary"
             className="w-full sm:w-fit"
-            isDisabled={verificationState === "sending"}
+            isPending={verificationState === "sending"}
+            // O rótulo não muda para "reenviado": o resultado é anunciado no
+            // `role="status"` abaixo, e o botão só sai do ar depois do envio.
+            isDisabled={verificationState === "sent"}
             onPress={handleResendVerification}
           >
             <Mail className="size-4" />
-            {verificationState === "sent"
-              ? "E-mail de verificação reenviado"
-              : "Reenviar e-mail de verificação"}
+            Reenviar e-mail de verificação
           </Button>
         ) : null}
 
         <Button
           variant="secondary"
           className="w-full sm:w-fit"
-          isDisabled={isSigningOut}
-          onPress={handleSignOut}
+          onPress={() => setIsSignOutOpen(true)}
         >
           <LogOut className="size-4" />
           Sair da conta
         </Button>
       </div>
 
+      {!user.emailVerified && verificationState === "sent" ? (
+        <p role="status" className="text-muted text-sm text-pretty">
+          E-mail de verificação reenviado. Confira a sua caixa de entrada.
+        </p>
+      ) : null}
+
       {!user.emailVerified && verificationState === "error" ? (
-        <p role="alert" className="text-danger text-sm text-pretty">
+        <p role="alert" className="text-danger-soft-foreground text-sm text-pretty">
           Não foi possível reenviar o e-mail de verificação. Tente novamente.
         </p>
       ) : null}
+
+      <DialogSignOut isOpen={isSignOutOpen} onOpenChange={setIsSignOutOpen} />
     </main>
   );
 }

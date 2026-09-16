@@ -7,7 +7,7 @@ export interface PublicUser {
   id: string;
   username: string;
   displayName: string;
-  avatarUrl: string | null;
+  avatarUrl: string;
   /** XP acumulado na temporada corrente (zera junto com ela). */
   xp: number;
 }

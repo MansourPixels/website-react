@@ -37,11 +37,14 @@ export function ColorPicker({ label, onChange, ...props }: ColorPickerProps) {
     >
       <ColorPickerTrigger className="grid w-full text-start gap-1">
         <Label>{label}</Label>
-        <ColorSwatch size="lg" className="w-full rounded-xl shadow" />
+        <ColorSwatch
+          size="lg"
+          className="w-full rounded-xl border border-border"
+        />
       </ColorPickerTrigger>
       <ColorPickerPopover>
         <ColorArea
-          aria-label="Color area"
+          aria-label="Área de cor"
           className="max-w-full"
           colorSpace="hsb"
           xChannel="saturation"
@@ -50,12 +53,12 @@ export function ColorPicker({ label, onChange, ...props }: ColorPickerProps) {
           <ColorArea.Thumb />
         </ColorArea>
         <ColorSlider
-          aria-label="Hue slider"
+          aria-label="Matiz"
           channel="hue"
           className="gap-1 px-1"
           colorSpace="hsb"
         >
-          <Label>Hue</Label>
+          <Label>Matiz</Label>
           <ColorSlider.Output className="text-muted" />
           <ColorSlider.Track>
             <ColorSlider.Thumb />

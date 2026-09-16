@@ -26,16 +26,25 @@ export function FlashCard({
           isAnswerRevealed ? "rotate-y-180" : ""
         }`}
       >
-        <div className="absolute inset-0 backface-hidden bg-emerald-500 rounded-2xl shadow-surface text-white text-center px-4 py-8 flex flex-col justify-between">
+        {/* `backface-hidden` esconde da vista, não da tecnologia assistiva:
+            sem o `aria-hidden` o leitor de tela anuncia a resposta antes de
+            ela ser revelada, e lê a pergunta duas vezes. */}
+        <div
+          aria-hidden={isAnswerRevealed}
+          className="absolute inset-0 backface-hidden bg-emerald-500 rounded-2xl shadow-surface text-white text-center px-4 py-8 flex flex-col justify-between"
+        >
           <span></span>
           <h2 className="text-2xl font-semibold align-middle">{question}</h2>
-          <p className="opacity-90">{counter}</p>
+          <p className="opacity-90 tabular-nums">{counter}</p>
         </div>
 
-        <div className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl shadow-surface text-center px-4 py-8 flex flex-col justify-between bg-surface">
+        <div
+          aria-hidden={!isAnswerRevealed}
+          className="absolute inset-0 backface-hidden rotate-y-180 border border-emerald-500 rounded-2xl shadow-surface text-center px-4 py-8 flex flex-col justify-between bg-surface"
+        >
           <h2>{question}</h2>
           <h3 className="text-2xl font-semibold">{answer}</h3>
-          <p className="opacity-90">{counter}</p>
+          <p className="text-muted tabular-nums">{counter}</p>
         </div>
       </div>
     </div>

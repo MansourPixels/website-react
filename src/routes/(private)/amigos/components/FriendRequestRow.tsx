@@ -39,7 +39,7 @@ export function FriendRequestRow({
 
     try {
       if (action === "accept") {
-        const friend = await acceptFriendRequest(request.id);
+        const friend = await acceptFriendRequest(request.id, request.user);
 
         feedback("sucesso");
         onAccepted(request, friend);

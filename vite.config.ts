@@ -27,6 +27,12 @@ export default defineConfig({
       // Em framework mode não existe `index.html` onde injetar o script de
       // registro; ele é feito à mão em `useServiceWorker`.
       injectRegister: null,
+      // O layout referencia o manifesto também durante `react-router dev`.
+      // Sem isto o Vite responde o fallback HTML para essa URL, que o navegador
+      // tenta interpretar como JSON e reporta como "Manifest: syntax error".
+      devOptions: {
+        enabled: true,
+      },
       workbox: {
         // Fontes ficam de fora de propósito: as 59 variantes do KaTeX pesam
         // 1,2 MB e só servem a páginas com fórmula. Elas entram no cache no

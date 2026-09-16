@@ -5,21 +5,23 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/api/client";
 import { removeFriend } from "@/api/friends";
 import { useFeedback } from "@/hooks/useFeedback";
-import type { Friend } from "@/types/api/friend";
+import type { PublicUser } from "@/types/api/social";
 
-interface DialogFriendRemovalProps {
-  friend: Friend;
+// Genérico em `PublicUser` porque o perfil público desfaz a mesma amizade sem
+// ter um `Friend` completo em mãos — é o mesmo diálogo, não uma cópia.
+interface DialogFriendRemovalProps<TUser extends PublicUser> {
+  friend: TUser;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirm: (friend: Friend) => void;
+  onConfirm: (friend: TUser) => void;
 }
 
-export function DialogFriendRemoval({
+export function DialogFriendRemoval<TUser extends PublicUser>({
   friend,
   isOpen,
   onOpenChange,
   onConfirm,
-}: DialogFriendRemovalProps) {
+}: DialogFriendRemovalProps<TUser>) {
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
 

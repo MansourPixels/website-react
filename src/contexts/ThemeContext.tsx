@@ -23,7 +23,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Começa em "system" para o HTML do servidor bater com o do cliente; o valor
+  // Começa em "light" para o HTML do servidor bater com o do cliente; o valor
   // guardado entra na hidratação. O tema já visível na tela não depende disto —
   // o script inline em `themeInitScript.ts` já aplicou o atributo em `<html>`
   // antes do primeiro paint. Este estado é só para a UI de Preferências saber

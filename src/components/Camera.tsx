@@ -36,6 +36,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
     videoRef,
     status,
     error,
+    errorKind,
     isFlashSupported,
     isFlashOn,
     isTapFocusSupported,
@@ -111,7 +112,9 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
 
       try {
         await onSelectMaterial(reviewMaterial);
-        previewUrlRef.current = null;
+        // A referência continua apontando para a URL: a miniatura da galeria
+        // ainda a exibe, e é ela que garante o revoke na desmontagem ou na
+        // próxima captura. Zerá-la aqui vazava um blob por envio.
         setReviewMaterial(null);
       } catch (error) {
         feedback("erro");
@@ -215,7 +218,7 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
       )}
     >
       {title ? (
-        <div className="absolute p-6">
+        <div className="absolute p-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
           <NavMenu title={title} hasBackButton variant="white" />
         </div>
       ) : (
@@ -256,12 +259,27 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
       ) : null}
 
       {status === "error" ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-10 text-center text-white">
+        <div
+          role="alert"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-10 text-center text-white"
+        >
           <CameraOff className="size-10 opacity-75" />
           <p className="text-sm opacity-75">{error}</p>
-          <Button variant="secondary" onPress={retry}>
-            Tentar novamente
-          </Button>
+          {/* Com a permissão bloqueada o navegador rejeita a próxima chamada
+              sem perguntar de novo, então "Tentar novamente" seria um botão
+              inerte: o caminho que ainda funciona é escolher do dispositivo. */}
+          {errorKind === "NotAllowedError" ? (
+            <Button
+              variant="secondary"
+              onPress={() => fileInputRef.current?.click()}
+            >
+              Escolher imagem ou PDF
+            </Button>
+          ) : (
+            <Button variant="secondary" onPress={retry}>
+              Tentar novamente
+            </Button>
+          )}
         </div>
       ) : null}
 
@@ -312,16 +330,23 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           <span className="size-full rounded-full border-2 border-amber-500" />
         </Button>
 
-        <Button
-          id="flash"
-          isIconOnly
-          aria-label={isFlashOn ? "Desligar flash" : "Ligar flash"}
-          isDisabled={!isFlashSupported}
-          className={isFlashOn ? "bg-amber-500" : "bg-black/35"}
-          onPress={toggleFlash}
-        >
-          {isFlashOn ? <Zap /> : <ZapOff />}
-        </Button>
+        {/* Aparelho sem lanterna esconde o controle, como já faz a mesa de
+            captura no desktop — um botão desabilitado sem explicação só
+            levanta a pergunta. O vão preserva o obturador centralizado. */}
+        {isFlashSupported ? (
+          <Button
+            id="flash"
+            isIconOnly
+            size="lg"
+            aria-label={isFlashOn ? "Desligar flash" : "Ligar flash"}
+            className={isFlashOn ? "bg-amber-500" : "bg-black/35"}
+            onPress={toggleFlash}
+          >
+            {isFlashOn ? <Zap /> : <ZapOff />}
+          </Button>
+        ) : (
+          <span className="size-13" aria-hidden="true" />
+        )}
       </footer>
 
       {overlays}

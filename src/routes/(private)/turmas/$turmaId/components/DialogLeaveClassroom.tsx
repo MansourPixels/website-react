@@ -85,13 +85,22 @@ export function DialogLeaveClassroom({
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
-                {isDeleting
-                  ? `As ${classroom.folderCount} ${
-                      classroom.folderCount === 1 ? "pasta" : "pastas"
-                    } e todo o conteúdo da turma serão excluídos para os ${
-                      classroom.memberCount
-                    } membros. Esta ação não pode ser desfeita.`
-                  : "Você perde o acesso a todas as pastas e conteúdos desta turma. Para voltar, vai precisar de um novo convite."}
+                {isDeleting ? (
+                  <>
+                    As{" "}
+                    <span className="tabular-nums">
+                      {classroom.folderCount}
+                    </span>{" "}
+                    {classroom.folderCount === 1 ? "pasta" : "pastas"} e todo o
+                    conteúdo da turma serão excluídos para os{" "}
+                    <span className="tabular-nums">
+                      {classroom.memberCount}
+                    </span>{" "}
+                    membros. Esta ação não pode ser desfeita.
+                  </>
+                ) : (
+                  "Você perde o acesso a todas as pastas e conteúdos desta turma. Para voltar, vai precisar de um novo convite."
+                )}
               </p>
               {error !== null ? (
                 <p role="alert" className="text-danger text-sm text-pretty">
