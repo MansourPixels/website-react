@@ -14,11 +14,11 @@ import {
 const EU = "usuario-atual";
 const OUTRA_PESSOA = "outro-editor";
 
-const meuConteudo = { authorId: EU };
-const conteudoAlheio = { authorId: OUTRA_PESSOA };
+const meuConteudo = { author: { id: EU } };
+const conteudoAlheio = { author: { id: OUTRA_PESSOA } };
 
 describe("gestão da turma", () => {
-  it("só o dono convida, gerencia membros e mexe nas pastas", () => {
+  it("só o dono convida e gerencia membros; editor também mexe nas pastas", () => {
     expect(canInviteMembers("owner")).toBe(true);
     expect(canInviteMembers("editor")).toBe(false);
     expect(canInviteMembers("viewer")).toBe(false);
@@ -27,7 +27,8 @@ describe("gestão da turma", () => {
     expect(canManageMembers("editor")).toBe(false);
 
     expect(canManageFolders("owner")).toBe(true);
-    expect(canManageFolders("editor")).toBe(false);
+    expect(canManageFolders("editor")).toBe(true);
+    expect(canManageFolders("viewer")).toBe(false);
   });
 
   it("todo mundo sai da turma, menos o dono", () => {
@@ -56,8 +57,8 @@ describe("canEditContent", () => {
     expect(canEditContent("owner", conteudoAlheio, EU)).toBe(false);
   });
 
-  it("nega o membro em qualquer caso", () => {
-    expect(canEditContent("viewer", meuConteudo, EU)).toBe(false);
+  it("permite ao membro ainda autor editar o próprio conteúdo", () => {
+    expect(canEditContent("viewer", meuConteudo, EU)).toBe(true);
   });
 });
 
@@ -71,8 +72,8 @@ describe("canDeleteContent", () => {
     expect(canDeleteContent("owner", conteudoAlheio, EU)).toBe(true);
   });
 
-  it("nunca deixa o membro excluir, nem o que ele mesmo teria criado", () => {
-    expect(canDeleteContent("viewer", meuConteudo, EU)).toBe(false);
+  it("permite ao membro ainda autor excluir o próprio conteúdo", () => {
+    expect(canDeleteContent("viewer", meuConteudo, EU)).toBe(true);
   });
 });
 

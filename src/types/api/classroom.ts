@@ -1,10 +1,15 @@
-import type { PublicUser } from "./social";
-
 /**
  * Papel do membro, válido para a turma inteira — não há permissão por pasta.
  * As regras derivadas vivem em `src/utils/classroomPermissions.ts`.
  */
 export type ClassroomRole = "owner" | "editor" | "viewer";
+
+export interface ClassroomMemberUser {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
 
 export interface Classroom {
   id: string;
@@ -25,7 +30,7 @@ export interface ClassroomMember {
   /** Id da associação, não do usuário — é o que a gestão de membros manipula. */
   id: string;
   classroomId: string;
-  user: PublicUser;
+  user: ClassroomMemberUser;
   role: ClassroomRole;
   joinedAt: string;
 }
@@ -52,19 +57,31 @@ export type ClassroomContentKind =
 
 export interface ClassroomContent {
   id: string;
-  classroomId: string;
-  folderId: string;
+  classroomFolderId: string;
   kind: ClassroomContentKind;
   title: string;
   description: string;
-  /** Autor: define quem pode editar/excluir, junto com o dono da turma. */
-  authorId: string;
-  authorUsername: string;
-  /** Preenchidos só para `pdf` e `image`. */
+  author: ClassroomMemberUser;
   fileName: string | null;
   fileSize: number | null;
+  reviMaterialId: string | null;
   createdAt: string;
-  updatedAt: string;
+}
+
+export interface ClassroomContentProcessing {
+  status: "pending" | "processing" | "completed" | "failed";
+  textExtractedAt: string | null;
+  error: string | null;
+}
+
+export interface ClassroomContentText {
+  text: string | null;
+  extractedAt: string | null;
+}
+
+export interface ClassroomDownloadUrl {
+  url: string;
+  expiresAt: string;
 }
 
 export type ClassroomInviteStatus =
@@ -85,16 +102,21 @@ export interface ClassroomInvite {
   code: string;
   role: Exclude<ClassroomRole, "owner">;
   status: ClassroomInviteStatus;
-  invitedBy: PublicUser;
-  invitee: PublicUser | null;
+  invitedBy: ClassroomMemberUser;
+  invitee: ClassroomMemberUser | null;
   createdAt: string;
   /** ISO 8601 ou `null` para link sem prazo — decisão pendente do backend. */
   expiresAt: string | null;
 }
 
-/** Prévia mostrada a quem abre um link de convite sem ser membro ainda. */
+/** Prévia mínima exposta antes de entrar na turma. */
 export interface ClassroomInvitePreview {
-  invite: ClassroomInvite;
+  inviteId: string;
+  classroomId: string;
+  classroomName: string;
+  classroomColor: string;
+  role: Exclude<ClassroomRole, "owner">;
+  owner: ClassroomMemberUser;
+  invitee: ClassroomMemberUser | null;
   memberCount: number;
-  owner: PublicUser;
 }

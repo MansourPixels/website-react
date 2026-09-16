@@ -1,16 +1,20 @@
 import { Button, Spinner, cn } from "@heroui/react";
 import { ChevronDown, ChevronUp, ScanText, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { ApiError } from "@/api/client";
 import { getContentText } from "@/api/content";
+import { getClassroomContentProcessing, getClassroomContentText } from "@/api/classrooms";
 import type { ContentText } from "@/types/api/content";
+import type { ClassroomContentProcessing, ClassroomContentText } from "@/types/api/classroom";
 import { getContentTextStatus } from "@/utils/contentTextStatus";
 
 import { SpeakButton } from "./SpeakButton";
 
 interface OcrSheetProps {
   contentId: string;
+  classroomContent?: { classroomId: string; folderId: string; contentId: string };
+  onContentUnavailable?: () => void;
 }
 
 const POLL_INTERVAL_MS = 3_000;
@@ -23,10 +27,16 @@ const POLL_MAX_DURATION_MS = 60_000;
  * Nasce espiando, não escondido: para quem não lê, o botão de ouvir precisa
  * estar visível sem depender de descobrir um gesto.
  */
-export function OcrSheet({ contentId }: OcrSheetProps) {
-  const [content, setContent] = useState<ContentText | undefined>(undefined);
+export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: OcrSheetProps) {
+  const [content, setContent] = useState<ContentText | ClassroomContentText | undefined>(undefined);
+  const [processing, setProcessing] = useState<ClassroomContentProcessing | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const classroomId = classroomContent?.classroomId;
+  const folderId = classroomContent?.folderId;
+  const classroomContentId = classroomContent?.contentId;
+  const reportUnavailable = useEffectEvent(() => onContentUnavailable?.());
 
   useEffect(() => {
     const startedAt = Date.now();
@@ -40,16 +50,21 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
 
     const loadContentText = () => {
       controller = new AbortController();
+      const loader = classroomId === undefined || folderId === undefined || classroomContentId === undefined
+        ? getContentText(contentId, controller.signal)
+        : Promise.all([
+            getClassroomContentProcessing(classroomId, folderId, classroomContentId, controller.signal),
+            getClassroomContentText(classroomId, folderId, classroomContentId, controller.signal),
+          ]);
 
-      getContentText(contentId, controller.signal)
-        .then((nextContent) => {
+      loader.then((result) => {
           if (isStopped) return;
-
+          const nextContent = Array.isArray(result) ? result[1] : result;
+          if (Array.isArray(result)) setProcessing(result[0]);
           setContent(nextContent);
-
           const elapsed = Date.now() - startedAt;
           if (
-            nextContent.extractedAt === null &&
+            (Array.isArray(result) ? result[0].status === "pending" || result[0].status === "processing" : nextContent.extractedAt === null) &&
             elapsed + POLL_INTERVAL_MS <= POLL_MAX_DURATION_MS
           ) {
             timeoutId = setTimeout(loadContentText, POLL_INTERVAL_MS);
@@ -57,6 +72,10 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
         })
         .catch((error: unknown) => {
           if (isStopped || controller?.signal.aborted) return;
+          if (error instanceof ApiError && error.status === 404 && classroomId !== undefined) {
+            reportUnavailable();
+            return;
+          }
 
           setLoadError(
             error instanceof ApiError
@@ -73,10 +92,21 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       controller?.abort();
     };
-  }, [contentId]);
+  }, [classroomContentId, classroomId, contentId, folderId]);
 
-  const text = content?.text.trim() ?? "";
-  const contentStatus = content === undefined ? null : getContentTextStatus(content);
+  const text = content?.text?.trim() ?? "";
+  const contentStatus =
+    content === undefined
+      ? null
+      : classroomId !== undefined
+        ? processing?.status === "failed"
+          ? "failed"
+          : processing?.status === "completed"
+            ? text.length > 0
+              ? "available"
+              : "empty"
+            : "pending"
+        : getContentTextStatus(content as ContentText);
   const hasText = contentStatus === "available";
 
   return (
@@ -151,6 +181,10 @@ export function OcrSheet({ contentId }: OcrSheetProps) {
         <p className="text-muted flex shrink-0 items-center gap-2 text-sm text-pretty">
           <Sparkles className="size-4 shrink-0" aria-hidden="true" />
           O Revi IA ainda está processando este material.
+        </p>
+      ) : contentStatus === "failed" ? (
+        <p role="alert" className="text-danger shrink-0 text-sm text-pretty">
+          {processing?.error || "Não foi possível extrair o texto. O download do arquivo continua disponível."}
         </p>
       ) : contentStatus === "empty" ? (
         <p className="text-muted shrink-0 text-sm text-pretty">

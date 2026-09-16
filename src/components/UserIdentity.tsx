@@ -1,4 +1,3 @@
-import type { PublicUser } from "@/types/api/social";
 import { profilePath } from "@/utils/profile";
 import { getInitials } from "@/utils/text";
 import { Avatar, cn } from "@heroui/react";
@@ -6,7 +5,11 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 interface UserIdentityProps {
-  user: PublicUser;
+  user: {
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
   /** Linha de apoio: XP, papel na turma, data de amizade. */
   caption?: ReactNode;
   /**

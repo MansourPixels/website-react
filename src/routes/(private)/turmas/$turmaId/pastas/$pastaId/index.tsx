@@ -3,7 +3,7 @@ import { buttonVariants } from "@heroui/styles";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
-import { getClassroom, getFolder, listContents } from "@/api/classrooms";
+import { getClassroom, getFolder, listContents, searchClassroomContent } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
@@ -14,6 +14,7 @@ import type {
   ClassroomFolder,
 } from "@/types/api/classroom";
 import { canAddContent, roleLabel } from "@/utils/classroomPermissions";
+import { normalizeText } from "@/utils/text";
 
 import { ClassroomContentTile } from "./components/ClassroomContentTile";
 import { DialogAddContent } from "./components/DialogAddContent";
@@ -27,6 +28,9 @@ export default function ClassroomFolderPage() {
   const [contents, setContents] = useState<ClassroomContent[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<ClassroomContent[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (turmaId === undefined || pastaId === undefined) return;
@@ -59,6 +63,27 @@ export default function ClassroomFolderPage() {
       cancelled = true;
     };
   }, [turmaId, pastaId]);
+
+  useEffect(() => {
+    if (turmaId === undefined || pastaId === undefined || search.trim().length < 2) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setIsSearching(true);
+      searchClassroomContent(turmaId, pastaId, search.trim(), controller.signal)
+        .then((result) => setSearchResults(result))
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+          setSearchResults([]);
+          setLoadError(error instanceof ApiError ? error.detail : "Não foi possível pesquisar o conteúdo.");
+        })
+        .finally(() => { if (!controller.signal.aborted) setIsSearching(false); });
+    }, 400);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [pastaId, search, turmaId]);
 
   function handleAdded(created: ClassroomContent[]) {
     setContents((current) => [...created, ...(current ?? [])]);
@@ -117,6 +142,10 @@ export default function ClassroomFolderPage() {
   }
 
   const canAdd = canAddContent(classroom.role);
+  const normalizedSearch = normalizeText(search.trim());
+  const displayedContents: ClassroomContent[] | null = search.trim().length >= 2
+    ? searchResults
+    : contents === null ? null : contents.filter((content) => normalizeText(`${content.title} ${content.fileName}`).includes(normalizedSearch));
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
@@ -124,22 +153,27 @@ export default function ClassroomFolderPage() {
         title={folder.name}
         hasBackButton
         backHref={`/turmas/${classroom.id}`}
+        hasSearch
+        onSearch={setSearch}
+        isSearching={isSearching}
       />
 
       <p className="text-muted -mt-6 text-sm">
         {classroom.name} · você é {roleLabel(classroom.role).toLowerCase()}
       </p>
 
-      {contents === null ? (
+       {displayedContents === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
           <span className="sr-only">Carregando o conteúdo da pasta</span>
         </div>
-      ) : contents.length > 0 ? (
+       ) : displayedContents.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {contents.map((content) => (
+           {displayedContents.map((content) => (
             <ClassroomContentTile
               key={content.id}
+              classroomId={classroom.id}
+              folderId={folder.id}
               content={content}
               role={classroom.role}
               currentUserId={user?.id ?? ""}

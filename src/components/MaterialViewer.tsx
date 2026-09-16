@@ -17,6 +17,8 @@ interface MaterialViewerProps {
    * local, antes do upload — não existe conteúdo no servidor para consultar.
    */
   contentId?: string;
+  classroomContent?: { classroomId: string; folderId: string; contentId: string };
+  onContentUnavailable?: () => void;
 }
 
 export function MaterialViewer({
@@ -24,6 +26,8 @@ export function MaterialViewer({
   onClose,
   footer,
   contentId,
+  classroomContent,
+  onContentUnavailable,
 }: MaterialViewerProps) {
   const isPdf = material?.contentType === "PDF";
   // Guardar a própria URL (em vez de um boolean) evita precisar de um efeito
@@ -91,8 +95,12 @@ export function MaterialViewer({
               )}
             </Modal.Body>
 
-            {contentId !== undefined && material !== null ? (
-              <OcrSheet contentId={contentId} />
+            {(contentId !== undefined || classroomContent !== undefined) && material !== null ? (
+              <OcrSheet
+                contentId={classroomContent?.contentId ?? contentId!}
+                classroomContent={classroomContent}
+                onContentUnavailable={onContentUnavailable}
+              />
             ) : null}
 
             {footer ? <Modal.Footer>{footer}</Modal.Footer> : null}
