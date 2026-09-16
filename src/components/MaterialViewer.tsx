@@ -1,6 +1,8 @@
 import type { ViewableFile } from "@/types/capture";
 import { pickImageForSeed } from "@/utils/imageFallback";
 import { Button, Modal } from "@heroui/react";
+
+import { OcrSheet } from "./OcrSheet";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -9,12 +11,19 @@ interface MaterialViewerProps {
   material: ViewableFile | null;
   onClose: () => void;
   footer?: ReactNode;
+  /**
+   * Quando presente, mostra o painel com o texto que o OCR extraiu.
+   * Fica opcional porque `PhotoReview` abre este visualizador com um arquivo
+   * local, antes do upload — não existe conteúdo no servidor para consultar.
+   */
+  contentId?: string;
 }
 
 export function MaterialViewer({
   material,
   onClose,
   footer,
+  contentId,
 }: MaterialViewerProps) {
   const isPdf = material?.contentType === "PDF";
   // Guardar a própria URL (em vez de um boolean) evita precisar de um efeito
@@ -38,7 +47,7 @@ export function MaterialViewer({
         <Modal.Container size="full">
           <Modal.Dialog
             aria-label={isPdf ? "Visualização do PDF" : "Visualização da imagem"}
-            className="bg-black/80"
+            className="relative bg-black/80"
           >
             <Modal.Header className="items-start justify-between gap-3">
               <Button
@@ -84,6 +93,10 @@ export function MaterialViewer({
                 />
               )}
             </Modal.Body>
+
+            {contentId !== undefined && material !== null ? (
+              <OcrSheet contentId={contentId} />
+            ) : null}
 
             {footer ? <Modal.Footer>{footer}</Modal.Footer> : null}
           </Modal.Dialog>

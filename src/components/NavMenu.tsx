@@ -1,7 +1,7 @@
 import { useCanGoBack } from "@/hooks/useCanGoBack";
-import { Button, cn, SearchField } from "@heroui/react";
+import { Button, cn, SearchField, Spinner } from "@heroui/react";
 import { ChevronLeft, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 interface NavMenuProps {
@@ -10,6 +10,10 @@ interface NavMenuProps {
   backHref?: string;
   hasSearch?: boolean;
   onSearch?: (term: string) => void;
+  /** Mostra um indicador no campo enquanto a busca vai à API. */
+  isSearching?: boolean;
+  /** Ação à direita do título — hoje, o botão de ouvir dos modos de estudo. */
+  action?: ReactNode;
   variant?: "black" | "white";
   className?: string;
 }
@@ -20,6 +24,8 @@ export function NavMenu({
   backHref = undefined,
   hasSearch = false,
   onSearch = () => {},
+  isSearching = false,
+  action = null,
   variant = "black",
   className,
 }: NavMenuProps) {
@@ -94,6 +100,12 @@ export function NavMenu({
                   autoFocus
                   placeholder="Insira um termo para pesquisar..."
                 />
+                {isSearching ? (
+                  <>
+                    <Spinner size="sm" />
+                    <span className="sr-only">Buscando</span>
+                  </>
+                ) : null}
                 <SearchField.ClearButton />
               </SearchField.Group>
             </SearchField>
@@ -109,17 +121,21 @@ export function NavMenu({
           </h1>
         )}
       </div>
-      {hasSearch ? (
-        <Button
-          isIconOnly
-          variant="tertiary"
-          aria-label={isSearchVisible ? "Fechar pesquisa" : "Pesquisar"}
-          onPress={toggleSearch}
-          size="lg"
-        >
-          <Search />
-        </Button>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+
+        {hasSearch ? (
+          <Button
+            isIconOnly
+            variant="tertiary"
+            aria-label={isSearchVisible ? "Fechar pesquisa" : "Pesquisar"}
+            onPress={toggleSearch}
+            size="lg"
+          >
+            <Search />
+          </Button>
+        ) : null}
+      </div>
     </header>
   );
 }

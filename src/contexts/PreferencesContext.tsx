@@ -6,6 +6,8 @@ import {
   writePreferences,
   type Preferences,
 } from "@/utils/preferencesStorage";
+import { setSpeechDriver } from "@/utils/speech";
+import { webSpeechDriver } from "@/utils/speechDrivers/webSpeech";
 import { prefetchSounds, resumeAudio, unlockAudio } from "@/utils/sound";
 import {
   createContext,
@@ -17,7 +19,12 @@ import {
 
 interface PreferencesContextValue {
   preferences: Preferences;
-  setPreference: (key: keyof Preferences, value: boolean) => void;
+  // Genérico, e não `value: boolean`: a velocidade da leitura em voz alta é
+  // numérica, e amarrar o setter a booleano obrigaria a um segundo setter.
+  setPreference: <K extends keyof Preferences>(
+    key: K,
+    value: Preferences[K],
+  ) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -41,6 +48,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [stored, setStored] = useState<Preferences | null>(null);
   const preferences = stored ?? DEFAULT_PREFERENCES;
 
+  // Registra o motor de fala do navegador. É o único lugar que conhece a
+  // implementação — trocar por uma API na nuvem é mudar esta linha.
+  useEffect(() => {
+    setSpeechDriver(webSpeechDriver);
+  }, []);
+
   useEffect(() => {
     const initial = readPreferences();
 
@@ -50,7 +63,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     writePreferences(initial);
   }, []);
 
-  function setPreference(key: keyof Preferences, value: boolean) {
+  function setPreference<K extends keyof Preferences>(
+    key: K,
+    value: Preferences[K],
+  ) {
     const next = { ...preferences, [key]: value };
 
     setStored(next);

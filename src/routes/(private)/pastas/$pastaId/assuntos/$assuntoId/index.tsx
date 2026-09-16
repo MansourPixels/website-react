@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
-import { getDownloadUrl, listContent } from "@/api/content";
+import { getDownloadUrl, listContent, searchContent } from "@/api/content";
 import { listChildFolders } from "@/api/folders";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -22,6 +22,10 @@ import { StudyTypeCard } from "./components/StudyTypeCard";
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS = 60_000;
 
+/** Espera o usuário parar de digitar antes de consultar a API. */
+const SEARCH_DEBOUNCE_MS = 400;
+const MIN_SEARCH_LENGTH = 2;
+
 export default function SubjectDetailsPage() {
   const { pastaId, assuntoId } = useParams<"pastaId" | "assuntoId">() as {
     pastaId: string;
@@ -37,7 +41,19 @@ export default function SubjectDetailsPage() {
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // Guardado ao lado do material: `ViewableFile` é documentado como "não
+  // corresponde a um Content da API", e o painel de OCR precisa do id.
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(
+    null,
+  );
+
   const [search, setSearch] = useState("");
+  // Resultados da busca vivem em estado próprio: o poll de `hasSummary`
+  // reescreve `contents` a cada 3s e atropelaria a busca.
+  const [searchResults, setSearchResults] = useState<Content[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -102,6 +118,46 @@ export default function SubjectDetailsPage() {
     };
   }, [assuntoId, reloadKey]);
 
+  useEffect(() => {
+    const trimmed = search.trim();
+
+    if (trimmed.length < MIN_SEARCH_LENGTH) {
+      setSearchResults(null);
+      setIsSearching(false);
+      setSearchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    const timer = setTimeout(() => {
+      searchContent(assuntoId, trimmed, controller.signal)
+        .then((found) => {
+          if (!controller.signal.aborted) setSearchResults(found);
+        })
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+
+          setSearchError(
+            error instanceof ApiError
+              ? error.detail
+              : "Não foi possível buscar agora. Tente novamente.",
+          );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsSearching(false);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [assuntoId, search]);
+
   async function handleOpenMaterial(content: Content) {
     setViewerError(null);
 
@@ -113,6 +169,7 @@ export default function SubjectDetailsPage() {
         url,
         contentType: content.contentType,
       });
+      setSelectedContentId(content.id);
     } catch (error) {
       setViewerError(
         error instanceof ApiError
@@ -122,13 +179,18 @@ export default function SubjectDetailsPage() {
     }
   }
 
-  const normalizedSearch = normalizeText(search);
+  const trimmedSearch = search.trim();
+  const isSearchActive = trimmedSearch.length >= MIN_SEARCH_LENGTH;
   const materials = contents ?? [];
-  const filteredMaterials = normalizedSearch
-    ? materials.filter((content) =>
-        normalizeText(content.name).includes(normalizedSearch),
-      )
-    : materials;
+  // Com busca ativa, a API manda; abaixo do mínimo de caracteres o filtro
+  // local segue valendo, para digitar uma letra não esvaziar a tela.
+  const filteredMaterials = isSearchActive
+    ? (searchResults ?? [])
+    : trimmedSearch.length > 0
+      ? materials.filter((content) =>
+          normalizeText(content.name).includes(normalizeText(trimmedSearch)),
+        )
+      : materials;
 
   return (
     <main className="p-6 md:p-8 gap-8 flex flex-col w-full max-w-6xl mx-auto">
@@ -138,6 +200,7 @@ export default function SubjectDetailsPage() {
         backHref={`/pastas/${pastaId}`}
         hasSearch
         onSearch={setSearch}
+        isSearching={isSearching}
       />
       <section
         id="tipos-estudo"
@@ -186,6 +249,13 @@ export default function SubjectDetailsPage() {
         <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
           {loadError}
         </ErrorState>
+      ) : searchError !== null ? (
+        <ErrorState>{searchError}</ErrorState>
+      ) : isSearchActive && searchResults === null ? (
+        <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
+          <Spinner size="lg" />
+          <span className="sr-only">Buscando materiais</span>
+        </div>
       ) : filteredMaterials.length > 0 ? (
         <section
           id="materiais"
@@ -201,8 +271,8 @@ export default function SubjectDetailsPage() {
         </section>
       ) : (
         <EmptyState>
-          {normalizedSearch
-            ? `Nenhum material encontrado para "${search.trim()}".`
+          {trimmedSearch.length > 0
+            ? `Nenhum material encontrado para "${trimmedSearch}".`
             : "Este assunto ainda não tem materiais. Adicione o primeiro pela câmera."}
         </EmptyState>
       )}
@@ -213,7 +283,11 @@ export default function SubjectDetailsPage() {
       />
       <MaterialViewer
         material={selectedMaterial}
-        onClose={() => setSelectedMaterial(null)}
+        contentId={selectedContentId ?? undefined}
+        onClose={() => {
+          setSelectedMaterial(null);
+          setSelectedContentId(null);
+        }}
       />
     </main>
   );
