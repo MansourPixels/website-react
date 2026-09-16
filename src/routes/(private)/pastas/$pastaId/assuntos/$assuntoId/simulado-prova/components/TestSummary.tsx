@@ -6,9 +6,10 @@ import type {
   QuizOption,
   QuizQuestion,
 } from "@/types/api/quiz";
-import { Button } from "@heroui/react";
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, ListCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { StudySummary, SummaryStat } from "../../components/StudySummary";
 
 /** Intervalo entre a entrada de um resultado e a do próximo. */
 const REVEAL_INTERVAL = 90;
@@ -72,67 +73,67 @@ export function TestSummary({
   }, [result, questions, prefersReducedMotion, feedback]);
 
   return (
-    <>
-      <section className="flex flex-col gap-6">
-        <div className="bg-surface rounded-2xl shadow-surface p-6 flex flex-col items-center gap-2 text-center">
-          <h2 className="text-3xl font-semibold">Simulado concluído!</h2>
-          <p className="text-5xl font-semibold text-orange-600">
-            {correctCount}
-            <span className="text-2xl opacity-50">/{totalQuestions}</span>
-          </p>
-          <p className="opacity-70">
-            Você acertou {percentage}% das questões deste simulado.
-          </p>
+    <StudySummary
+      icon={ListCheck}
+      medallionClass="bg-orange-600"
+      title="Simulado concluído!"
+      description={
+        <>
+          Você acertou <span className="tabular-nums">{percentage}%</span> das
+          questões deste simulado.
+        </>
+      }
+      restartLabel="Refazer simulado"
+      onRestart={onRestart}
+      onFinish={onFinish}
+      metrics={
+        <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+          <SummaryStat value={correctCount} label="Acertos" />
+          <SummaryStat
+            value={totalQuestions - correctCount}
+            label="Erros"
+          />
+          <SummaryStat value={`${percentage}%`} label="Aproveitamento" />
         </div>
+      }
+    >
+      <ul className="flex flex-col gap-2 w-full text-left">
+        {questions.slice(0, revealedCount).map((question, index) => {
+          const selectedOption = answers.get(question.id) ?? null;
+          const isCorrect = correctByQuestionId.get(question.id) ?? false;
 
-        <ul className="flex flex-col gap-2">
-          {questions.slice(0, revealedCount).map((question, index) => {
-            const selectedOption = answers.get(question.id) ?? null;
-            const isCorrect = correctByQuestionId.get(question.id) ?? false;
-
-            return (
-              <li
-                key={question.id}
-                className="celebrate bg-surface rounded-2xl shadow-surface p-4 flex gap-3"
+          return (
+            <li
+              key={question.id}
+              className="celebrate bg-surface rounded-2xl shadow-surface p-4 flex gap-3"
+            >
+              <span
+                className={`size-7 shrink-0 rounded-full flex items-center justify-center text-white ${
+                  isCorrect ? "bg-success" : "bg-danger"
+                }`}
               >
-                <span
-                  className={`size-7 shrink-0 rounded-full flex items-center justify-center text-white ${
-                    isCorrect ? "bg-emerald-500" : "bg-red-500"
-                  }`}
-                >
-                  {isCorrect ? (
-                    <Check className="size-4" />
-                  ) : (
-                    <X className="size-4" />
-                  )}
-                </span>
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {String(index + 1).padStart(2, "0")}.{" "}
-                    <MathText>{question.question}</MathText>
-                  </p>
-                  <p className="text-sm opacity-70">
-                    Sua resposta:{" "}
-                    {selectedOption === null
-                      ? "não respondida"
-                      : selectedOption}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <footer className="flex flex-col gap-3">
-        <Button fullWidth size="lg" onClick={onRestart}>
-          <RotateCcw />
-          Refazer simulado
-        </Button>
-        <Button fullWidth size="lg" variant="tertiary" onClick={onFinish}>
-          Voltar ao assunto
-        </Button>
-      </footer>
-    </>
+                {isCorrect ? (
+                  <Check className="size-4" />
+                ) : (
+                  <X className="size-4" />
+                )}
+              </span>
+              <div className="flex-1">
+                <p className="font-medium">
+                  <span className="tabular-nums">
+                    {String(index + 1).padStart(2, "0")}.
+                  </span>{" "}
+                  <MathText>{question.question}</MathText>
+                </p>
+                <p className="text-sm text-muted">
+                  Sua resposta:{" "}
+                  {selectedOption === null ? "não respondida" : selectedOption}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </StudySummary>
   );
 }

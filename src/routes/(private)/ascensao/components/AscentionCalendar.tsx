@@ -1,7 +1,8 @@
 import { ApiError } from "@/api/client";
 import { getStreakCalendar } from "@/api/streak";
+import { ErrorState } from "@/components/ErrorState";
 import type { StreakDayStatus } from "@/types/api/streak";
-import { cn } from "@heroui/react";
+import { Button, Spinner, cn } from "@heroui/react";
 import { ChevronLeft, ChevronRight, Flame, Snowflake } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -21,15 +22,31 @@ const MONTH_LABELS = [
   "Dezembro",
 ];
 
+// Janela de navegação para trás: sem uma data de primeiro registro vinda do
+// back, doze meses é o limite que cobre o histórico útil sem deixar o aluno
+// paginar (e disparar um request) por meses que nunca existiram.
+const CALENDAR_MONTH_SPAN = 12;
+
 const statusStyles: Record<StreakDayStatus, string> = {
   GOLD: "bg-accent text-accent-foreground",
-  PARTIAL: "bg-accent-soft text-accent",
-  FROZEN: "bg-sky-100 text-sky-500",
-  NONE: "bg-zinc-100 text-zinc-400",
+  PARTIAL: "bg-accent-soft text-accent-soft-foreground",
+  FROZEN: "bg-default text-muted",
+  NONE: "bg-default text-muted",
+};
+
+const statusLabels: Record<StreakDayStatus, string> = {
+  GOLD: "dia de ouro",
+  PARTIAL: "dia parcial",
+  FROZEN: "dia congelado",
+  NONE: "sem atividade",
 };
 
 function monthKey(year: number, month: number) {
   return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function monthIndex(year: number, month: number) {
+  return year * 12 + (month - 1);
 }
 
 function isCurrentOrFutureMonth(year: number, month: number) {
@@ -46,14 +63,19 @@ export function AscentionCalendar() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  const [statusByDate, setStatusByDate] = useState<Map<string, StreakDayStatus>>(
-    new Map(),
-  );
+  const [statusByDate, setStatusByDate] = useState<Map<
+    string,
+    StreakDayStatus
+  > | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
+    // Sem limpar o mapa, o mês anterior continua desenhado enquanto o novo
+    // carrega — e o mês novo estreia inteiro em cinza de "sem dados".
+    setStatusByDate(null);
     setLoadError(null);
 
     getStreakCalendar(monthKey(year, month))
@@ -75,9 +97,16 @@ export function AscentionCalendar() {
     return () => {
       cancelled = true;
     };
-  }, [year, month]);
+  }, [year, month, reloadKey]);
+
+  const isPreviousDisabled =
+    monthIndex(year, month) <=
+    monthIndex(now.getFullYear(), now.getMonth() + 1) -
+      (CALENDAR_MONTH_SPAN - 1);
 
   function goToPreviousMonth() {
+    if (isPreviousDisabled) return;
+
     if (month === 1) {
       setYear((current) => current - 1);
       setMonth(12);
@@ -105,30 +134,40 @@ export function AscentionCalendar() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <button
-          type="button"
+        <Button
+          isIconOnly
+          variant="ghost"
+          size="sm"
           aria-label="Mês anterior"
-          className="size-8 rounded-full flex items-center justify-center hover:bg-background"
-          onClick={goToPreviousMonth}
+          isDisabled={isPreviousDisabled}
+          onPress={goToPreviousMonth}
         >
           <ChevronLeft className="size-4" />
-        </button>
-        <span className="font-medium text-sm">
+        </Button>
+        <span className="font-medium text-sm tabular-nums">
           {MONTH_LABELS[month - 1]} de {year}
         </span>
-        <button
-          type="button"
+        <Button
+          isIconOnly
+          variant="ghost"
+          size="sm"
           aria-label="Próximo mês"
-          disabled={isNextDisabled}
-          className="size-8 rounded-full flex items-center justify-center hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent"
-          onClick={goToNextMonth}
+          isDisabled={isNextDisabled}
+          onPress={goToNextMonth}
         >
           <ChevronRight className="size-4" />
-        </button>
+        </Button>
       </div>
 
       {loadError !== null ? (
-        <p className="text-danger text-sm text-center">{loadError}</p>
+        <ErrorState isCompact onRetry={() => setReloadKey((k) => k + 1)}>
+          {loadError}
+        </ErrorState>
+      ) : statusByDate === null ? (
+        <div className="flex items-center justify-center py-8" aria-busy="true">
+          <Spinner />
+          <span className="sr-only">Carregando calendário</span>
+        </div>
       ) : (
         <div className="grid grid-cols-7 gap-1 place-items-center">
           {WEEKDAY_LABELS.map((label, index) => (
@@ -149,19 +188,28 @@ export function AscentionCalendar() {
             return (
               <span
                 key={date}
-                aria-label={`Dia ${day}: ${status ?? "sem dados ainda"}`}
+                // Sem um papel explícito, o `aria-label` de um `span` genérico
+                // não é exposto: a célula seria lida só como o numeral.
+                role="img"
+                aria-label={`Dia ${day}: ${status !== null ? statusLabels[status] : "sem dados ainda"}`}
                 className={cn(
-                  "size-8 rounded-full flex items-center justify-center text-xs tabular-nums",
+                  "relative size-8 rounded-full flex items-center justify-center text-xs tabular-nums",
                   status !== null ? statusStyles[status] : "text-muted",
                 )}
               >
-                {status === "FROZEN" ? (
-                  <Snowflake className="size-3.5" />
-                ) : status === "GOLD" ? (
-                  <Flame className="size-3.5" />
-                ) : (
-                  day
-                )}
+                {day}
+                {status === "GOLD" || status === "FROZEN" ? (
+                  <span
+                    aria-hidden
+                    className="absolute -top-1 -right-1 size-3 rounded-full bg-surface flex items-center justify-center"
+                  >
+                    {status === "GOLD" ? (
+                      <Flame className="size-2.5 text-accent" />
+                    ) : (
+                      <Snowflake className="size-2.5 text-muted" />
+                    )}
+                  </span>
+                ) : null}
               </span>
             );
           })}

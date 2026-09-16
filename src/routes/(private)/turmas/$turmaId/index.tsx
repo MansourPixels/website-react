@@ -13,6 +13,8 @@ import { useNavigate, useParams, Link } from "react-router";
 
 import { getClassroom, listFolders } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Classroom, ClassroomFolder } from "@/types/api/classroom";
@@ -44,11 +46,16 @@ export default function ClassroomDetailPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isFolderOpen, setIsFolderOpen] = useState(false);
   const [isExitOpen, setIsExitOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (turmaId === undefined) return;
 
     let cancelled = false;
+
+    setClassroom(null);
+    setFolders(null);
+    setLoadError(null);
 
     Promise.all([getClassroom(turmaId), listFolders(turmaId)])
       .then(([classroomResult, folderResult]) => {
@@ -70,7 +77,7 @@ export default function ClassroomDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [turmaId]);
+  }, [turmaId, reloadKey]);
 
   function handleFolderAdded(folder: ClassroomFolder) {
     setFolders((current) => [...(current ?? []), folder]);
@@ -103,16 +110,9 @@ export default function ClassroomDetailPage() {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
         <NavMenu title="Turma" hasBackButton backHref="/turmas" />
-        <p className="text-danger py-8 text-center">{loadError}</p>
-        <Link
-          to="/turmas"
-          className={buttonVariants({
-            variant: "secondary",
-            className: "mx-auto",
-          })}
-        >
-          Voltar para turmas
-        </Link>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       </main>
     );
   }
@@ -210,7 +210,7 @@ export default function ClassroomDetailPage() {
             })}
           >
             <Users className="size-4" />
-            {classroom.memberCount}{" "}
+            <span className="tabular-nums">{classroom.memberCount}</span>{" "}
             {classroom.memberCount === 1 ? "membro" : "membros"}
           </Link>
 
@@ -242,23 +242,34 @@ export default function ClassroomDetailPage() {
             <span className="sr-only">Carregando as pastas da turma</span>
           </div>
         ) : folders.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {folders.map((folder) => (
-              <ClassroomFolderCard
-                key={folder.id}
-                folder={folder}
-                role={classroom.role}
-                onChange={handleFolderChanged}
-                onDelete={handleFolderDeleted}
-              />
+              <li key={folder.id}>
+                <ClassroomFolderCard
+                  folder={folder}
+                  role={classroom.role}
+                  onChange={handleFolderChanged}
+                  onDelete={handleFolderDeleted}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
+        ) : canManageFolders(classroom.role) ? (
+          <EmptyState
+            action={
+              <Button variant="secondary" onPress={() => setIsFolderOpen(true)}>
+                Criar pasta
+              </Button>
+            }
+          >
+            Esta turma ainda não tem pastas. Crie a primeira para começar a
+            reunir o material da sala.
+          </EmptyState>
         ) : (
-          <p className="text-muted py-8 text-center text-pretty">
-            {canManageFolders(classroom.role)
-              ? "Esta turma ainda não tem pastas. Crie a primeira no botão +."
-              : "Esta turma ainda não tem pastas. Assim que o dono criar uma, ela aparece aqui."}
-          </p>
+          <EmptyState>
+            Esta turma ainda não tem pastas. Assim que o dono criar uma, ela
+            aparece aqui.
+          </EmptyState>
         )}
       </section>
 
@@ -283,11 +294,12 @@ export default function ClassroomDetailPage() {
         onOpenChange={setIsFolderOpen}
         onSubmit={handleFolderAdded}
       />
+      {/* Sem `onInvited`: esta tela não lista convites (quem lista é
+          /membros), e um convite não muda a contagem de membros. */}
       <DialogInviteMember
         classroomId={classroom.id}
         isOpen={isInviteOpen}
         onOpenChange={setIsInviteOpen}
-        onInvited={() => {}}
       />
       <DialogLeaveClassroom
         classroom={classroom}

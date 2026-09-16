@@ -25,37 +25,17 @@ import { profilePath } from "@/utils/profile";
 import { DialogContentExclusion } from "./DialogContentExclusion";
 import { DialogFormContent } from "./DialogFormContent";
 
-const kindMeta: Record<
-  ClassroomContentKind,
-  { icon: LucideIcon; label: string; className: string }
-> = {
-  flashcards: {
-    icon: Layers,
-    label: "Flash cards",
-    className: "bg-success-soft text-success",
-  },
-  summary: {
-    icon: FileText,
-    label: "Resumo",
-    className: "bg-accent-soft text-accent",
-  },
-  quiz: {
-    icon: ClipboardList,
-    label: "Simulado",
-    className: "bg-warning-soft text-warning",
-  },
-  mindmap: {
-    icon: Network,
-    label: "Mapa mental",
-    className: "bg-accent-soft text-accent",
-  },
-  pdf: { icon: FileType, label: "PDF", className: "bg-default text-muted" },
-  image: {
-    icon: ImageIcon,
-    label: "Imagem",
-    className: "bg-default text-muted",
-  },
-};
+// Categoria não é status: verde, laranja e o accent têm significado próprio no
+// sistema e não são etiqueta de tipo de material. Quem distingue é o ícone.
+const kindMeta: Record<ClassroomContentKind, { icon: LucideIcon; label: string }> =
+  {
+    flashcards: { icon: Layers, label: "Flash cards" },
+    summary: { icon: FileText, label: "Resumo" },
+    quiz: { icon: ClipboardList, label: "Simulado" },
+    mindmap: { icon: Network, label: "Mapa mental" },
+    pdf: { icon: FileType, label: "PDF" },
+    image: { icon: ImageIcon, label: "Imagem" },
+  };
 
 function formatFileSize(bytes: number): string {
   const megabytes = bytes / 1_048_576;
@@ -89,11 +69,11 @@ export function ClassroomContentTile({
   const Icon = meta.icon;
 
   return (
-    <article className="bg-surface shadow-surface flex flex-col gap-3 rounded-2xl p-4">
+    <article className="bg-surface shadow-surface flex h-full flex-col gap-3 rounded-2xl p-4">
       <header className="flex items-start gap-3">
         <span
           aria-hidden="true"
-          className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${meta.className}`}
+          className="bg-default text-muted flex size-9 shrink-0 items-center justify-center rounded-xl"
         >
           <Icon className="size-5" />
         </span>

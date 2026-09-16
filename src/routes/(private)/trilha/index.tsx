@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/api/client";
 import { getByDiscipline, getOverview } from "@/api/performance";
 import { generateStudyPlan, getStudyPlan } from "@/api/studyPlan";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import type {
@@ -36,9 +37,15 @@ export default function PathPage() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [isSelectDisciplinesOpen, setIsSelectDisciplinesOpen] =
     useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setOverview(null);
+    setDisciplines(null);
+    setPlan(null);
+    setLoadError(null);
 
     Promise.all([getOverview(), getByDiscipline(), getStudyPlan()])
       .then(([overviewResult, disciplinesResult, planResult]) => {
@@ -61,7 +68,7 @@ export default function PathPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function handleGenerate(motherFolderIds?: string[]) {
     setIsGenerating(true);
@@ -78,10 +85,19 @@ export default function PathPage() {
         await sleep(GENERATE_POLL_INTERVAL_MS);
 
         const result = await getStudyPlan();
-        const timedOut = Date.now() - startedAt > GENERATE_POLL_TIMEOUT_MS;
 
-        if (result.generatedAt !== previousGeneratedAt || timedOut) {
+        if (result.generatedAt !== previousGeneratedAt) {
           setPlan(result);
+          break;
+        }
+
+        // Sem esta mensagem o timeout regravava o plano antigo em silêncio, e
+        // a tela ficava idêntica a um pedido bem-sucedido.
+        if (Date.now() - startedAt > GENERATE_POLL_TIMEOUT_MS) {
+          setPlan(result);
+          setGenerateError(
+            "A Revi IA ainda está montando sua trilha. O plano abaixo continua sendo o anterior — tente gerar de novo em alguns instantes.",
+          );
           break;
         }
       }
@@ -96,8 +112,10 @@ export default function PathPage() {
     }
   }
 
+  // O mesmo 50 do medidor em `DisciplinePerformanceList`: com 60 aqui, uma
+  // disciplina de 55% era chamada de fraca no texto e pintada de azul "ok".
   const attentionPoints = (disciplines ?? [])
-    .filter((discipline) => discipline.accuracyPercentage < 60)
+    .filter((discipline) => discipline.accuracyPercentage < 50)
     .map((discipline) => discipline.motherFolderName);
 
   const groups = plan !== null ? groupStepsByDiscipline(plan.steps) : [];
@@ -107,7 +125,9 @@ export default function PathPage() {
       <NavMenu title="Trilha" />
 
       {loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : overview === null || disciplines === null || plan === null ? (
         <div
           className="flex flex-1 items-center justify-center p-6"
@@ -120,11 +140,17 @@ export default function PathPage() {
         <>
           <div className="grid bg-accent-soft p-4 rounded-3xl items-center gap-4 sm:grid-cols-2">
             <h2 className="grid min-w-0">
-              <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-background dark:bg-white [-webkit-text-stroke:3px_var(--accent)] tabular-nums">
-                {Math.round(overview.accuracyPercentage)}%
-              </span>
-              <span className="text-2xl text-accent font-semibold text-balance">
-                de aproveitamento geral
+              {/* Sem nenhuma tentativa, "0%" em contorno accent se lê como
+                  desempenho medido. Sem numeral, sobra só o convite. */}
+              {overview.totalAttempts > 0 ? (
+                <span className="text-7xl font-extrabold text-transparent bg-clip-text bg-background dark:bg-white [-webkit-text-stroke:3px_var(--accent)] dark:[-webkit-text-stroke:5px_var(--accent)] tabular-nums">
+                  {Math.round(overview.accuracyPercentage)}%
+                </span>
+              ) : null}
+              <span className="text-2xl text-accent-soft-foreground font-semibold text-balance">
+                {overview.totalAttempts > 0
+                  ? "de aproveitamento geral"
+                  : "Aproveitamento geral"}
               </span>
             </h2>
             <p className="text-accent-soft-foreground text-sm text-balance">
@@ -134,10 +160,7 @@ export default function PathPage() {
             </p>
           </div>
 
-          <section
-            id="indicadores-gerais"
-            className="grid grid-cols-2 lg:grid-cols-3 gap-3"
-          >
+          <section className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             <StatTile
               label="Simulados feitos"
               value={`${overview.totalAttempts}`}
@@ -163,12 +186,12 @@ export default function PathPage() {
               <DisciplinePerformanceList disciplines={disciplines} />
             </div>
 
-            <section id="plano-estudos" className="flex flex-col gap-4">
+            <section className="flex flex-col gap-4" aria-busy={isGenerating}>
               <header className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">
                   Plano de estudos sugerido
                 </h2>
-                <p className="text-sm">
+                <p className="text-sm text-muted">
                   {attentionPoints.length > 0 ? (
                     <>
                       Foi identificada uma queda de domínio nos assuntos
@@ -180,7 +203,7 @@ export default function PathPage() {
                               ? " e "
                               : ", "
                             : null}
-                          <strong>{name}</strong>
+                          <strong className="text-foreground">{name}</strong>
                         </span>
                       ))}
                       . Vamos focar para melhorar isso? 😎
@@ -193,10 +216,21 @@ export default function PathPage() {
                 </p>
               </header>
 
+              {isGenerating ? (
+                <div
+                  role="status"
+                  className="flex items-center justify-center gap-3 text-sm text-muted"
+                >
+                  <Spinner size="sm" />
+                  <span className="text-pretty">
+                    A Revi IA está montando sua trilha. Isso leva alguns
+                    segundos.
+                  </span>
+                </div>
+              ) : null}
+
               {generateError !== null ? (
-                <p role="alert" className="text-danger text-sm text-pretty">
-                  {generateError}
-                </p>
+                <ErrorState isCompact>{generateError}</ErrorState>
               ) : null}
 
               {plan.generatedAt === null ? (

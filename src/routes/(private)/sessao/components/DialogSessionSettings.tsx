@@ -4,25 +4,19 @@ import { Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
+  DEFAULT_SESSION_SETTINGS,
   SESSION_LIMITS,
   type SessionSettings,
 } from "@/types/StudySession";
 
 interface DurationFieldProps {
-  id: string;
   label: string;
   value: number;
   limits: { min: number; max: number; step: number };
   onChange: (value: number) => void;
 }
 
-function DurationField({
-  id,
-  label,
-  value,
-  limits,
-  onChange,
-}: DurationFieldProps) {
+function DurationField({ label, value, limits, onChange }: DurationFieldProps) {
   return (
     <NumberField
       value={value}
@@ -32,10 +26,10 @@ function DurationField({
       onChange={onChange}
       className="w-full"
     >
-      <Label htmlFor={id}>{label}</Label>
+      <Label>{label}</Label>
       <NumberField.Group>
         <NumberField.DecrementButton />
-        <NumberField.Input id={id} className="tabular-nums" />
+        <NumberField.Input className="tabular-nums" />
         <NumberField.IncrementButton />
       </NumberField.Group>
     </NumberField>
@@ -47,7 +41,6 @@ interface DialogSessionSettingsProps {
   onOpenChange: (isOpen: boolean) => void;
   settings: SessionSettings;
   onSubmit: (settings: SessionSettings) => void;
-  onRestoreDefaults: () => void;
   isSpotifyConnected?: boolean;
 }
 
@@ -56,7 +49,6 @@ export function DialogSessionSettings({
   onOpenChange,
   settings,
   onSubmit,
-  onRestoreDefaults,
   isSpotifyConnected = false,
 }: DialogSessionSettingsProps) {
   const [form, setForm] = useState<SessionSettings>(settings);
@@ -74,9 +66,11 @@ export function DialogSessionSettings({
     onOpenChange(false);
   }
 
+  // Restaurar só reescreve o formulário: quem grava é o "Salvar", então o
+  // aluno ainda pode desistir fechando o diálogo, e nada que ele editou some
+  // sem aviso.
   function handleRestoreDefaults() {
-    onRestoreDefaults();
-    onOpenChange(false);
+    setForm(DEFAULT_SESSION_SETTINGS);
   }
 
   return (
@@ -94,28 +88,24 @@ export function DialogSessionSettings({
 
             <Modal.Body className="grid gap-4">
               <DurationField
-                id="minutos-foco"
                 label="Foco (minutos)"
                 value={form.focusMinutes}
                 limits={SESSION_LIMITS.focusMinutes}
                 onChange={(focusMinutes) => update({ focusMinutes })}
               />
               <DurationField
-                id="minutos-pausa-curta"
                 label="Pausa curta (minutos)"
                 value={form.shortBreakMinutes}
                 limits={SESSION_LIMITS.shortBreakMinutes}
                 onChange={(shortBreakMinutes) => update({ shortBreakMinutes })}
               />
               <DurationField
-                id="minutos-pausa-longa"
                 label="Pausa longa (minutos)"
                 value={form.longBreakMinutes}
                 limits={SESSION_LIMITS.longBreakMinutes}
                 onChange={(longBreakMinutes) => update({ longBreakMinutes })}
               />
               <DurationField
-                id="ciclos-pausa-longa"
                 label="Ciclos até a pausa longa"
                 value={form.cyclesUntilLongBreak}
                 limits={SESSION_LIMITS.cyclesUntilLongBreak}

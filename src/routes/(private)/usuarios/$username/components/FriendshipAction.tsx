@@ -9,10 +9,10 @@ import {
   acceptFriendRequest,
   cancelFriendRequest,
   declineFriendRequest,
-  removeFriend,
   sendFriendRequest,
 } from "@/api/friends";
 import { useFeedback } from "@/hooks/useFeedback";
+import { DialogFriendRemoval } from "@/routes/(private)/amigos/components/DialogFriendRemoval";
 import type { PublicProfile } from "@/types/api/profile";
 
 interface NextFriendship {
@@ -40,6 +40,8 @@ export function FriendshipAction({
 }: FriendshipActionProps) {
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isRemovalOpen, setIsRemovalOpen] = useState(false);
 
   const feedback = useFeedback();
 
@@ -155,7 +157,9 @@ export function FriendshipAction({
           </Button>
         </div>
       ) : (
-        <Popover>
+        // Desfazer amizade é destrutivo: o popover só abre o mesmo diálogo de
+        // confirmação que a lista de amigos usa.
+        <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <Button size="sm" variant="secondary">
             <Check className="size-4" />
             Amigos
@@ -166,13 +170,10 @@ export function FriendshipAction({
                 <Button
                   variant="ghost"
                   className="text-danger justify-start"
-                  onPress={() =>
-                    run(async () => {
-                      await removeFriend(profile.user.id);
-
-                      return { friendship: "none", pendingRequestId: null };
-                    }, "Não foi possível desfazer a amizade. Tente novamente.")
-                  }
+                  onPress={() => {
+                    setIsMenuOpen(false);
+                    setIsRemovalOpen(true);
+                  }}
                 >
                   <UserMinus className="size-4" />
                   Desfazer amizade
@@ -182,6 +183,13 @@ export function FriendshipAction({
           </Popover.Content>
         </Popover>
       )}
+
+      <DialogFriendRemoval
+        friend={profile.user}
+        isOpen={isRemovalOpen}
+        onOpenChange={setIsRemovalOpen}
+        onConfirm={() => onChange("none", null)}
+      />
 
       {error !== null ? (
         <p

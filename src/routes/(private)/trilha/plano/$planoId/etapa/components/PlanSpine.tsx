@@ -1,18 +1,16 @@
+import type { StudyPlanStep } from "@/types/api/studyPlan";
 import { cn } from "@heroui/styles";
 
 interface PlanSpineProps {
   position: number;
-  total: number;
   disciplineName: string;
-  completedCount: number;
+  steps: StudyPlanStep[];
 }
 
-export function PlanSpine({
-  position,
-  total,
-  disciplineName,
-  completedCount,
-}: PlanSpineProps) {
+export function PlanSpine({ position, disciplineName, steps }: PlanSpineProps) {
+  const total = steps.length;
+  const completedCount = steps.filter((step) => step.completed).length;
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm opacity-70 flex flex-wrap items-center gap-x-2 justify-center text-center">
@@ -29,13 +27,16 @@ export function PlanSpine({
       </p>
 
       <div aria-hidden className="flex items-center gap-1.5">
-        {Array.from({ length: total }, (_, index) => {
-          const isDone = index < completedCount;
+        {steps.map((step, index) => {
+          // Cada segmento é a etapa daquela posição, não uma contagem global:
+          // as linhas do plano permitem pular ordem, então concluir a 1 e a 3
+          // não pode acender a 2.
+          const isDone = step.completed;
           const isCurrent = index === position - 1;
 
           return (
             <span
-              key={index}
+              key={step.id}
               className={cn(
                 "h-1.5 flex-1 rounded-full",
                 isDone

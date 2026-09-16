@@ -96,7 +96,6 @@ export function SessionTimer({
         maxValue={totalMs}
         color="accent"
         className="w-full"
-        aria-label="Progresso da fase"
         aria-hidden="true"
       >
         <Meter.Track>

@@ -42,6 +42,11 @@
     --accent-foreground: oklch(99.11% 0 0);
     --focus: oklch(49% 0.288 269.1);
     --background: oklch(19.2% 0.004 286);
+    /* O HeroUI zera a sombra ambiente no escuro, e aqui papel (21%) e mesa
+       (19.2%) ficam a menos de dois pontos de luminosidade: sem isto todo
+       cartão do app perde a separação do fundo. O anel de 1px devolve, por
+       borda, a hierarquia que no claro vem da sombra. */
+    --surface-shadow: 0 0 0 1px var(--border);
   }
 
   :root {

@@ -11,7 +11,6 @@ import { Link, useParams } from "react-router";
 import {
   Ellipsis,
   FileText,
-  Inbox,
   ListCheck,
   Network,
   SquarePen,
@@ -27,7 +26,9 @@ const MAX_CONTENT_PREVIEWS = 4;
 
 interface SubjectCardProps {
   subject: ChildFolder;
-  contents?: Content[];
+  // `undefined` enquanto carrega, `null` quando a busca do conteúdo falhou —
+  // sem o segundo caso o esqueleto pisca para sempre em cima de um erro.
+  contents?: Content[] | null;
   onChangeSubject: (subject: ChildFolder) => void;
   onDeleteSubject: (subject: ChildFolder) => void;
 }
@@ -46,10 +47,10 @@ export function SubjectCard(props: SubjectCardProps) {
   const basePath = `/pastas/${pastaId}/assuntos/${subject.id}`;
 
   return (
-    <article className="relative bg-surface rounded-xl shadow-surface hover:brightness-105">
+    <article className="relative bg-surface rounded-xl shadow-surface transition-colors duration-100 hover:bg-surface-secondary">
       <Link to={basePath} className="px-3 block h-full">
         <div className="pt-3 pb-2 flex flex-col gap-2 h-full justify-between">
-          <h2 className="leading-tight font-semibold line-clamp-2 h-10">
+          <h2 className="leading-tight font-semibold line-clamp-2 break-words h-10">
             {subject.name}
           </h2>
 
@@ -60,11 +61,12 @@ export function SubjectCard(props: SubjectCardProps) {
                   <Skeleton key={index} className="rounded-md aspect-video" />
                 ))}
               </div>
-            ) : contents.length === 0 ? (
-              <span className="flex items-center gap-1.5 text-xs text-muted">
-                <Inbox className="size-3.5 shrink-0" />
-                Sem conteúdo
+            ) : contents === null ? (
+              <span className="text-xs text-danger-soft-foreground">
+                Não foi possível carregar
               </span>
+            ) : contents.length === 0 ? (
+              <span className="text-xs text-muted">Sem conteúdo</span>
             ) : (
               <div className="grid grid-cols-2 gap-1">
                 {contents.slice(0, MAX_CONTENT_PREVIEWS).map((content) => (
@@ -95,7 +97,8 @@ export function SubjectCard(props: SubjectCardProps) {
               <Link
                 to={`${basePath}/flash-cards`}
                 className={buttonVariants({
-                  className: "w-full justify-start border-b text-emerald-500",
+                  className:
+                    "w-full justify-start rounded-t-lg border-b border-border",
                   variant: "ghost",
                 })}
               >
@@ -104,7 +107,7 @@ export function SubjectCard(props: SubjectCardProps) {
               <Link
                 to={`${basePath}/resumo`}
                 className={buttonVariants({
-                  className: "w-full justify-start border-b text-purple-700",
+                  className: "w-full justify-start border-b border-border",
                   variant: "ghost",
                 })}
               >
@@ -113,7 +116,7 @@ export function SubjectCard(props: SubjectCardProps) {
               <Link
                 to={`${basePath}/simulado-prova`}
                 className={buttonVariants({
-                  className: "w-full justify-start border-b text-orange-600",
+                  className: "w-full justify-start border-b border-border",
                   variant: "ghost",
                 })}
               >
@@ -122,7 +125,7 @@ export function SubjectCard(props: SubjectCardProps) {
               <Link
                 to={`${basePath}/mapa-mental`}
                 className={buttonVariants({
-                  className: "w-full justify-start border-b text-cyan-600",
+                  className: "w-full justify-start border-b border-border",
                   variant: "ghost",
                 })}
               >
@@ -130,14 +133,14 @@ export function SubjectCard(props: SubjectCardProps) {
               </Link>
               <Button
                 variant="ghost"
-                className="w-full justify-start text-accent-soft-foreground"
+                className="w-full justify-start border-b border-border"
                 onPress={() => openDialog(setIsEditOpen)}
               >
                 <SquarePen /> Renomear assunto
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start rounded-b-lg text-danger"
+                className="w-full justify-start rounded-b-lg text-danger-soft-foreground"
                 onPress={() => openDialog(setIsDeleteOpen)}
               >
                 <Trash /> Excluir assunto
@@ -159,24 +162,6 @@ export function SubjectCard(props: SubjectCardProps) {
         onOpenChange={setIsDeleteOpen}
         onConfirm={onDeleteSubject}
       />
-    </article>
-  );
-}
-
-export function LoadingSubjectCard() {
-  return (
-    <article className="relative bg-surface rounded-xl shadow-surface">
-      <div className="px-3 pt-4 pb-2 flex flex-col gap-2 h-full justify-between">
-        <header className="h-10 flex flex-col justify-between">
-          <Skeleton className="rounded-full h-4 w-3/4" />
-          <Skeleton className="rounded-full h-4 w-11/12" />
-        </header>
-        <div className="grid grid-cols-2 gap-1 pb-1 pr-9">
-          {Array.from({ length: MAX_CONTENT_PREVIEWS }).map((_, index) => (
-            <Skeleton key={index} className="rounded-md aspect-video" />
-          ))}
-        </div>
-      </div>
     </article>
   );
 }

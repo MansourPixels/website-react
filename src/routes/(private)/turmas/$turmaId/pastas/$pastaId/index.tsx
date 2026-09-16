@@ -1,10 +1,11 @@
-import { Spinner } from "@heroui/react";
-import { buttonVariants } from "@heroui/styles";
+import { Button, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import { getClassroom, getFolder, listContents } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,11 +28,17 @@ export default function ClassroomFolderPage() {
   const [contents, setContents] = useState<ClassroomContent[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (turmaId === undefined || pastaId === undefined) return;
 
     let cancelled = false;
+
+    setClassroom(null);
+    setFolder(null);
+    setContents(null);
+    setLoadError(null);
 
     Promise.all([
       getClassroom(turmaId),
@@ -58,7 +65,7 @@ export default function ClassroomFolderPage() {
     return () => {
       cancelled = true;
     };
-  }, [turmaId, pastaId]);
+  }, [turmaId, pastaId, reloadKey]);
 
   function handleAdded(created: ClassroomContent[]) {
     setContents((current) => [...created, ...(current ?? [])]);
@@ -86,16 +93,9 @@ export default function ClassroomFolderPage() {
           hasBackButton
           backHref={turmaId === undefined ? "/turmas" : `/turmas/${turmaId}`}
         />
-        <p className="text-danger py-8 text-center">{loadError}</p>
-        <Link
-          to="/turmas"
-          className={buttonVariants({
-            variant: "secondary",
-            className: "mx-auto",
-          })}
-        >
-          Voltar para turmas
-        </Link>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       </main>
     );
   }
@@ -136,24 +136,35 @@ export default function ClassroomFolderPage() {
           <span className="sr-only">Carregando o conteúdo da pasta</span>
         </div>
       ) : contents.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {contents.map((content) => (
-            <ClassroomContentTile
-              key={content.id}
-              content={content}
-              role={classroom.role}
-              currentUserId={user?.id ?? ""}
-              onChange={handleChanged}
-              onDelete={handleDeleted}
-            />
+            <li key={content.id}>
+              <ClassroomContentTile
+                content={content}
+                role={classroom.role}
+                currentUserId={user?.id ?? ""}
+                onChange={handleChanged}
+                onDelete={handleDeleted}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
+      ) : canAdd ? (
+        <EmptyState
+          action={
+            <Button variant="secondary" onPress={() => setIsAddOpen(true)}>
+              Adicionar conteúdo
+            </Button>
+          }
+        >
+          Esta pasta está vazia. Adicione um material do Revi ou envie um
+          arquivo.
+        </EmptyState>
       ) : (
-        <p className="text-muted py-8 text-center text-pretty">
-          {canAdd
-            ? "Esta pasta está vazia. Adicione um material do Revi ou envie um arquivo no botão +."
-            : "Esta pasta ainda não tem conteúdo. Como membro, você verá o material assim que alguém publicar."}
-        </p>
+        <EmptyState>
+          Esta pasta ainda não tem conteúdo. Como membro, você verá o material
+          assim que alguém publicar.
+        </EmptyState>
       )}
 
       {canAdd ? (

@@ -6,6 +6,8 @@ import { useNavigate, useParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { getDownloadUrl, listContent } from "@/api/content";
 import { listChildFolders } from "@/api/folders";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
@@ -33,6 +35,7 @@ export default function SubjectDetailsPage() {
     null,
   );
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -62,6 +65,9 @@ export default function SubjectDetailsPage() {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const startedAt = Date.now();
+
+    setContents(null);
+    setLoadError(null);
 
     async function poll() {
       try {
@@ -94,7 +100,7 @@ export default function SubjectDetailsPage() {
       cancelled = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
-  }, [assuntoId]);
+  }, [assuntoId, reloadKey]);
 
   async function handleOpenMaterial(content: Content) {
     setViewerError(null);
@@ -135,7 +141,7 @@ export default function SubjectDetailsPage() {
       />
       <section
         id="tipos-estudo"
-        className="grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+        className="grid md:grid-cols-2 gap-3"
       >
         <StudyTypeCard
           id="flash-cards"
@@ -168,9 +174,7 @@ export default function SubjectDetailsPage() {
       </section>
 
       {viewerError !== null ? (
-        <p role="alert" className="text-danger text-center text-sm">
-          {viewerError}
-        </p>
+        <ErrorState isCompact>{viewerError}</ErrorState>
       ) : null}
 
       {contents === null && loadError === null ? (
@@ -179,7 +183,9 @@ export default function SubjectDetailsPage() {
           <span className="sr-only">Carregando materiais</span>
         </div>
       ) : loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+          {loadError}
+        </ErrorState>
       ) : filteredMaterials.length > 0 ? (
         <section
           id="materiais"
@@ -194,13 +200,17 @@ export default function SubjectDetailsPage() {
           ))}
         </section>
       ) : (
-        <p className="text-muted text-center py-8">
+        <EmptyState>
           {normalizedSearch
             ? `Nenhum material encontrado para "${search.trim()}".`
             : "Este assunto ainda não tem materiais. Adicione o primeiro pela câmera."}
-        </p>
+        </EmptyState>
       )}
-      <FABButton icon={Camera} onClick={() => navigate("camera")} />
+      <FABButton
+        icon={Camera}
+        aria-label="Capturar material para este assunto"
+        onPress={() => navigate("camera")}
+      />
       <MaterialViewer
         material={selectedMaterial}
         onClose={() => setSelectedMaterial(null)}

@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getMindMap } from "@/api/mindMap";
+import { ErrorState } from "@/components/ErrorState";
 import { MindMapCanvas } from "@/components/MindMapCanvas";
 import { NavMenu } from "@/components/NavMenu";
 import { useMindMap } from "@/hooks/useMindMap";
@@ -27,6 +28,7 @@ export default function MindMapPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Enquanto o mapa não chega, esta página não toca no DOM do canvas — é o
   // que mantém o React Flow fora do render do servidor.
@@ -34,6 +36,10 @@ export default function MindMapPage() {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const startedAt = Date.now();
+
+    setMap(null);
+    setLoadError(null);
+    setTimedOut(false);
 
     async function poll() {
       try {
@@ -68,7 +74,7 @@ export default function MindMapPage() {
       cancelled = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
-  }, [assuntoId]);
+  }, [assuntoId, reloadKey]);
 
   const {
     placements,
@@ -86,7 +92,10 @@ export default function MindMapPage() {
   }
 
   return (
-    <main className="content-bg-cyan-200 h-[100svh] overflow-hidden flex flex-col">
+    // `flex-1 min-h-0` e não `h-[100svh]`: com a ilha de sessão em curso o
+    // contêiner de rota ganha `pt-(--island-inset)`, e uma altura de viewport
+    // inteira empurraria o rodapé para fora da tela.
+    <main className="content-bg-cyan-200 flex-1 min-h-0 overflow-hidden flex flex-col">
       <div className="py-6 md:py-8 gap-4 flex flex-col flex-1 min-h-0 w-full mx-auto">
         <div className="max-w-4xl mx-auto w-full px-6 md:px-8">
           <NavMenu
@@ -94,46 +103,68 @@ export default function MindMapPage() {
             hasBackButton
             className="text-center pr-12 mb-3"
           />
-          <ProgressBar
-            aria-label="Progresso"
-            size="lg"
-            value={total === 0 ? 0 : (revealedCount / total) * 100}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill className="bg-cyan-600" />
-            </ProgressBar.Track>
-          </ProgressBar>
+          {/* Enquanto não há mapa, uma barra em 0% seria progresso falso. */}
+          {loadError === null && map?.raiz != null && total > 0 ? (
+            <ProgressBar
+              aria-label="Progresso"
+              size="lg"
+              value={(revealedCount / total) * 100}
+            >
+              <ProgressBar.Track>
+                <ProgressBar.Fill className="bg-cyan-600" />
+              </ProgressBar.Track>
+            </ProgressBar>
+          ) : null}
         </div>
 
         {loadError !== null ? (
-          <p className="flex-1 flex items-center justify-center text-danger text-center px-6">
-            {loadError}
-          </p>
+          <div className="flex-1 flex items-center justify-center px-6">
+            <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+              {loadError}
+            </ErrorState>
+          </div>
         ) : map?.raiz == null ? (
           <section
-            aria-busy
+            aria-busy={!timedOut}
             className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6"
           >
-            <Spinner size="lg" />
+            {/* Quando o polling desiste, um spinner girando prometeria um
+                desfecho que não vem mais — some, e sobra a saída. */}
+            {timedOut ? null : <Spinner size="lg" />}
             <p className="flex items-center gap-2 font-medium">
               <Sparkles className="size-4" />
-              Revi IA está montando o seu mapa...
-            </p>
-            <p className="text-muted text-sm max-w-xs">
               {timedOut
-                ? "Ainda estamos gerando o seu mapa. Tente novamente em instantes."
+                ? "O mapa ainda não ficou pronto"
+                : "Revi IA está montando o seu mapa..."}
+            </p>
+            <p className="text-muted text-sm max-w-xs text-pretty">
+              {timedOut
+                ? "A geração está demorando mais que o normal. Tente novamente em instantes."
                 : "Estamos organizando os conceitos deste assunto em ramos para você percorrer."}
             </p>
+            {timedOut ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onPress={() => setReloadKey((k) => k + 1)}
+              >
+                Tentar novamente
+              </Button>
+            ) : null}
           </section>
         ) : isFinished ? (
-          <MindMapSummary
-            revealedCount={revealedCount}
-            total={total}
-            onRestart={restartMap}
-            onFinish={() =>
-              navigate(`/pastas/${pastaId}/assuntos/${assuntoId}`)
-            }
-          />
+          // O resumo é a única parte desta tela que rola; o resto da página é
+          // canvas de altura fixa.
+          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-8 max-w-4xl mx-auto w-full px-6 md:px-8">
+            <MindMapSummary
+              revealedCount={revealedCount}
+              total={total}
+              onRestart={restartMap}
+              onFinish={() =>
+                navigate(`/pastas/${pastaId}/assuntos/${assuntoId}`)
+              }
+            />
+          </div>
         ) : (
           <>
             {/* min-h-0 é o que dá altura real ao canvas dentro do flex column. */}
@@ -147,7 +178,7 @@ export default function MindMapPage() {
             </div>
 
             <footer className="flex flex-col gap-3 sm:flex-row-reverse max-w-4xl mx-auto w-full px-6 md:px-8">
-              <Button fullWidth size="lg" onClick={() => setIsFinished(true)}>
+              <Button fullWidth size="lg" onPress={() => setIsFinished(true)}>
                 <Waypoints />
                 Concluí o mapa
               </Button>
@@ -155,7 +186,7 @@ export default function MindMapPage() {
                 fullWidth
                 size="lg"
                 variant="tertiary"
-                onClick={expandAll}
+                onPress={expandAll}
                 isDisabled={isComplete}
               >
                 Expandir tudo

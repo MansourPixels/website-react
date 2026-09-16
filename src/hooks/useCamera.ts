@@ -115,6 +115,10 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     autoStart ? "loading" : "idle",
   );
   const [error, setError] = useState<string | null>(null);
+  // A causa, e não só a mensagem: em permissão negada o navegador rejeita
+  // qualquer `getUserMedia` seguinte sem perguntar de novo, então oferecer
+  // "Tentar novamente" ali é um botão que não faz nada.
+  const [errorKind, setErrorKind] = useState<string | null>(null);
   const [isFlashSupported, setIsFlashSupported] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [isTapFocusSupported, setIsTapFocusSupported] = useState(false);
@@ -145,11 +149,13 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     async function startCamera() {
       setStatus("loading");
       setError(null);
+      setErrorKind(null);
       resetCapabilities();
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setStatus("error");
         setError("Este navegador não oferece suporte ao acesso à câmera.");
+        setErrorKind("UnsupportedError");
         return;
       }
 
@@ -173,6 +179,7 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
 
         setStatus("error");
         setError(getErrorMessage(cause));
+        setErrorKind(cause instanceof DOMException ? cause.name : null);
       }
     }
 
@@ -379,6 +386,7 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     setAttempt(0);
     setStatus("idle");
     setError(null);
+    setErrorKind(null);
     resetCapabilities();
   }, [resetCapabilities]);
 
@@ -386,6 +394,7 @@ export function useCamera({ autoStart = true }: UseCameraOptions = {}) {
     videoRef,
     status,
     error,
+    errorKind,
     isFlashSupported,
     isFlashOn,
     isTapFocusSupported,

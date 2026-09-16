@@ -75,11 +75,14 @@ export function DialogClassroomFolderExclusion({
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-2">
               <p className="text-muted">
-                {folder.contentCount > 0
-                  ? `Esta pasta tem ${folder.contentCount} ${
-                      folder.contentCount === 1 ? "item" : "itens"
-                    } que também serão excluídos para toda a turma. `
-                  : ""}
+                {folder.contentCount > 0 ? (
+                  <>
+                    Esta pasta tem{" "}
+                    <span className="tabular-nums">{folder.contentCount}</span>{" "}
+                    {folder.contentCount === 1 ? "item" : "itens"} que também
+                    serão excluídos para toda a turma.{" "}
+                  </>
+                ) : null}
                 Esta ação não pode ser desfeita.
               </p>
               {error !== null ? (
