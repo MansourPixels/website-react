@@ -7,6 +7,11 @@ import {
 
 export default [
   index("routes/(landing)/index.tsx"),
+  // Fora de (auth) e de (private): precisam abrir para quem não tem conta. O
+  // Google exige a política acessível sem login para verificar a tela de
+  // consentimento, e os termos têm de ser legíveis antes do cadastro.
+  route("politica-privacidade", "routes/(landing)/politica-privacidade/index.tsx"),
+  route("termos-uso", "routes/(landing)/termos-uso/index.tsx"),
   layout("routes/(auth)/layout.tsx", [
     route("auth/entrar", "routes/(auth)/entrar/index.tsx"),
     route("auth/cadastro", "routes/(auth)/cadastro/index.tsx"),

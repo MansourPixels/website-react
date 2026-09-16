@@ -63,6 +63,21 @@ const links = [
   },
 ];
 
+// Título e descrição padrão de todas as telas. Vive aqui, e não como <title>
+// fixo no <head> abaixo, porque dois <title> no documento fariam o navegador
+// ficar com o primeiro — e as rotas que exportam `meta` (política de
+// privacidade e termos) nunca conseguiriam sobrescrever.
+export function meta() {
+  return [
+    { title: "Revi - Página Inicial" },
+    {
+      name: "description",
+      content:
+        "Fotografe o caderno e estude o que está nele. O Revi IA reconhece a disciplina, arquiva a foto e transforma o seu próprio material em flash cards, resumo e simulado.",
+    },
+  ];
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-br" suppressHydrationWarning>
@@ -81,12 +96,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
         <meta name="theme-color" content="#f4f4f5" />
-
-        <title>Revi - Página Inicial</title>
-        <meta
-          name="description"
-          content="Fotografe o caderno e estude o que está nele. O Revi IA reconhece a disciplina, arquiva a foto e transforma o seu próprio material em flash cards, resumo e simulado."
-        />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
