@@ -24,6 +24,11 @@ export default [
   // login e descartaria o retorno do Google se a sessão local tivesse expirado
   // durante o consentimento.
   route("google/callback", "routes/(google)/callback/index.tsx"),
+  // Fora do layout de (private) pela mesma razão dos callbacks acima, e mais
+  // uma: é esta rota que o RequireOnboarding manda cumprir, então ela não pode
+  // passar pelo próprio gate — seria um laço infinito. A exigência de sessão
+  // continua valendo, e o RequireAuth entra dentro da própria rota.
+  route("onboarding", "routes/(onboarding)/index.tsx"),
   // Fora de (private) e de (auth): precisa aparecer igual para quem está
   // logado e para quem não está, sem nenhum dos dois redirecionar antes.
   route("*", "routes/(not-found)/index.tsx"),

@@ -378,3 +378,117 @@ o `syncState` passa a chegar pronto na resposta.
    sobre quem pode criar e quem pode concluir.
 10. **Quantas contas por usuário.** `uq_google_accounts_user` assume uma. Aluno com
     conta pessoal e conta da escola vai querer escolher qual agenda recebe a entrega.
+
+---
+
+## 8. Onboarding
+
+Depois do cadastro o aluno passa por `/onboarding`: boas-vindas, avatar,
+conexões (Spotify e Google) e um mapa das funcionalidades. É obrigatório uma
+vez, cada etapa é pulável, e o gate que o torna obrigatório precisa saber se
+aquele usuário já concluiu.
+
+**Motivação**: o cadastro terminava jogando o aluno direto na câmera. O avatar
+nunca era personalizado, as duas integrações só existiam para quem entrava no
+Perfil por conta própria, e ninguém era apresentado às seis abas nem aos quatro
+modos de estudo.
+
+> Este documento é o lugar dos contratos que ainda esperam o `revi-back`. O
+> onboarding entra aqui pela mesma razão que as tarefas: a tela está pronta e
+> completa, e o que falta é só onde guardar o fato. Se um dia ficar grande
+> demais, esta seção se destaca num `ONBOARDING.md` sem perda nenhuma.
+
+### 8.1 O que já está implementado no frontend
+
+| Arquivo | Papel |
+| --- | --- |
+| `src/api/onboarding.ts` | **A fachada de persistência.** É o único arquivo que muda quando o endpoint existir |
+| `src/utils/onboardingStorage.ts` | Chave `revi:onboarding`, no formato `{ [ownerId]: { completedAt } }`. Puro e testado |
+| `src/utils/onboardingSteps.ts` | Os slugs das etapas e o parse do `?passo=`. Puro e testado |
+| `src/contexts/OnboardingContext.tsx` | Resolve o estado uma vez por sessão e expõe `complete()` |
+| `src/components/RequireOnboarding.tsx` | O gate, irmão do `RequireAuth`, composto dentro dele em `(private)/layout.tsx` |
+| `src/routes/(onboarding)/` | A tela: `index.tsx` e os quatro painéis em `components/` |
+| `src/components/AvatarPicker.tsx` | As cinco abas de peças, extraídas de `/perfil/avatar` para servir às duas telas |
+
+A etapa atual vive na URL (`/onboarding?passo=conexoes`), e não em estado de
+componente: `spotify.connect()` faz `window.location.assign` e derruba todo o
+estado em memória. Pelo mesmo motivo **o avatar é gravado ao sair da etapa**, e
+não no fim do fluxo.
+
+O destino pretendido viaja no mesmo `?proximo=` que o login já usa, para que um
+convite de turma aberto por quem ainda não tem conta sobreviva ao cadastro e ao
+onboarding.
+
+### 8.2 Contrato de backend
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| `GET` | `/api/whoami` | Ganha mais um campo (abaixo) |
+| `POST` | `/api/whoami/onboarding` | Marca como concluído. `204`, sem corpo |
+
+**`GET /api/whoami`**
+```json
+{ "ownerId": "0198...",
+  "avatarUrl": "https://api.dicebear.com/10.x/big-smile/svg?eyesVariant=...",
+  "onboardingCompletedAt": "2026-09-16T10:00:00Z" }
+```
+
+`onboardingCompletedAt` é `null` enquanto o aluno não terminou. **Não existe um
+booleano `onboardingCompleted`**: a data responde "já concluiu?" e mais a
+pergunta de quando, que é o que permite medir se o fluxo está sendo abandonado.
+
+**`POST /api/whoami/onboarding`** → `204`. Precisa ser **idempotente**: a segunda
+chamada não reescreve a data. Sem isso, voltar ao onboarding pelo histórico do
+navegador e concluir de novo moveria o marco. A fachada do frontend já se
+comporta assim.
+
+**Endpoint próprio, e não mais um campo no `PATCH /api/whoami`**: o `PATCH` de
+hoje é `record UpdateAvatarRequest(@NotBlank String avatarUrl)`. Aceitar um
+segundo campo exigiria afrouxar o `@NotBlank` e inventar semântica de "ausente
+vs. nulo" num record Java, para um corpo que nunca vai ter conteúdo. Um POST sem
+corpo é mais barato e não mexe no que já funciona.
+
+### 8.3 Modelo de dados
+
+Não é tabela nova: é uma coluna em `user_profile` (`V14__create_user_profile_table.sql`),
+que já é a linha por usuário e já nasce sozinha no primeiro `GET /api/whoami`
+via `GetOrCreateUserProfileUseCase`.
+
+`V22__user_profile_onboarding.sql` — `V20` e `V21` estão reservadas para
+`google_accounts` e `tasks` (seção 4).
+
+```sql
+ALTER TABLE user_profile ADD COLUMN onboarding_completed_at TIMESTAMPTZ;
+```
+
+Anulável e sem default de propósito: `NULL` é "nunca concluiu". As contas que já
+existem nascem com `NULL` e veem o onboarding no próximo acesso — que é o
+comportamento desejado, já que nenhuma delas passou por ele.
+
+`UserProfile` (o record em `profile/domain/`) ganha o campo e um
+`withOnboardingCompleted(now)`, no mesmo formato do `withAvatarUrl` que já existe.
+
+### 8.4 O que trocar no frontend quando o backend subir
+
+1. `src/api/onboarding.ts`: os dois corpos viram `apiFetch` nos caminhos de 8.2.
+   As assinaturas já estão nesse formato e devolvem `Promise` desde hoje.
+2. `src/contexts/OnboardingContext.tsx`: nada. Ele já trata o estado
+   `"loading"`, que hoje dura um tick e amanhã dura uma requisição.
+3. `src/utils/onboardingStorage.ts` e o `ownerId` como chave deixam de ser
+   necessários — o backend já sabe de quem é a linha pelo token.
+
+**Nenhuma tela é reescrita.**
+
+### 8.5 A limitação do modo atual
+
+Em `localStorage`, "concluí o onboarding" é um fato **por aparelho**: quem se
+cadastra no celular e depois entra pelo computador vê o fluxo de novo. A chave é
+por `ownerId` justamente para o caso oposto — dois alunos no mesmo aparelho, que
+é o laboratório da escola —, mas isso não resolve o primeiro caso, e só o
+backend resolve.
+
+Também vale registrar: a escrita é *best-effort*. Em navegador com armazenamento
+bloqueado (Safari privado), `writeOnboarding` falha em silêncio e o aluno reveria
+o onboarding na próxima visita. O gate lê o estado **em memória** do provider, e
+não o `localStorage` direto, para que essa falha não vire um laço de redirect
+dentro da mesma sessão.

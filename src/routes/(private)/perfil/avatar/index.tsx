@@ -1,37 +1,21 @@
-import { Button, Spinner, Tabs } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { Dices } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getWhoami, updateAvatar } from "@/api/user";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { useFeedback } from "@/hooks/useFeedback";
 import { usePreloadedImage } from "@/hooks/usePreloadedImage";
 import {
   buildAvatarUrl,
-  defaultBackgroundColors,
-  defaultHairColors,
-  defaultSkinColors,
   parseAvatarUrl,
   randomAvatarConfig,
-  type AccessoriesVariant,
   type AvatarConfig,
-  type EyesVariant,
-  type HairVariant,
-  type MouthVariant,
 } from "@/utils/avatar";
-import { AvatarColorRow } from "./components/AvatarColorRow";
-import { AvatarOptionGrid } from "./components/AvatarOptionGrid";
-
-const avatarTabs = [
-  { id: "accessories", label: "Acessórios" },
-  { id: "eyes", label: "Olhos" },
-  { id: "hair", label: "Cabelo" },
-  { id: "mouth", label: "Boca" },
-  { id: "colors", label: "Cores" },
-];
 
 export default function AvatarPage() {
   const navigate = useNavigate();
@@ -190,86 +174,7 @@ export default function AvatarPage() {
         </p>
       </section>
 
-      <Tabs
-        defaultSelectedKey="accessories"
-        className="rounded-3xl bg-surface p-4 shadow-surface"
-      >
-        {/* `ListContainer` traz a rolagem horizontal com as setas de overflow:
-            as cinco abas não cabem lado a lado numa tela estreita. */}
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="Partes do avatar">
-            {avatarTabs.map(({ id, label }) => (
-              <Tabs.Tab key={id} id={id}>
-                {label}
-                <Tabs.Indicator />
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs.ListContainer>
-
-        <Tabs.Panel id="accessories" className="pt-4">
-          <AvatarOptionGrid<AccessoriesVariant>
-            group="accessories"
-            legend="Acessórios"
-            value={config.accessories}
-            onChange={(accessories) => patch({ accessories })}
-            noneLabel="Sem acessório"
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="eyes" className="pt-4">
-          <AvatarOptionGrid<EyesVariant>
-            group="eyes"
-            legend="Olhos"
-            value={config.eyes}
-            onChange={(eyes) => patch({ eyes })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="hair" className="pt-4">
-          <AvatarOptionGrid<HairVariant>
-            group="hair"
-            legend="Cabelo"
-            value={config.hair}
-            onChange={(hair) => patch({ hair })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="mouth" className="pt-4">
-          <AvatarOptionGrid<MouthVariant>
-            group="mouth"
-            legend="Boca"
-            value={config.mouth}
-            onChange={(mouth) => patch({ mouth })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="colors" className="flex flex-col gap-5 pt-4">
-          <AvatarColorRow
-            name="avatar-hair-color"
-            label="Cor do cabelo"
-            colors={defaultHairColors}
-            value={config.hairColor}
-            onChange={(hairColor) => patch({ hairColor })}
-          />
-
-          <AvatarColorRow
-            name="avatar-skin-color"
-            label="Tom de pele"
-            colors={defaultSkinColors}
-            value={config.skinColor}
-            onChange={(skinColor) => patch({ skinColor })}
-          />
-
-          <AvatarColorRow
-            name="avatar-background-color"
-            label="Cor de fundo"
-            colors={defaultBackgroundColors}
-            value={config.backgroundColor}
-            onChange={(backgroundColor) => patch({ backgroundColor })}
-          />
-        </Tabs.Panel>
-      </Tabs>
+      <AvatarPicker config={config} onChange={patch} />
 
       {saveError !== null ? (
         <p role="alert" className="text-danger-soft-foreground text-sm text-pretty">

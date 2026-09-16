@@ -23,6 +23,7 @@ import { BottomNavigation } from "./components/BottomNavigation";
 import { SessionIsland } from "./components/SessionIsland";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { GoogleProvider } from "./contexts/GoogleContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -139,13 +140,15 @@ export default function App() {
     <ThemeProvider>
       <PreferencesProvider>
         <AuthProvider>
-          <SpotifyProvider>
-            <GoogleProvider>
-              <SessionProvider>
-                <AppShell />
-              </SessionProvider>
-            </GoogleProvider>
-          </SpotifyProvider>
+          <OnboardingProvider>
+            <SpotifyProvider>
+              <GoogleProvider>
+                <SessionProvider>
+                  <AppShell />
+                </SessionProvider>
+              </GoogleProvider>
+            </SpotifyProvider>
+          </OnboardingProvider>
         </AuthProvider>
       </PreferencesProvider>
     </ThemeProvider>
@@ -169,7 +172,9 @@ const extraBottomNavigationRoutes = [
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
-const islandFreeRoutes = ["/", "/sessao"];
+// `/onboarding` entra pela mesma lógica: a ilha por cima de um fluxo que o
+// aluno tem de concluir é ruído, e ele ainda nem sabe o que ela é.
+const islandFreeRoutes = ["/", "/sessao", "/onboarding"];
 
 function AppShell() {
   const { pathname } = useLocation();
