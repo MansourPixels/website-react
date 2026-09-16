@@ -232,7 +232,7 @@ export function DialogFormTarefa({
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container>
-          <Modal.Dialog className="sm:max-w-90">
+          <Modal.Dialog className="sm:max-w-110">
             <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Icon className="bg-default text-foreground">
@@ -382,7 +382,7 @@ export function DialogFormTarefa({
                       </DateInputGroup.Suffix>
                     </DateInputGroup>
                     <DatePicker.Popover>
-                      <Calendar>
+                      <Calendar minValue={today(getLocalTimeZone())}>
                         <Calendar.Header>
                           <Calendar.NavButton slot="previous" />
                           <Calendar.Heading />
