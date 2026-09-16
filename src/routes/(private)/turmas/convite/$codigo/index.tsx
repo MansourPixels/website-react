@@ -138,7 +138,7 @@ export default function ClassroomInvitePage() {
           </header>
 
           <div className="flex flex-col gap-2">
-            {/* Só o dono convida (nominal ou por link) — owner e "quem convidou" são sempre a mesma pessoa. */}
+{/* Só o dono convida (nominal ou por link) — owner e "quem convidou" são sempre a mesma pessoa. */}
             <p className="text-muted text-xs">Convite enviado por</p>
             <UserIdentity user={preview.owner} size="sm" linkToProfile />
           </div>

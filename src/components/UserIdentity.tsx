@@ -1,4 +1,3 @@
-import type { PublicUser } from "@/types/api/social";
 import { profilePath } from "@/utils/profile";
 import { getInitials } from "@/utils/text";
 import { Avatar, cn } from "@heroui/react";
@@ -6,7 +5,13 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 interface UserIdentityProps {
-  user: PublicUser;
+  user: {
+    id?: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    xp?: number;
+  };
   /** Linha de apoio: XP, papel na turma, data de amizade. */
   caption?: ReactNode;
   /**
@@ -40,7 +45,7 @@ export function UserIdentity({
           size === "sm" ? "size-9" : "size-24",
         )}
       >
-        <Avatar.Image src={user.avatarUrl} alt="" />
+        <Avatar.Image src={user.avatarUrl ?? undefined} alt="" />
         <Avatar.Fallback>
           {getInitials(user.displayName || user.username)}
         </Avatar.Fallback>

@@ -8,6 +8,8 @@ import { useFeedback } from "@/hooks/useFeedback";
 import type { ClassroomContent } from "@/types/api/classroom";
 
 interface DialogContentExclusionProps {
+  classroomId: string;
+  folderId: string;
   content: ClassroomContent;
   /** O dono está removendo conteúdo de outra pessoa — a copy precisa dizer. */
   isOwnerModerating: boolean;
@@ -17,6 +19,8 @@ interface DialogContentExclusionProps {
 }
 
 export function DialogContentExclusion({
+  classroomId,
+  folderId,
   content,
   isOwnerModerating,
   isOpen,
@@ -39,7 +43,7 @@ export function DialogContentExclusion({
     setError(null);
 
     try {
-      await deleteContent(content.classroomId, content.folderId, content.id);
+      await deleteContent(classroomId, folderId, content.id);
 
       feedback("exclusao");
       onConfirm(content);

@@ -1,9 +1,11 @@
 import { Button, ButtonGroup, Popover } from "@heroui/react";
 import {
   ClipboardList,
+  Copy,
   Ellipsis,
   FileText,
   FileType,
+  Download,
   Image as ImageIcon,
   Layers,
   Network,
@@ -11,9 +13,12 @@ import {
   Trash,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
+import { getClassroomContentProcessing, getClassroomDownloadUrl } from "@/api/classrooms";
+import { ApiError } from "@/api/client";
+import { MaterialViewer } from "@/components/MaterialViewer";
 import type {
   ClassroomContent,
   ClassroomContentKind,
@@ -21,21 +26,26 @@ import type {
 } from "@/types/api/classroom";
 import { canDeleteContent, canEditContent } from "@/utils/classroomPermissions";
 import { profilePath } from "@/utils/profile";
+import type { ViewableFile } from "@/types/capture";
 
 import { DialogContentExclusion } from "./DialogContentExclusion";
 import { DialogFormContent } from "./DialogFormContent";
+import { ClassroomSnapshotViewer } from "./ClassroomSnapshotViewer";
 
 // Categoria não é status: verde, laranja e o accent têm significado próprio no
 // sistema e não são etiqueta de tipo de material. Quem distingue é o ícone.
-const kindMeta: Record<ClassroomContentKind, { icon: LucideIcon; label: string }> =
-  {
-    flashcards: { icon: Layers, label: "Flash cards" },
-    summary: { icon: FileText, label: "Resumo" },
-    quiz: { icon: ClipboardList, label: "Simulado" },
-    mindmap: { icon: Network, label: "Mapa mental" },
-    pdf: { icon: FileType, label: "PDF" },
-    image: { icon: ImageIcon, label: "Imagem" },
-  };
+const kindMeta: Record<
+  ClassroomContentKind,
+  { icon: LucideIcon; label: string }
+> = {
+  flashcards: { icon: Layers, label: "Flash cards" },
+  summary: { icon: FileText, label: "Resumo" },
+  quiz: { icon: ClipboardList, label: "Simulado" },
+  mindmap: { icon: Network, label: "Mapa mental" },
+  snapshot: { icon: Copy, label: "Cópia da pasta" },
+  pdf: { icon: FileType, label: "PDF" },
+  image: { icon: ImageIcon, label: "Imagem" },
+};
 
 function formatFileSize(bytes: number): string {
   const megabytes = bytes / 1_048_576;
@@ -46,6 +56,8 @@ function formatFileSize(bytes: number): string {
 }
 
 interface ClassroomContentTileProps {
+  classroomId: string;
+  folderId: string;
   content: ClassroomContent;
   role: ClassroomRole;
   currentUserId: string;
@@ -54,6 +66,8 @@ interface ClassroomContentTileProps {
 }
 
 export function ClassroomContentTile({
+  classroomId,
+  folderId,
   content,
   role,
   currentUserId,
@@ -62,11 +76,43 @@ export function ClassroomContentTile({
 }: ClassroomContentTileProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [material, setMaterial] = useState<ViewableFile | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [snapshotContentId, setSnapshotContentId] = useState<string | null>(null);
 
   const canEdit = canEditContent(role, content, currentUserId);
   const canDelete = canDeleteContent(role, content, currentUserId);
+  const isFile = content.kind === "pdf" || content.kind === "image";
+  const isSnapshot = content.kind === "snapshot";
   const meta = kindMeta[content.kind];
   const Icon = meta.icon;
+
+  useEffect(() => {
+    if (!isFile) return;
+
+    const controller = new AbortController();
+    getClassroomContentProcessing(classroomId, folderId, content.id, controller.signal)
+      .then((result) => setStatus(result.status))
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setStatus(null);
+      });
+    return () => controller.abort();
+  }, [classroomId, content.id, folderId, isFile]);
+
+  async function requestFile(open: boolean) {
+    setActionError(null);
+    try {
+      const { url } = await getClassroomDownloadUrl(classroomId, folderId, content.id);
+      if (open) {
+        setMaterial({ name: content.fileName || content.title, url, contentType: content.kind === "pdf" ? "PDF" : "IMAGE" });
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      setActionError(error instanceof ApiError ? error.detail : "Não foi possível acessar o arquivo. Tente novamente.");
+    }
+  }
 
   return (
     <article className="bg-surface shadow-surface flex h-full flex-col gap-3 rounded-2xl p-4">
@@ -158,19 +204,49 @@ export function ClassroomContentTile({
         ) : null}
       </footer>
 
+      {isFile && status !== null ? (
+        <p role="status" className="text-muted text-xs">
+          {status === "completed" ? "Texto extraído" : status === "failed" ? "Falha ao extrair texto. O download continua disponível." : "Processando texto…"}
+        </p>
+      ) : null}
+      {isFile ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button className="min-h-11" variant="secondary" onPress={() => requestFile(true)}>Abrir</Button>
+          <Button className="min-h-11" variant="secondary" onPress={() => requestFile(false)}><Download className="size-4" />Baixar</Button>
+        </div>
+      ) : null}
+      {isSnapshot ? <Button className="min-h-11" variant="secondary" onPress={() => setSnapshotContentId(content.id)}>Abrir cópia</Button> : null}
+      {actionError !== null ? <p role="alert" className="text-danger text-sm">{actionError}</p> : null}
+
       <DialogFormContent
+        classroomId={classroomId}
+        folderId={folderId}
         content={content}
         isOpen={isEditOpen}
         onOpenChange={setIsEditOpen}
         onSubmit={onChange}
       />
       <DialogContentExclusion
+        classroomId={classroomId}
+        folderId={folderId}
         content={content}
         isOwnerModerating={role === "owner" && content.author.id !== currentUserId}
         isOpen={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
         onConfirm={onDelete}
       />
+      {isFile ? (
+        <MaterialViewer
+          material={material}
+          onClose={() => setMaterial(null)}
+          classroomContent={{ classroomId, folderId, contentId: content.id }}
+          onContentUnavailable={() => {
+            setMaterial(null);
+            setActionError("Este conteúdo foi removido ou não está mais disponível.");
+          }}
+        />
+      ) : null}
+      {isSnapshot ? <ClassroomSnapshotViewer classroomId={classroomId} folderId={folderId} contentId={snapshotContentId} onClose={() => setSnapshotContentId(null)} /> : null}
     </article>
   );
 }

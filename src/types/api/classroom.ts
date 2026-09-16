@@ -1,10 +1,15 @@
-import type { PublicUser } from "./social";
-
 /**
  * Papel do membro, válido para a turma inteira — não há permissão por pasta.
  * As regras derivadas vivem em `src/utils/classroomPermissions.ts`.
  */
 export type ClassroomRole = "owner" | "editor" | "viewer";
+
+export interface ClassroomMemberUser {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
 
 export interface Classroom {
   id: string;
@@ -25,7 +30,7 @@ export interface ClassroomMember {
   /** Id da associação, não do usuário — é o que a gestão de membros manipula. */
   id: string;
   classroomId: string;
-  user: PublicUser;
+  user: ClassroomMemberUser;
   role: ClassroomRole;
   joinedAt: string;
 }
@@ -40,31 +45,136 @@ export interface ClassroomFolder {
 }
 
 /**
- * `flashcards | summary | quiz | mindmap` são materiais gerados dentro do
- * Revi (referenciados por `reviMaterialId`); `pdf | image` são arquivos
- * enviados de fora.
+ * `flashcards | summary | quiz` são materiais gerados dentro do Revi;
+ * `pdf | image` são arquivos enviados de fora.
  */
 export type ClassroomContentKind =
   | "flashcards"
   | "summary"
   | "quiz"
   | "mindmap"
+  | "snapshot"
   | "pdf"
   | "image";
 
+/** Modalidades que podem ser publicadas como referência de uma pasta pessoal. */
+export type ClassroomReferenceKind = "flashcards" | "summary" | "quiz" | "mindmap";
+
+export interface OwnerMaterial {
+  childFolderId: string;
+  kinds: ClassroomReferenceKind[];
+}
+
 export interface ClassroomContent {
   id: string;
-  classroomId: string;
-  folderId: string;
+  classroomFolderId: string;
   kind: ClassroomContentKind;
   title: string;
   description: string;
-  /** Autor: define quem pode editar/excluir, junto com o dono da turma. */
-  author: PublicUser;
-  /** Preenchidos só para `pdf` e `image`. */
+  author: ClassroomMemberUser;
   fileName: string | null;
   fileSize: number | null;
+  reviMaterialId: string | null;
   createdAt: string;
+}
+
+export interface ClassroomSnapshotFlashcard {
+  front: string;
+  back: string;
+}
+
+export interface ClassroomSnapshotQuizQuestion {
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: ClassroomQuizOption;
+}
+
+/** Nós de snapshot não reutilizam ids de artefatos pessoais. */
+export interface ClassroomSnapshotMindMapBranch {
+  label: string;
+  detalhe?: string;
+  formula?: string;
+  children?: ClassroomSnapshotMindMapBranch[];
+}
+
+export interface ClassroomMaterialSnapshot {
+  contentId: string;
+  sourceOwnerId: string;
+  sourceChildFolderId: string;
+  summary: string | null;
+  flashcards: ClassroomSnapshotFlashcard[];
+  quizQuestions: ClassroomSnapshotQuizQuestion[];
+  mindMapRoot: ClassroomSnapshotMindMapBranch | null;
+  snapshottedAt: string;
+}
+
+export interface ClassroomContentProcessing {
+  status: "pending" | "processing" | "completed" | "failed";
+  textExtractedAt: string | null;
+  error: string | null;
+}
+
+export interface ClassroomContentText {
+  text: string | null;
+  extractedAt: string | null;
+}
+
+export interface ClassroomDownloadUrl {
+  url: string;
+  expiresAt: string;
+}
+
+export interface ClassroomSummary {
+  id: string;
+  classroomFolderId: string;
+  markdown: string;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export interface ClassroomFlashcard {
+  id: string;
+  classroomFolderId: string;
+  position: number;
+  front: string;
+  back: string;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export type ClassroomQuizOption = "A" | "B" | "C" | "D";
+
+export interface ClassroomQuizQuestion {
+  id: string;
+  classroomFolderId: string;
+  position: number;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: ClassroomQuizOption;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export interface ClassroomMindMapBranch {
+  id: string;
+  label: string;
+  detalhe?: string;
+  formula?: string;
+  children?: ClassroomMindMapBranch[];
+}
+
+export interface ClassroomMindMap {
+  id: string;
+  classroomFolderId: string;
+  raiz: ClassroomMindMapBranch;
+  sourceVersion: number;
+  generatedAt: string;
 }
 
 export type ClassroomInviteStatus =
@@ -85,40 +195,21 @@ export interface ClassroomInvite {
   code: string;
   role: Exclude<ClassroomRole, "owner">;
   status: ClassroomInviteStatus;
-  invitedBy: PublicUser;
-  invitee: PublicUser | null;
+  invitedBy: ClassroomMemberUser;
+  invitee: ClassroomMemberUser | null;
   createdAt: string;
-  /** ISO 8601, ou `null` para um link sem prazo de expiração. */
+  /** ISO 8601 ou `null` para link sem prazo — decisão pendente do backend. */
   expiresAt: string | null;
 }
 
-/**
- * Prévia mostrada a quem abre um convite sem ser membro ainda — mais magra
- * que `ClassroomInvite`: sem `code`/`status`/`createdAt`/`expiresAt`/
- * `invitedBy`, que não fazem sentido expor a alguém de fora da turma.
- */
+/** Prévia mínima exposta antes de entrar na turma. */
 export interface ClassroomInvitePreview {
   inviteId: string;
   classroomId: string;
   classroomName: string;
   classroomColor: string;
   role: Exclude<ClassroomRole, "owner">;
-  owner: PublicUser;
-  /** Presente só em convite nominal — é o que diferencia de um convite por link. */
-  invitee: PublicUser | null;
+  owner: ClassroomMemberUser;
+  invitee: ClassroomMemberUser | null;
   memberCount: number;
-}
-
-/**
- * Um material do Revi (flashcards/resumo/simulado/mapa mental) disponível
- * para referenciar como conteúdo de turma. `id` identifica a combinação
- * pasta+tipo (`reviMaterialId` é a própria pasta — uma pasta pode ter mais
- * de um tipo de material gerado, cada um vira uma opção separada aqui).
- */
-export interface ReviMaterial {
-  id: string;
-  reviMaterialId: string;
-  kind: Extract<ClassroomContentKind, "flashcards" | "summary" | "quiz" | "mindmap">;
-  title: string;
-  description: string;
 }

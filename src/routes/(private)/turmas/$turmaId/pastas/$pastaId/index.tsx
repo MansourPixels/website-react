@@ -1,11 +1,11 @@
-import { Button, Spinner } from "@heroui/react";
+import { Spinner } from "@heroui/react";
+import { buttonVariants } from "@heroui/styles";
+import { Brain, FileText, Map, PanelsTopLeft } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 
-import { getClassroom, getFolder, listContents } from "@/api/classrooms";
+import { getClassroom, getFolder, listContents, searchClassroomContent } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
-import { EmptyState } from "@/components/EmptyState";
-import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,9 +15,11 @@ import type {
   ClassroomFolder,
 } from "@/types/api/classroom";
 import { canAddContent, roleLabel } from "@/utils/classroomPermissions";
+import { normalizeText } from "@/utils/text";
 
 import { ClassroomContentTile } from "./components/ClassroomContentTile";
 import { DialogAddContent } from "./components/DialogAddContent";
+import { StudyTypeCard } from "../../../../pastas/$pastaId/assuntos/$assuntoId/components/StudyTypeCard";
 
 export default function ClassroomFolderPage() {
   const { turmaId, pastaId } = useParams();
@@ -28,17 +30,14 @@ export default function ClassroomFolderPage() {
   const [contents, setContents] = useState<ClassroomContent[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<ClassroomContent[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (turmaId === undefined || pastaId === undefined) return;
 
     let cancelled = false;
-
-    setClassroom(null);
-    setFolder(null);
-    setContents(null);
-    setLoadError(null);
 
     Promise.all([
       getClassroom(turmaId),
@@ -65,7 +64,28 @@ export default function ClassroomFolderPage() {
     return () => {
       cancelled = true;
     };
-  }, [turmaId, pastaId, reloadKey]);
+  }, [turmaId, pastaId]);
+
+  useEffect(() => {
+    if (turmaId === undefined || pastaId === undefined || search.trim().length < 2) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setIsSearching(true);
+      searchClassroomContent(turmaId, pastaId, search.trim(), controller.signal)
+        .then((result) => setSearchResults(result))
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+          setSearchResults([]);
+          setLoadError(error instanceof ApiError ? error.detail : "Não foi possível pesquisar o conteúdo.");
+        })
+        .finally(() => { if (!controller.signal.aborted) setIsSearching(false); });
+    }, 400);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [pastaId, search, turmaId]);
 
   function handleAdded(created: ClassroomContent[]) {
     setContents((current) => [...created, ...(current ?? [])]);
@@ -93,9 +113,16 @@ export default function ClassroomFolderPage() {
           hasBackButton
           backHref={turmaId === undefined ? "/turmas" : `/turmas/${turmaId}`}
         />
-        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
-          {loadError}
-        </ErrorState>
+        <p className="text-danger py-8 text-center">{loadError}</p>
+        <Link
+          to="/turmas"
+          className={buttonVariants({
+            variant: "secondary",
+            className: "mx-auto",
+          })}
+        >
+          Voltar para turmas
+        </Link>
       </main>
     );
   }
@@ -117,6 +144,10 @@ export default function ClassroomFolderPage() {
   }
 
   const canAdd = canAddContent(classroom.role);
+  const normalizedSearch = normalizeText(search.trim());
+  const displayedContents: ClassroomContent[] | null = search.trim().length >= 2
+    ? searchResults
+    : contents === null ? null : contents.filter((content) => normalizeText(`${content.title} ${content.fileName}`).includes(normalizedSearch));
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 md:p-8">
@@ -124,47 +155,48 @@ export default function ClassroomFolderPage() {
         title={folder.name}
         hasBackButton
         backHref={`/turmas/${classroom.id}`}
+        hasSearch
+        onSearch={setSearch}
+        isSearching={isSearching}
       />
 
       <p className="text-muted -mt-6 text-sm">
         {classroom.name} · você é {roleLabel(classroom.role).toLowerCase()}
       </p>
 
-      {contents === null ? (
+      <section aria-label="Modos de estudo" className="grid gap-3 sm:grid-cols-2">
+        <StudyTypeCard id="resumo" name="Resumo" description="Leia a síntese compartilhada da pasta." icon={FileText} iconClass="bg-violet-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/resumo`} />
+        <StudyTypeCard id="flash-cards" name="Flash Cards" description="Revise conceitos com cartões compartilhados." icon={PanelsTopLeft} iconClass="bg-emerald-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/flash-cards`} />
+        <StudyTypeCard id="simulado-prova" name="Simulado de prova" description="Pratique com perguntas da pasta." icon={Brain} iconClass="bg-orange-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/simulado-prova`} />
+        <StudyTypeCard id="mapa-mental" name="Mapa mental" description="Explore os conceitos em um mapa." icon={Map} iconClass="bg-cyan-600" to={`/turmas/${classroom.id}/pastas/${folder.id}/mapa-mental`} />
+      </section>
+
+       {displayedContents === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
           <span className="sr-only">Carregando o conteúdo da pasta</span>
         </div>
-      ) : contents.length > 0 ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {contents.map((content) => (
-            <li key={content.id}>
-              <ClassroomContentTile
-                content={content}
-                role={classroom.role}
-                currentUserId={user?.id ?? ""}
-                onChange={handleChanged}
-                onDelete={handleDeleted}
-              />
-            </li>
+       ) : displayedContents.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+           {displayedContents.map((content) => (
+            <ClassroomContentTile
+              key={content.id}
+              classroomId={classroom.id}
+              folderId={folder.id}
+              content={content}
+              role={classroom.role}
+              currentUserId={user?.id ?? ""}
+              onChange={handleChanged}
+              onDelete={handleDeleted}
+            />
           ))}
-        </ul>
-      ) : canAdd ? (
-        <EmptyState
-          action={
-            <Button variant="secondary" onPress={() => setIsAddOpen(true)}>
-              Adicionar conteúdo
-            </Button>
-          }
-        >
-          Esta pasta está vazia. Adicione um material do Revi ou envie um
-          arquivo.
-        </EmptyState>
+        </div>
       ) : (
-        <EmptyState>
-          Esta pasta ainda não tem conteúdo. Como membro, você verá o material
-          assim que alguém publicar.
-        </EmptyState>
+        <p className="text-muted py-8 text-center text-pretty">
+          {canAdd
+            ? "Esta pasta está vazia. Adicione um material do Revi ou envie um arquivo no botão +."
+            : "Esta pasta ainda não tem conteúdo. Como membro, você verá o material assim que alguém publicar."}
+        </p>
       )}
 
       {canAdd ? (
