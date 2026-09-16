@@ -84,6 +84,56 @@ export interface ClassroomDownloadUrl {
   expiresAt: string;
 }
 
+export interface ClassroomSummary {
+  id: string;
+  classroomFolderId: string;
+  markdown: string;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export interface ClassroomFlashcard {
+  id: string;
+  classroomFolderId: string;
+  position: number;
+  front: string;
+  back: string;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export type ClassroomQuizOption = "A" | "B" | "C" | "D";
+
+export interface ClassroomQuizQuestion {
+  id: string;
+  classroomFolderId: string;
+  position: number;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: ClassroomQuizOption;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
+export interface ClassroomMindMapBranch {
+  id: string;
+  label: string;
+  detalhe?: string;
+  formula?: string;
+  children?: ClassroomMindMapBranch[];
+}
+
+export interface ClassroomMindMap {
+  id: string;
+  classroomFolderId: string;
+  raiz: ClassroomMindMapBranch;
+  sourceVersion: number;
+  generatedAt: string;
+}
+
 export type ClassroomInviteStatus =
   | "pending"
   | "accepted"

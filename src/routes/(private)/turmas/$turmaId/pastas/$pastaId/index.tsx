@@ -1,5 +1,6 @@
 import { Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
+import { Brain, FileText, Map, PanelsTopLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
@@ -18,6 +19,7 @@ import { normalizeText } from "@/utils/text";
 
 import { ClassroomContentTile } from "./components/ClassroomContentTile";
 import { DialogAddContent } from "./components/DialogAddContent";
+import { StudyTypeCard } from "../../../../pastas/$pastaId/assuntos/$assuntoId/components/StudyTypeCard";
 
 export default function ClassroomFolderPage() {
   const { turmaId, pastaId } = useParams();
@@ -161,6 +163,13 @@ export default function ClassroomFolderPage() {
       <p className="text-muted -mt-6 text-sm">
         {classroom.name} · você é {roleLabel(classroom.role).toLowerCase()}
       </p>
+
+      <section aria-label="Modos de estudo" className="grid gap-3 sm:grid-cols-2">
+        <StudyTypeCard id="resumo" name="Resumo" description="Leia a síntese compartilhada da pasta." icon={FileText} iconClass="bg-violet-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/resumo`} />
+        <StudyTypeCard id="flash-cards" name="Flash Cards" description="Revise conceitos com cartões compartilhados." icon={PanelsTopLeft} iconClass="bg-emerald-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/flash-cards`} />
+        <StudyTypeCard id="simulado-prova" name="Simulado de prova" description="Pratique com perguntas da pasta." icon={Brain} iconClass="bg-orange-500" to={`/turmas/${classroom.id}/pastas/${folder.id}/simulado-prova`} />
+        <StudyTypeCard id="mapa-mental" name="Mapa mental" description="Explore os conceitos em um mapa." icon={Map} iconClass="bg-cyan-600" to={`/turmas/${classroom.id}/pastas/${folder.id}/mapa-mental`} />
+      </section>
 
        {displayedContents === null ? (
         <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">

@@ -6,10 +6,14 @@ import type {
   ClassroomContentText,
   ClassroomDownloadUrl,
   ClassroomFolder,
+  ClassroomFlashcard,
   ClassroomInvite,
   ClassroomInvitePreview,
+  ClassroomMindMap,
   ClassroomMember,
+  ClassroomQuizQuestion,
   ClassroomRole,
+  ClassroomSummary,
 } from "@/types/api/classroom";
 
 import { ApiError, apiFetch } from "./client";
@@ -81,6 +85,40 @@ export function getFolder(
   folderId: string,
 ): Promise<ClassroomFolder> {
   return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}`);
+}
+
+export async function getClassroomSummary(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomSummary | null> {
+  const result = await apiFetch<ClassroomSummary | undefined>(`/api/classrooms/${classroomId}/folders/${folderId}/summary`, { signal });
+  return result ?? null;
+}
+
+export function listClassroomFlashcards(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomFlashcard[]> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/flashcards`, { signal });
+}
+
+export function listClassroomQuiz(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomQuizQuestion[]> {
+  return apiFetch(`/api/classrooms/${classroomId}/folders/${folderId}/quiz`, { signal });
+}
+
+export async function getClassroomMindMap(
+  classroomId: string,
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<ClassroomMindMap | null> {
+  const result = await apiFetch<ClassroomMindMap | undefined>(`/api/classrooms/${classroomId}/folders/${folderId}/mind-map`, { signal });
+  return result ?? null;
 }
 
 export function createFolder(
