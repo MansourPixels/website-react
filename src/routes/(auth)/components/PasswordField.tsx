@@ -40,6 +40,7 @@ export function PasswordField({
           placeholder="••••••••"
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur}
+          className="w-full"
         />
         <InputGroup.Suffix className="px-1">
           {/* O botão sai do raio `rounded-3xl` padrão (que num quadrado de
