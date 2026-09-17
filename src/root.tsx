@@ -27,6 +27,7 @@ import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
+import { GoogleProvider } from "./contexts/GoogleContext";
 import { THEME_INIT_SCRIPT } from "./utils/themeInitScript";
 
 const links = [
@@ -129,11 +130,13 @@ export default function App() {
     <ThemeProvider>
       <PreferencesProvider>
         <AuthProvider>
-          <SpotifyProvider>
-            <SessionProvider>
-              <AppShell />
-            </SessionProvider>
-          </SpotifyProvider>
+          <GoogleProvider>
+            <SpotifyProvider>
+              <SessionProvider>
+                <AppShell />
+              </SessionProvider>
+            </SpotifyProvider>
+          </GoogleProvider>
         </AuthProvider>
       </PreferencesProvider>
     </ThemeProvider>
