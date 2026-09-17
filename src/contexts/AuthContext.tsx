@@ -22,6 +22,7 @@ import {
   writeTokens,
 } from "@/api/tokenStorage";
 import type { User } from "@/types/User";
+import { clearGoogleTokens } from "@/utils/googleStorage";
 import { decodeAccessTokenClaims } from "@/utils/jwt";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -180,6 +181,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const tokens = readTokens();
 
+    // O token do Google dá acesso de *escrita* à agenda pessoal do aluno:
+    // deixá-lo neste aparelho depois que ele saiu da conta não é aceitável. A
+    // conexão com o Spotify é só leitura e reprodução, e continua onde está.
+    clearGoogleTokens();
     clearTokens();
     setUser(null);
     setStatus("unauthenticated");

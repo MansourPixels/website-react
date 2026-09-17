@@ -4,7 +4,16 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import { forgotPassword } from "@/api/auth";
+import { pageMeta } from "@/utils/pageMeta";
 import { isValidEmail } from "@/utils/validation";
+
+export function meta() {
+  return pageMeta({
+    title: "Esqueci minha senha",
+    description:
+      "Receba por e-mail o link para definir uma nova senha e voltar a acessar a sua conta.",
+  });
+}
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("");

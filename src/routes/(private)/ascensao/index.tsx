@@ -9,9 +9,18 @@ import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { useAchievementFeedback } from "@/hooks/useAchievementFeedback";
 import type { StreakStatus } from "@/types/api/streak";
+import { pageMeta } from "@/utils/pageMeta";
 import { AscentionCalendar } from "./components/AscentionCalendar";
 import { MilestoneList } from "./components/MilestoneList";
 import { TodayChecklist } from "./components/TodayChecklist";
+
+export function meta() {
+  return pageMeta({
+    title: "Ascensão",
+    description:
+      "Acompanhe o seu nível, as conquistas desbloqueadas e o quanto falta para a próxima.",
+  });
+}
 
 export default function Ascensao() {
   const [streak, setStreak] = useState<StreakStatus | null>(null);

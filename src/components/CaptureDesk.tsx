@@ -4,6 +4,7 @@ import {
   Camera,
   CameraOff,
   FilePlus2,
+  HardDriveDownload,
   TriangleAlert,
   X,
   Zap,
@@ -21,6 +22,11 @@ interface CaptureDeskProps {
   onReceiveFile: (file: Blob) => void;
   onCapture: () => void;
   isPasteEnabled: boolean;
+  /** Falso quando falta configuração do Google neste ambiente. */
+  isDriveAvailable: boolean;
+  isImportingDrive: boolean;
+  driveError: string | null;
+  onImportFromDrive: () => void;
 }
 
 export function CaptureDesk({
@@ -30,6 +36,10 @@ export function CaptureDesk({
   onReceiveFile,
   onCapture,
   isPasteEnabled,
+  isDriveAvailable,
+  isImportingDrive,
+  driveError,
+  onImportFromDrive,
 }: CaptureDeskProps) {
   const {
     videoRef,
@@ -170,6 +180,32 @@ export function CaptureDesk({
                 pode ser enviado. Tente uma foto do material ou o PDF do slide.
               </span>
             </p>
+          ) : null}
+
+          {/* O Drive é a mesma dropzone por outro caminho: o arquivo escolhido
+              lá cai no mesmo fluxo de captura. */}
+          {isDriveAvailable ? (
+            <>
+              <Button
+                variant="tertiary"
+                fullWidth
+                isPending={isImportingDrive}
+                onPress={onImportFromDrive}
+              >
+                <HardDriveDownload />
+                Importar do Google Drive
+              </Button>
+
+              {driveError !== null ? (
+                <p
+                  role="alert"
+                  className="flex items-start gap-2 text-sm text-danger"
+                >
+                  <TriangleAlert className="size-4 shrink-0 mt-0.5" />
+                  <span className="text-pretty">{driveError}</span>
+                </p>
+              ) : null}
+            </>
           ) : null}
         </section>
 

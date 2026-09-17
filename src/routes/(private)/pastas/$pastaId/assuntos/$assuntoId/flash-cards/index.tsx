@@ -17,8 +17,17 @@ import { useSpeech } from "@/hooks/useSpeech";
 import type { Flashcard } from "@/types/api/flashcard";
 import { difficulties, type Difficulty } from "@/utils/difficulties";
 import type { FeedbackEvent } from "@/utils/feedbackCatalog";
+import { pageMeta } from "@/utils/pageMeta";
 import { flashcardSpeech } from "@/utils/speechText";
 import { SessionSummary } from "./components/SessionSummary";
+
+export function meta() {
+  return pageMeta({
+    title: "Flash cards",
+    description:
+      "Revise o assunto com cartões de pergunta e resposta feitos a partir do seu material.",
+  });
+}
 
 const difficultyFeedback: Record<Difficulty, FeedbackEvent> = {
   facil: "flashcard-facil",

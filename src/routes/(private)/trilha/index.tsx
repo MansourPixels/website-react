@@ -1,6 +1,14 @@
 import { Button, Spinner } from "@heroui/react";
-import { CircleStar, ListCheck, SquareCheck, Target } from "lucide-react";
+import { buttonVariants } from "@heroui/styles";
+import {
+  CalendarClock,
+  CircleStar,
+  ListCheck,
+  SquareCheck,
+  Target,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getByDiscipline, getOverview } from "@/api/performance";
@@ -13,10 +21,19 @@ import type {
   PerformanceOverview,
 } from "@/types/api/performance";
 import type { StudyPlan } from "@/types/api/studyPlan";
+import { pageMeta } from "@/utils/pageMeta";
 import { groupStepsByDiscipline } from "@/utils/studyPlan";
 import { DialogSelecionarDisciplinas } from "./components/DialogSelecionarDisciplinas";
 import { DisciplinePerformanceList } from "./components/DisciplinePerformanceList";
 import { StudyPlanCard } from "./components/StudyPlanCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Trilha",
+    description:
+      "O caminho de estudo montado a partir das suas pastas, etapa por etapa.",
+  });
+}
 
 const GENERATE_POLL_INTERVAL_MS = 3_000;
 const GENERATE_POLL_TIMEOUT_MS = 30_000;
@@ -123,6 +140,27 @@ export default function PathPage() {
   return (
     <main className="p-6 gap-8 flex flex-col w-full max-w-6xl mx-auto">
       <NavMenu title="Trilha" />
+
+      {/* A trilha diz o que estudar; as tarefas dizem até quando. O caminho de
+          uma para a outra mora aqui, e não numa sétima aba. */}
+      <Link
+        to="/tarefas"
+        className={buttonVariants({
+          variant: "ghost",
+          className:
+            "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
+        })}
+      >
+        <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
+          <CalendarClock className="size-5" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold">Tarefas</h3>
+          <p className="text-xs text-muted font-normal whitespace-normal">
+            Provas e trabalhos com data e hora de entrega.
+          </p>
+        </div>
+      </Link>
 
       {loadError !== null ? (
         <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>

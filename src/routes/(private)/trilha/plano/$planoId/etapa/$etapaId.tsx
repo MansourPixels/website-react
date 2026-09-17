@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { useCanGoBack } from "@/hooks/useCanGoBack";
 import type { StudyPlan } from "@/types/api/studyPlan";
+import { pageMeta } from "@/utils/pageMeta";
 import {
   groupProgress,
   groupStepsByDiscipline,
@@ -17,6 +18,13 @@ import {
 
 import { PlanSpine } from "./components/PlanSpine";
 import { StepRunner } from "./components/StepRunner";
+
+export function meta() {
+  return pageMeta({
+    title: "Etapa do plano",
+    description: "O que estudar nesta etapa da trilha e por onde começar.",
+  });
+}
 
 export default function PlanStepPage() {
   const { planoId, etapaId } = useParams<"planoId" | "etapaId">() as {

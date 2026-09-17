@@ -4,8 +4,11 @@ import { useNavigate } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveNextRoute } from "@/utils/authRedirect";
+import { LANDING_META, pageMeta } from "@/utils/pageMeta";
 
+import { Classrooms } from "./components/Classrooms";
 import { FinalCta } from "./components/FinalCta";
+import { GoogleFlow } from "./components/GoogleFlow";
 import { Hero } from "./components/Hero";
 import { HowItWorks } from "./components/HowItWorks";
 import { LandingFooter } from "./components/LandingFooter";
@@ -14,6 +17,10 @@ import { Progress } from "./components/Progress";
 import { StudyModes } from "./components/StudyModes";
 import { StudySession } from "./components/StudySession";
 import { Team } from "./components/Team";
+
+export function meta() {
+  return pageMeta(LANDING_META);
+}
 
 export default function LandingPage() {
   const { status } = useAuth();
@@ -45,7 +52,9 @@ export default function LandingPage() {
         <HowItWorks />
         <StudyModes />
         <StudySession />
+        <GoogleFlow />
         <Progress />
+        <Classrooms />
         <FinalCta />
         <Team />
       </main>

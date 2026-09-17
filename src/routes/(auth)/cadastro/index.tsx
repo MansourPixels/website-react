@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
+import { pageMeta } from "@/utils/pageMeta";
 import {
   getEmailError,
   getPasswordError,
@@ -14,6 +15,14 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "@/utils/validation";
 import { PasswordField } from "../components/PasswordField";
+
+export function meta() {
+  return pageMeta({
+    title: "Criar conta",
+    description:
+      "Crie a sua conta no Revi e comece a transformar as fotos do seu material em flash cards, resumo e simulado.",
+  });
+}
 
 export default function CadastroPage() {
   const { signUp } = useAuth();
@@ -139,6 +148,30 @@ export default function CadastroPage() {
         >
           Criar conta
         </Button>
+
+        {/* Em nova aba de propósito: sair da tela agora descartaria o que já
+            foi digitado no formulário. */}
+        <p className="text-muted text-center text-xs text-pretty">
+          Ao criar sua conta, você concorda com os{" "}
+          <Link
+            to="/termos-uso"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-sm text-foreground underline underline-offset-4 outline-accent focus-visible:outline-2"
+          >
+            Termos de Uso
+          </Link>{" "}
+          e com a{" "}
+          <Link
+            to="/politica-privacidade"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-sm text-foreground underline underline-offset-4 outline-accent focus-visible:outline-2"
+          >
+            Política de Privacidade
+          </Link>
+          .
+        </p>
       </form>
 
       <p className="text-muted text-center text-sm">

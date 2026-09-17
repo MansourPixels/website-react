@@ -17,6 +17,10 @@ export function FinalCta() {
         >
           Começar a estudar
         </Link>
+        <p className="max-w-[52ch] text-sm text-pretty text-muted">
+          Funciona no navegador e instala na tela inicial, abrindo direto na
+          câmera.
+        </p>
       </div>
     </section>
   );

@@ -29,6 +29,15 @@ export function canManageClassroom(role: ClassroomRole): boolean {
   return role === "owner";
 }
 
+/**
+ * Criar, editar e excluir a entrega da turma. Concluir não passa por aqui:
+ * a conclusão é de cada membro, inclusive do leitor, e o servidor guarda uma
+ * por par (tarefa, pessoa).
+ */
+export function canManageClassroomTasks(role: ClassroomRole): boolean {
+  return role === "owner" || role === "editor";
+}
+
 export function canAddContent(role: ClassroomRole): boolean {
   return role === "owner" || role === "editor";
 }

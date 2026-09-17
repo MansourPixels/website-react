@@ -8,9 +8,18 @@ import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { MotherFolder as FolderType } from "@/types/api/folder";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 import { DialogFormFolder } from "./components/DialogFormFolder";
 import { FolderCard } from "./components/FolderCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Pastas",
+    description:
+      "Todo o material que você já capturou, organizado por disciplina.",
+  });
+}
 
 export default function FolderListPage() {
   const [folders, setFolders] = useState<FolderType[] | null>(null);

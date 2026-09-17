@@ -11,8 +11,17 @@ import { NavMenu } from "@/components/NavMenu";
 import { SpeakButton } from "@/components/SpeakButton";
 import { useMindMap } from "@/hooks/useMindMap";
 import type { MindMap } from "@/types/api/mindMap";
+import { pageMeta } from "@/utils/pageMeta";
 import { mindMapSpeech } from "@/utils/speechText";
 import { MindMapSummary } from "./components/MindMapSummary";
+
+export function meta() {
+  return pageMeta({
+    title: "Mapa mental",
+    description:
+      "Veja como as ideias do assunto se ligam, num mapa montado a partir do seu material.",
+  });
+}
 
 // Enquanto o mapa ainda não foi gerado (raiz: null), reconsulta a cada ~3s;
 // desiste depois de ~60s para não pollar para sempre.
@@ -94,11 +103,7 @@ export default function MindMapPage() {
   }
 
   return (
-    // `flex-1 min-h-0` e não `h-[100svh]`: com a ilha de sessão em curso o
-    // contêiner de rota ganha `pt-(--island-inset)`, e uma altura de viewport
-    // inteira empurraria o rodapé para fora da tela.
-    <main className="content-bg-cyan-200 flex-1 min-h-0 overflow-hidden flex flex-col">
-      <div className="py-6 md:py-8 gap-4 flex flex-col flex-1 min-h-0 w-full mx-auto">
+    <main className="content-bg-cyan-200 h-svh overflow-hidden flex flex-col">      <div className="py-6 md:py-8 gap-4 flex flex-col flex-1 min-h-0 w-full mx-auto">
         <div className="max-w-4xl mx-auto w-full px-6 md:px-8">
           <NavMenu
             title="Mapa Mental"

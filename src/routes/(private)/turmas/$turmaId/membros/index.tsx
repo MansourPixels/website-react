@@ -15,11 +15,19 @@ import type {
   ClassroomMember,
 } from "@/types/api/classroom";
 import { canManageMembers, roleLabel } from "@/utils/classroomPermissions";
+import { pageMeta } from "@/utils/pageMeta";
 import { profilePath } from "@/utils/profile";
 
 import { DialogInviteMember } from "../components/DialogInviteMember";
 import { DialogInviteRevocation } from "./components/DialogInviteRevocation";
 import { MemberRow } from "./components/MemberRow";
+
+export function meta() {
+  return pageMeta({
+    title: "Membros da turma",
+    description: "Quem participa da turma e o papel de cada um.",
+  });
+}
 
 function InviteRow({
   invite,

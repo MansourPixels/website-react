@@ -1,6 +1,7 @@
 import { Button, ButtonGroup, Popover, Spinner } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
 import {
+  CalendarPlus,
   Ellipsis,
   LogOut,
   PencilLine,
@@ -22,17 +23,28 @@ import {
   canInviteMembers,
   canLeaveClassroom,
   canManageClassroom,
+  canManageClassroomTasks,
   canManageFolders,
   roleDescription,
   roleLabel,
 } from "@/utils/classroomPermissions";
+import { pageMeta } from "@/utils/pageMeta";
 import { profilePath } from "@/utils/profile";
 
+import { DialogFormTarefa } from "../../tarefas/components/DialogFormTarefa";
 import { DialogFormClassroom } from "../components/DialogFormClassroom";
 import { ClassroomFolderCard } from "./components/ClassroomFolderCard";
 import { DialogFormClassroomFolder } from "./components/DialogFormClassroomFolder";
 import { DialogInviteMember } from "./components/DialogInviteMember";
 import { DialogLeaveClassroom } from "./components/DialogLeaveClassroom";
+
+export function meta() {
+  return pageMeta({
+    title: "Turma",
+    description:
+      "O material compartilhado pela turma e os assuntos que ela está estudando.",
+  });
+}
 
 export default function ClassroomDetailPage() {
   const { turmaId } = useParams();
@@ -46,6 +58,7 @@ export default function ClassroomDetailPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isFolderOpen, setIsFolderOpen] = useState(false);
   const [isExitOpen, setIsExitOpen] = useState(false);
+  const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -225,6 +238,20 @@ export default function ClassroomDetailPage() {
             </Button>
           ) : null}
 
+          {/* A entrega marcada aqui aparece na lista de todo membro da turma, e
+              cada um conclui a sua — quem marca não conclui pelos outros. */}
+          {canManageClassroomTasks(classroom.role) ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full sm:w-fit"
+              onPress={() => setIsTaskOpen(true)}
+            >
+              <CalendarPlus className="size-4" />
+              Marcar entrega
+            </Button>
+          ) : null}
+
           <p className="text-muted text-xs sm:ml-auto">
             Você é <strong className="font-medium">{roleLabel(classroom.role).toLowerCase()}</strong>
             {" · "}
@@ -307,6 +334,15 @@ export default function ClassroomDetailPage() {
         isOpen={isExitOpen}
         onOpenChange={setIsExitOpen}
         onConfirm={() => navigate("/turmas", { replace: true })}
+      />
+      {/* Sem `onSubmit` que mexa nesta tela: a turma não lista entregas — quem
+          lista é /tarefas, para onde a criada acabou de ir. */}
+      <DialogFormTarefa
+        variant="add"
+        classroomId={classroom.id}
+        isOpen={isTaskOpen}
+        onOpenChange={setIsTaskOpen}
+        onSubmit={() => undefined}
       />
     </main>
   );

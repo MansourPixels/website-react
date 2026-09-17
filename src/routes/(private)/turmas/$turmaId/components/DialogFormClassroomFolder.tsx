@@ -107,7 +107,7 @@ export function DialogFormClassroomFolder({
                   : `Editar pasta ${folder?.name ?? ""}`}
               </Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <TextField className="w-full">
                 <Label htmlFor="nome-pasta-turma">Nome da pasta</Label>
                 <Input

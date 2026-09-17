@@ -5,7 +5,17 @@ const appLinks = [
   { to: "/pastas", label: "Pastas" },
   { to: "/ascensao", label: "Ascensão" },
   { to: "/trilha", label: "Trilha" },
+  { to: "/turmas", label: "Turmas" },
+  { to: "/ranking", label: "Ranking" },
 ] as const;
+
+const legalLinks = [
+  { to: "/politica-privacidade", label: "Política de Privacidade" },
+  { to: "/termos-uso", label: "Termos de Uso" },
+] as const;
+
+const linkClassName =
+  "rounded-sm text-muted underline-offset-4 outline-accent hover:underline focus-visible:outline-2";
 
 export function LandingFooter() {
   return (
@@ -24,10 +34,7 @@ export function LandingFooter() {
           <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {appLinks.map(({ to, label }) => (
               <li key={to}>
-                <Link
-                  to={to}
-                  className="rounded-sm text-muted underline-offset-4 outline-accent hover:underline focus-visible:outline-2"
-                >
+                <Link to={to} className={linkClassName}>
                   {label}
                 </Link>
               </li>
@@ -36,7 +43,21 @@ export function LandingFooter() {
         </nav>
       </div>
 
-      <p className="mt-8 text-xs text-muted">© 2026 Revi</p>
+      <div className="mt-8 flex flex-col gap-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>© 2026 Revi</p>
+
+        <nav aria-label="Documentos legais">
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {legalLinks.map(({ to, label }) => (
+              <li key={to}>
+                <Link to={to} className={linkClassName}>
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </footer>
   );
 }

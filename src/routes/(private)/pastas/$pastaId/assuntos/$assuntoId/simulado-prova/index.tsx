@@ -19,8 +19,17 @@ import type {
   QuizOption,
   QuizQuestion,
 } from "@/types/api/quiz";
+import { pageMeta } from "@/utils/pageMeta";
 import { quizSpeech } from "@/utils/speechText";
 import { TestSummary } from "./components/TestSummary";
+
+export function meta() {
+  return pageMeta({
+    title: "Simulado de prova",
+    description:
+      "Responda questões geradas a partir do seu material e veja onde ainda erra.",
+  });
+}
 
 // Enquanto a lista vier vazia (quiz ainda não gerado), reconsulta a cada
 // ~3s; desiste depois de ~30s e mostra o estado "ainda gerando" com opção

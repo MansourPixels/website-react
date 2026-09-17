@@ -29,7 +29,8 @@ export function StudyModes() {
         </h2>
         <p className="mt-4 leading-relaxed text-pretty text-muted">
           Você escolhe o modo dentro do assunto. Os quatro leem o conteúdo que
-          você capturou, inclusive a notação matemática.
+          você capturou, inclusive a notação matemática, e todos podem ser
+          ouvidos em voz alta.
         </p>
       </header>
 
@@ -83,7 +84,7 @@ export function StudyModes() {
         <article className="reveal flex flex-col gap-5 rounded-3xl bg-surface p-5 shadow-surface md:p-6 lg:col-span-7">
           <ModeHeader
             icon={FileText}
-            iconClass="bg-violet-700"
+            iconClass="bg-purple-700"
             name="Resumo"
             description="O assunto inteiro, condensado para leitura"
           />
