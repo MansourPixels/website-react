@@ -6,6 +6,7 @@ import {
   canEditContent,
   canInviteMembers,
   canLeaveClassroom,
+  canManageClassroomTasks,
   canManageFolders,
   canManageMembers,
   roleLabel,
@@ -35,6 +36,14 @@ describe("gestão da turma", () => {
     expect(canLeaveClassroom("owner")).toBe(false);
     expect(canLeaveClassroom("editor")).toBe(true);
     expect(canLeaveClassroom("viewer")).toBe(true);
+  });
+});
+
+describe("canManageClassroomTasks", () => {
+  it("deixa dono e editor criar/editar/excluir a entrega da turma; o membro comum, não", () => {
+    expect(canManageClassroomTasks("owner")).toBe(true);
+    expect(canManageClassroomTasks("editor")).toBe(true);
+    expect(canManageClassroomTasks("viewer")).toBe(false);
   });
 });
 
