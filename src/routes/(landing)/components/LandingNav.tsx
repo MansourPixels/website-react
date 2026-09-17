@@ -1,11 +1,15 @@
 import { buttonVariants } from "@heroui/styles";
 import { Link } from "react-router";
 
+// Os rótulos encurtaram para caber em uma linha só depois das seções novas, mas
+// os `id` das âncoras continuam os mesmos: as páginas legais voltam para a
+// landing por eles. A seção do Google fica de fora para o menu não estourar.
 const sections = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#modos", label: "Modos de estudo" },
-  { href: "#sessao", label: "Sessão de estudos" },
-  { href: "#acompanhamento", label: "Acompanhamento" },
+  { href: "#sessao", label: "Sessão" },
+  { href: "#acompanhamento", label: "Progresso" },
+  { href: "#turmas", label: "Turmas" },
   { href: "#equipe", label: "Equipe" },
 ];
 
@@ -38,7 +42,7 @@ export function LandingNav({
           </span>
         </SectionLink>
 
-        <ul className="mx-auto hidden items-center gap-1 lg:flex">
+        <ul className="mx-auto hidden items-center gap-1 xl:flex">
           {sections.map(({ href, label }) => (
             <li key={href}>
               <SectionLink
@@ -55,7 +59,7 @@ export function LandingNav({
           ))}
         </ul>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-0 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 xl:ml-0">
           <Link to="/auth/entrar" className={buttonVariants({ variant: "ghost" })}>
             Entrar
           </Link>

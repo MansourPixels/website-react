@@ -5,13 +5,21 @@ import { roleLabel } from "@/utils/classroomPermissions";
 
 interface ClassroomCardProps {
   classroom: Classroom;
+  /** Mesma prop do `FolderCover`: a landing já tem o `h2` da seção. */
+  titleAs?: "h2" | "p";
+  /** Destino alternativo: na landing o cartão é demonstração e leva ao cadastro. */
+  to?: string;
 }
 
-export function ClassroomCard({ classroom }: ClassroomCardProps) {
+export function ClassroomCard({
+  classroom,
+  titleAs: Title = "h2",
+  to = `/turmas/${classroom.id}`,
+}: ClassroomCardProps) {
   return (
     <article className="group h-full hover:brightness-105">
       <Link
-        to={`/turmas/${classroom.id}`}
+        to={to}
         className="bg-surface shadow-surface flex h-full flex-col overflow-hidden rounded-3xl transition-all active:scale-98 motion-reduce:transition-none"
       >
         <div
@@ -21,9 +29,9 @@ export function ClassroomCard({ classroom }: ClassroomCardProps) {
 
         <div className="flex flex-1 flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
-            <h2 className="line-clamp-2 font-semibold break-words text-balance">
+            <Title className="line-clamp-2 font-semibold break-words text-balance">
               {classroom.name}
-            </h2>
+            </Title>
             <span className="bg-default text-muted shrink-0 rounded-full px-2 py-0.5 text-xs">
               {roleLabel(classroom.role)}
             </span>

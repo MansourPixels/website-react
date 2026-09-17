@@ -26,8 +26,8 @@ export function Hero() {
           </h1>
 
           <p className="max-w-[46ch] text-lg leading-relaxed text-pretty text-muted">
-            O Revi IA reconhece a disciplina, arquiva a foto e vira flash cards,
-            resumo e simulado do seu próprio material.
+            O Revi IA reconhece a disciplina, arquiva a foto e devolve flash
+            cards, resumo, simulado e mapa mental.
           </p>
 
           <div className="flex flex-wrap items-center gap-3">

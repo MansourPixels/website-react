@@ -6,6 +6,11 @@ import { formatPosition, formatXp } from "@/utils/ranking";
 
 interface RankingRowProps {
   entry: RankingEntry;
+  /**
+   * Desligado só na landing, onde as linhas são demonstração e levariam o
+   * visitante deslogado para uma rota privada.
+   */
+  linkToProfile?: boolean;
 }
 
 /**
@@ -21,7 +26,7 @@ function positionClass(position: number | null): string {
   return "text-muted";
 }
 
-export function RankingRow({ entry }: RankingRowProps) {
+export function RankingRow({ entry, linkToProfile = true }: RankingRowProps) {
   return (
     <li
       className={cn(
@@ -42,7 +47,7 @@ export function RankingRow({ entry }: RankingRowProps) {
       <UserIdentity
         user={entry.user}
         size="sm"
-        linkToProfile
+        linkToProfile={linkToProfile}
         caption={
           <span className="tabular-nums">
             {entry.flashcards} flash cards · {entry.quizzes}{" "}

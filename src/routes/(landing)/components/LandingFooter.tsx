@@ -5,6 +5,8 @@ const appLinks = [
   { to: "/pastas", label: "Pastas" },
   { to: "/ascensao", label: "Ascensão" },
   { to: "/trilha", label: "Trilha" },
+  { to: "/turmas", label: "Turmas" },
+  { to: "/ranking", label: "Ranking" },
 ] as const;
 
 const legalLinks = [
