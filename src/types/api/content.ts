@@ -19,3 +19,13 @@ export interface FolderSuggestion {
 export interface DownloadUrlResponse {
   url: string;
 }
+
+/**
+ * Texto extraído de um conteúdo pelo pipeline de categorização. Ver `OCR.md`.
+ */
+export interface ContentText {
+  contentId: string;
+  text: string;
+  /** `null` enquanto o pipeline de OCR ainda não terminou. */
+  extractedAt: string | null;
+}

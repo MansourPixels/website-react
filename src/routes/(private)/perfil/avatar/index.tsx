@@ -1,36 +1,30 @@
-import { Button, Spinner, Tabs } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { Dices } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getWhoami, updateAvatar } from "@/api/user";
+import { AvatarPicker } from "@/components/AvatarPicker";
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { useFeedback } from "@/hooks/useFeedback";
 import { usePreloadedImage } from "@/hooks/usePreloadedImage";
 import {
   buildAvatarUrl,
-  defaultBackgroundColors,
-  defaultHairColors,
-  defaultSkinColors,
   parseAvatarUrl,
   randomAvatarConfig,
-  type AccessoriesVariant,
   type AvatarConfig,
-  type EyesVariant,
-  type HairVariant,
-  type MouthVariant,
 } from "@/utils/avatar";
-import { AvatarColorRow } from "./components/AvatarColorRow";
-import { AvatarOptionGrid } from "./components/AvatarOptionGrid";
+import { pageMeta } from "@/utils/pageMeta";
 
-const avatarTabs = [
-  { id: "accessories", label: "Acessórios" },
-  { id: "eyes", label: "Olhos" },
-  { id: "hair", label: "Cabelo" },
-  { id: "mouth", label: "Boca" },
-  { id: "colors", label: "Cores" },
-];
+export function meta() {
+  return pageMeta({
+    title: "Seu avatar",
+    description:
+      "Monte o avatar que aparece no seu perfil, no ranking e para os seus amigos.",
+  });
+}
 
 export default function AvatarPage() {
   const navigate = useNavigate();
@@ -42,13 +36,22 @@ export default function AvatarPage() {
   // um seed do backend, sem como virar peças do catálogo) em vez de refletir
   // o avatar salvo de verdade. Nesse caso a prévia mostra `savedUrl` — o
   // avatar real — até o aluno mexer em algo; só então passa a derivar de
-  // `config`, senão a prévia mostraria uma cara que não é a do usuário.
+  // `config`, senão a prévia mostraria uma cara que não é a do usuário. E
+  // enquanto isso durar, salvar fica bloqueado: o que está na tela e o que
+  // seria gravado são avatares diferentes.
   const [isPlaceholderConfig, setIsPlaceholderConfig] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setConfig(null);
+    setSavedUrl(null);
+    setIsPlaceholderConfig(false);
+    setLoadError(null);
 
     getWhoami()
       .then(({ avatarUrl }) => {
@@ -60,23 +63,36 @@ export default function AvatarPage() {
         setIsPlaceholderConfig(stored === null);
         setSavedUrl(avatarUrl);
       })
-      .catch(() => {
-        if (!cancelled) {
-          setConfig(randomAvatarConfig());
-          setIsPlaceholderConfig(true);
-        }
+      .catch((error) => {
+        // Sem saber qual é o avatar atual não dá para montar a tela: partir de
+        // uma configuração sorteada em silêncio esconderia a falha.
+        if (cancelled) return;
+
+        setLoadError(
+          error instanceof ApiError
+            ? error.detail
+            : "Não foi possível carregar o seu avatar.",
+        );
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   // A URL nunca vira estado próprio: ela é sempre derivada da configuração, o
   // que impede as duas de saírem de sincronia.
   const url = config === null ? null : buildAvatarUrl(config);
   const previewUrl = isPlaceholderConfig ? savedUrl : url;
   const preview = usePreloadedImage(previewUrl);
+
+  // `usePreloadedImage` trata falha como sucesso (entrega o `src` mesmo assim),
+  // então quem detecta o erro é o próprio `<img>` da tela.
+  const [hasPreviewError, setHasPreviewError] = useState(false);
+
+  useEffect(() => {
+    setHasPreviewError(false);
+  }, [previewUrl]);
 
   function patch(next: Partial<AvatarConfig>) {
     setConfig((current) => (current === null ? current : { ...current, ...next }));
@@ -105,6 +121,17 @@ export default function AvatarPage() {
     }
   }
 
+  if (loadError !== null) {
+    return (
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6">
+        <NavMenu title="Seu avatar" hasBackButton backHref="/perfil" />
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)}>
+          {loadError}
+        </ErrorState>
+      </main>
+    );
+  }
+
   if (config === null) {
     return (
       <div className="flex flex-1 items-center justify-center p-6" aria-busy="true">
@@ -118,14 +145,25 @@ export default function AvatarPage() {
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6">
       <NavMenu title="Seu avatar" hasBackButton backHref="/perfil" />
 
-      <section className="flex flex-col items-center gap-4 rounded-3xl bg-white p-6 shadow-surface">
+      <section className="flex flex-col items-center gap-4 rounded-3xl bg-surface p-6 shadow-surface">
         <div className="relative size-40 overflow-hidden rounded-3xl bg-default">
-          {preview.src !== null ? (
-            <img src={preview.src} alt="" className="size-full object-cover" />
+          {preview.src !== null && !hasPreviewError ? (
+            <img
+              src={preview.src}
+              alt="Prévia do seu avatar"
+              className="size-full object-cover"
+              onError={() => setHasPreviewError(true)}
+            />
+          ) : null}
+
+          {hasPreviewError ? (
+            <p className="text-muted absolute inset-0 flex items-center justify-center p-3 text-center text-xs text-pretty">
+              Não foi possível carregar a prévia
+            </p>
           ) : null}
 
           {preview.isLoading ? (
-            <span className="absolute inset-0 flex items-center justify-center bg-white/40">
+            <span className="absolute inset-0 flex items-center justify-center bg-surface/40">
               <Spinner size="sm" />
             </span>
           ) : null}
@@ -137,105 +175,40 @@ export default function AvatarPage() {
         </Button>
 
         <p aria-live="polite" className="sr-only">
-          {preview.isLoading ? "Atualizando o avatar…" : "Avatar atualizado."}
+          {hasPreviewError
+            ? "Não foi possível carregar a prévia do avatar."
+            : preview.isLoading
+              ? "Atualizando o avatar…"
+              : "Avatar atualizado."}
         </p>
       </section>
 
-      <Tabs
-        defaultSelectedKey="accessories"
-        className="rounded-3xl bg-white p-4 shadow-surface"
-      >
-        {/* `ListContainer` traz a rolagem horizontal com as setas de overflow:
-            as cinco abas não cabem lado a lado numa tela estreita. */}
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="Partes do avatar">
-            {avatarTabs.map(({ id, label }) => (
-              <Tabs.Tab key={id} id={id}>
-                {label}
-                <Tabs.Indicator />
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs.ListContainer>
-
-        <Tabs.Panel id="accessories" className="pt-2">
-          <AvatarOptionGrid<AccessoriesVariant>
-            group="accessories"
-            legend="Acessórios"
-            value={config.accessories}
-            onChange={(accessories) => patch({ accessories })}
-            noneLabel="Sem acessório"
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="eyes" className="pt-2">
-          <AvatarOptionGrid<EyesVariant>
-            group="eyes"
-            legend="Olhos"
-            value={config.eyes}
-            onChange={(eyes) => patch({ eyes })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="hair" className="pt-2">
-          <AvatarOptionGrid<HairVariant>
-            group="hair"
-            legend="Cabelo"
-            value={config.hair}
-            onChange={(hair) => patch({ hair })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="mouth" className="pt-2">
-          <AvatarOptionGrid<MouthVariant>
-            group="mouth"
-            legend="Boca"
-            value={config.mouth}
-            onChange={(mouth) => patch({ mouth })}
-          />
-        </Tabs.Panel>
-
-        <Tabs.Panel id="colors" className="flex flex-col gap-5 pt-2">
-          <AvatarColorRow
-            name="avatar-hair-color"
-            label="Cor do cabelo"
-            colors={defaultHairColors}
-            value={config.hairColor}
-            onChange={(hairColor) => patch({ hairColor })}
-          />
-
-          <AvatarColorRow
-            name="avatar-skin-color"
-            label="Tom de pele"
-            colors={defaultSkinColors}
-            value={config.skinColor}
-            onChange={(skinColor) => patch({ skinColor })}
-          />
-
-          <AvatarColorRow
-            name="avatar-background-color"
-            label="Cor de fundo"
-            colors={defaultBackgroundColors}
-            value={config.backgroundColor}
-            onChange={(backgroundColor) => patch({ backgroundColor })}
-          />
-        </Tabs.Panel>
-      </Tabs>
+      <AvatarPicker config={config} onChange={patch} />
 
       {saveError !== null ? (
-        <p role="alert" className="text-danger text-sm text-pretty">
+        <p role="alert" className="text-danger-soft-foreground text-sm text-pretty">
           {saveError}
         </p>
       ) : null}
 
       {/* `/perfil/avatar` é rota de detalhe e não exibe a barra inferior, então
           a barra de ação fica desobstruída no rodapé. */}
-      <div className="sticky bottom-0 -mx-6 -mb-6 border-t bg-white/85 px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-2 border-t bg-surface/85 px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur">
+        {isPlaceholderConfig ? (
+          <p className="text-muted text-xs text-pretty">
+            A prévia mostra o seu avatar atual. Escolha uma peça ou toque em
+            Surpreenda-me para montar um novo.
+          </p>
+        ) : null}
+
         <Button
           variant="primary"
           size="lg"
           className="w-full sm:w-fit"
-          isDisabled={url === savedUrl}
+          // Enquanto a configuração é só um ponto de partida sorteado, a prévia
+          // mostra o avatar salvo e `url` aponta para outra cara: salvar aqui
+          // gravaria um rosto que o aluno nunca viu.
+          isDisabled={isPlaceholderConfig || hasPreviewError || url === savedUrl}
           isPending={isSaving}
           onPress={() => void handleSave()}
         >

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError } from "@/api/client";
 import { listMotherFolders } from "@/api/folders";
+import { ErrorState } from "@/components/ErrorState";
 import type { MotherFolder } from "@/types/api/folder";
 
 const MAX_DISCIPLINES = 3;
@@ -81,16 +82,14 @@ export function DialogSelecionarDisciplinas({
               </Modal.Icon>
               <Modal.Heading>Escolher disciplinas</Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <p className="text-sm text-muted">
                 Selecione até {MAX_DISCIPLINES} disciplinas para focar a
                 trilha, ou gere automaticamente com base no seu desempenho.
               </p>
 
               {error !== null ? (
-                <p role="alert" className="text-danger text-sm text-pretty">
-                  {error}
-                </p>
+                <ErrorState isCompact>{error}</ErrorState>
               ) : disciplines === null ? (
                 <div
                   className="flex items-center justify-center py-6"
@@ -104,36 +103,57 @@ export function DialogSelecionarDisciplinas({
                   Você ainda não tem nenhuma disciplina cadastrada.
                 </p>
               ) : (
-                <CheckboxGroup
-                  value={selected}
-                  onChange={setSelected}
-                  className="grid gap-2"
-                >
-                  {disciplines.map((discipline) => {
-                    const isChecked = selected.includes(discipline.id);
-                    const isLimitReached =
-                      !isChecked && selected.length >= MAX_DISCIPLINES;
+                <div className="grid gap-2">
+                  {/* O contador é o que explica por que os checkboxes apagam
+                      ao chegar no teto — sem ele, o desabilitado não tem
+                      motivo visível. */}
+                  <p
+                    role="status"
+                    className="text-sm font-medium tabular-nums"
+                  >
+                    {selected.length} de {MAX_DISCIPLINES} selecionadas
+                    {selected.length >= MAX_DISCIPLINES ? (
+                      <span className="font-normal text-muted">
+                        {" "}
+                        · desmarque uma para trocar
+                      </span>
+                    ) : null}
+                  </p>
 
-                    return (
-                      <Checkbox
-                        key={discipline.id}
-                        value={discipline.id}
-                        isDisabled={isLimitReached}
-                      >
-                        <Checkbox.Content className="flex items-center gap-2">
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                          <span
-                            className="size-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: discipline.color }}
-                          />
-                          {discipline.name}
-                        </Checkbox.Content>
-                      </Checkbox>
-                    );
-                  })}
-                </CheckboxGroup>
+                  {/* O espaçamento entre itens é o nativo do grupo
+                      (`margin-top` de 16px em cada checkbox); um `gap` aqui
+                      só somaria com ele. */}
+                  <CheckboxGroup
+                    value={selected}
+                    onChange={setSelected}
+                    className="[&>*:first-child]:mt-0"
+                  >
+                    {disciplines.map((discipline) => {
+                      const isChecked = selected.includes(discipline.id);
+                      const isLimitReached =
+                        !isChecked && selected.length >= MAX_DISCIPLINES;
+
+                      return (
+                        <Checkbox
+                          key={discipline.id}
+                          value={discipline.id}
+                          isDisabled={isLimitReached}
+                        >
+                          <Checkbox.Content className="flex min-h-11 items-center gap-2">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span
+                              className="size-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: discipline.color }}
+                            />
+                            {discipline.name}
+                          </Checkbox.Content>
+                        </Checkbox>
+                      );
+                    })}
+                  </CheckboxGroup>
+                </div>
               )}
             </Modal.Body>
             <Modal.Footer className="grid gap-2">

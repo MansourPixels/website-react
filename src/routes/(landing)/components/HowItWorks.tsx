@@ -15,7 +15,7 @@ const steps: Step[] = [
   {
     icon: Camera,
     title: "Fotografe",
-    body: "Câmera em tela cheia, com flash e acesso à galeria. Caderno, lousa, apostila ou PDF de exercícios.",
+    body: "Câmera em tela cheia, com flash e acesso à galeria. No computador, arraste, cole ou traga do Drive. Caderno, lousa, apostila ou PDF.",
   },
   {
     icon: Sparkles,
@@ -25,7 +25,7 @@ const steps: Step[] = [
   {
     icon: GraduationCap,
     title: "Estude",
-    body: "Dentro do assunto, o material vira flash cards, resumo ou simulado de prova. Sem redigitar uma linha.",
+    body: "Dentro do assunto, o material vira flash cards, resumo, simulado de prova ou mapa mental. Dá para ler ou ouvir em voz alta, sem redigitar uma linha.",
   },
 ];
 

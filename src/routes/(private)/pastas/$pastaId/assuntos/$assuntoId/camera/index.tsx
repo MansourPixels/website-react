@@ -4,6 +4,15 @@ import { uploadContent } from "@/api/content";
 import { Camera } from "@/components/Camera";
 import type { CapturedFile } from "@/types/capture";
 import { ensureUploadFilename } from "@/utils/materials";
+import { pageMeta } from "@/utils/pageMeta";
+
+export function meta() {
+  return pageMeta({
+    title: "Adicionar material",
+    description:
+      "Fotografe ou envie um arquivo para somar ao material deste assunto.",
+  });
+}
 
 export default function SubjectCameraPage() {
   const navigate = useNavigate();
@@ -20,6 +29,13 @@ export default function SubjectCameraPage() {
   }
 
   return (
-    <Camera title="Adicionar material" onSelectMaterial={handleSelectMaterial} />
+    <Camera
+      title="Adicionar material"
+      onSelectMaterial={handleSelectMaterial}
+      // O destino já é este assunto: o material do Drive entra direto, sem
+      // repetir uma pergunta que a própria rota já respondeu.
+      driveChildFolderId={assuntoId}
+      onDriveImported={() => navigate(-1)}
+    />
   );
 }

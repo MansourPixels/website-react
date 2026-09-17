@@ -4,6 +4,7 @@ import {
   Camera,
   CameraOff,
   FilePlus2,
+  HardDriveDownload,
   TriangleAlert,
   X,
   Zap,
@@ -21,6 +22,11 @@ interface CaptureDeskProps {
   onReceiveFile: (file: Blob) => void;
   onCapture: () => void;
   isPasteEnabled: boolean;
+  /** Falso quando falta configuração do Google neste ambiente. */
+  isDriveAvailable: boolean;
+  isImportingDrive: boolean;
+  driveError: string | null;
+  onImportFromDrive: () => void;
 }
 
 export function CaptureDesk({
@@ -30,11 +36,16 @@ export function CaptureDesk({
   onReceiveFile,
   onCapture,
   isPasteEnabled,
+  isDriveAvailable,
+  isImportingDrive,
+  driveError,
+  onImportFromDrive,
 }: CaptureDeskProps) {
   const {
     videoRef,
     status,
     error,
+    errorKind,
     isFlashSupported,
     isFlashOn,
     toggleFlash,
@@ -170,6 +181,32 @@ export function CaptureDesk({
               </span>
             </p>
           ) : null}
+
+          {/* O Drive é a mesma dropzone por outro caminho: o arquivo escolhido
+              lá cai no mesmo fluxo de captura. */}
+          {isDriveAvailable ? (
+            <>
+              <Button
+                variant="tertiary"
+                fullWidth
+                isPending={isImportingDrive}
+                onPress={onImportFromDrive}
+              >
+                <HardDriveDownload />
+                Importar do Google Drive
+              </Button>
+
+              {driveError !== null ? (
+                <p
+                  role="alert"
+                  className="flex items-start gap-2 text-sm text-danger"
+                >
+                  <TriangleAlert className="size-4 shrink-0 mt-0.5" />
+                  <span className="text-pretty">{driveError}</span>
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </section>
 
         <section className="bg-surface rounded-3xl shadow-surface p-4 md:p-6 flex flex-col gap-4">
@@ -210,9 +247,14 @@ export function CaptureDesk({
             ) : null}
 
             {status === "error" ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <div
+                role="alert"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+              >
                 <CameraOff className="size-8 text-danger" />
-                <p className="text-sm text-muted text-balance">{error}</p>
+                <p className="text-sm text-danger-soft-foreground text-balance">
+                  {error}
+                </p>
               </div>
             ) : null}
           </div>
@@ -245,15 +287,20 @@ export function CaptureDesk({
               </Button>
             </div>
           ) : (
-            <Button
-              variant="tertiary"
-              fullWidth
-              isDisabled={status === "loading"}
-              onPress={status === "error" ? retry : start}
-            >
-              <Camera />
-              {status === "error" ? "Tentar novamente" : "Ligar a webcam"}
-            </Button>
+            // Permissão bloqueada não se resolve por nova tentativa: o
+            // navegador rejeita sem perguntar de novo, então o botão sai de
+            // cena e a dropzone ao lado continua sendo o caminho.
+            errorKind === "NotAllowedError" ? null : (
+              <Button
+                variant="tertiary"
+                fullWidth
+                isDisabled={status === "loading"}
+                onPress={status === "error" ? retry : start}
+              >
+                <Camera />
+                {status === "error" ? "Tentar novamente" : "Ligar a webcam"}
+              </Button>
+            )
           )}
         </section>
       </div>

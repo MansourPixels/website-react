@@ -1,6 +1,8 @@
+import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { ApiError } from "@/api/client";
 import { getStudyPlan } from "@/api/studyPlan";
+import { pageMeta } from "@/utils/pageMeta";
 import { groupProgress, groupStepsByDiscipline } from "@/utils/studyPlan";
 import { Spinner, Meter } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
@@ -10,6 +12,14 @@ import { Link, useParams } from "react-router";
 
 import { PlanStepRow } from "./components/PlanStepRow";
 
+export function meta() {
+  return pageMeta({
+    title: "Plano de estudos",
+    description:
+      "As etapas deste plano, o que já foi concluído e o que vem a seguir.",
+  });
+}
+
 export default function StudyPlanPage() {
   const { planoId } = useParams<"planoId">() as { planoId: string };
 
@@ -17,9 +27,13 @@ export default function StudyPlanPage() {
     ReturnType<typeof groupStepsByDiscipline> | null
   >(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setGroups(null);
+    setLoadError(null);
 
     getStudyPlan()
       .then((result) => {
@@ -38,13 +52,15 @@ export default function StudyPlanPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loadError !== null) {
     return (
       <main className="p-6 md:p-8 gap-6 flex flex-col w-full max-w-3xl mx-auto">
         <NavMenu title="Plano de estudos" hasBackButton />
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       </main>
     );
   }
@@ -86,7 +102,7 @@ export default function StudyPlanPage() {
 
       <section className="bg-accent-soft rounded-3xl p-4 md:p-6 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <h2 className="text-2xl md:text-3xl font-semibold text-accent text-balance">
+          <h2 className="text-2xl md:text-3xl font-semibold text-accent-soft-foreground text-balance">
             {group.motherFolderName}
           </h2>
           <p className="text-sm text-accent-soft-foreground text-pretty">
@@ -104,7 +120,7 @@ export default function StudyPlanPage() {
           <Meter
             value={completed}
             maxValue={total}
-            color={isComplete ? "success" : "accent"}
+            color="accent"
             aria-label={`Progresso do plano: ${completed} de ${total} etapas`}
           >
             <Meter.Track>
@@ -118,13 +134,14 @@ export default function StudyPlanPage() {
         <section className="bg-surface rounded-3xl shadow-surface p-6 flex flex-col items-center gap-3 text-center">
           <span
             aria-hidden
-            className="size-16 rounded-full bg-accent text-accent-foreground flex items-center justify-center"
+            className="size-16 rounded-xl bg-accent text-accent-foreground flex items-center justify-center"
           >
             <Flame className="size-8" />
           </span>
           <h2 className="text-2xl font-semibold">Plano concluído</h2>
           <p className="text-muted text-balance max-w-md">
-            Você fechou as {total} etapas de {group.motherFolderName}. Gerar
+            Você fechou as <span className="tabular-nums">{total}</span> etapas
+            de {group.motherFolderName}. Gerar
             uma nova trilha na página inicial recalcula suas disciplinas mais
             fracas.
           </p>

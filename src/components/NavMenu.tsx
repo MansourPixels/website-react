@@ -1,7 +1,7 @@
 import { useCanGoBack } from "@/hooks/useCanGoBack";
-import { Button, cn, SearchField } from "@heroui/react";
+import { Button, cn, SearchField, Spinner } from "@heroui/react";
 import { ChevronLeft, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 interface NavMenuProps {
@@ -10,6 +10,10 @@ interface NavMenuProps {
   backHref?: string;
   hasSearch?: boolean;
   onSearch?: (term: string) => void;
+  /** Mostra um indicador no campo enquanto a busca vai à API. */
+  isSearching?: boolean;
+  /** Ação à direita do título — hoje, o botão de ouvir dos modos de estudo. */
+  action?: ReactNode;
   variant?: "black" | "white";
   className?: string;
 }
@@ -20,6 +24,8 @@ export function NavMenu({
   backHref = undefined,
   hasSearch = false,
   onSearch = () => {},
+  isSearching = false,
+  action = null,
   variant = "black",
   className,
 }: NavMenuProps) {
@@ -28,75 +34,108 @@ export function NavMenu({
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
+  function closeSearch() {
+    onSearch("");
+    setIsSearchVisible(false);
+  }
+
   function toggleSearch() {
-    if (isSearchVisible) onSearch("");
-    setIsSearchVisible(!isSearchVisible);
+    if (isSearchVisible) {
+      closeSearch();
+      return;
+    }
+
+    setIsSearchVisible(true);
   }
 
   return (
     <header
       className={cn("flex items-center justify-between gap-2", className)}
     >
-      <div className={cn("flex-1", hasSearch && "max-w-[75vw]")}>
-        {isSearchVisible ? (
-          <SearchField
-            name="search"
-            className="w-full"
-            aria-label={`Pesquisar em ${title}`}
-            onChange={onSearch}
-          >
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                autoFocus
-                placeholder="Insira um termo para pesquisar..."
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-        ) : (
-          <div className="flex items-center">
-            {hasBackButton && (canGoBack || backHref !== undefined) ? (
-              <Button
-                isIconOnly
-                variant="ghost"
-                aria-label="Voltar"
-                onPress={() => {
-                  if (backHref) navigate(backHref, { replace: true });
+      <div
+        className={cn(
+          "flex flex-1 items-center min-w-0",
+          hasSearch && "max-w-[75vw]",
+        )}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && isSearchVisible) closeSearch();
+        }}
+      >
+        {hasBackButton && (canGoBack || backHref !== undefined) ? (
+          <Button
+            isIconOnly
+            variant="ghost"
+            aria-label="Voltar"
+            onPress={() => {
+              // O destino declarado pela rota vence o histórico: sem este
+              // `return` os dois navigate disparavam na mesma ação.
+              if (backHref !== undefined) {
+                navigate(backHref, { replace: true });
+                return;
+              }
 
-                  if (canGoBack) {
-                    navigate(-1);
-                    return;
-                  }
-                }}
-                size="lg"
-                className={variant === "white" ? "not-active:text-white" : ""}
-              >
-                <ChevronLeft className="size-6 transition-all" />
-              </Button>
-            ) : null}
-            <h1
-              className={cn(
-                "text-3xl font-semibold line-clamp-1 break-all flex-1",
-                variant === "white" && "text-white",
-              )}
+              navigate(-1);
+            }}
+            size="lg"
+            className={variant === "white" ? "not-active:text-white" : ""}
+          >
+            <ChevronLeft className="size-6 transition-all" />
+          </Button>
+        ) : null}
+
+        {isSearchVisible ? (
+          <>
+            {/* A busca toma o lugar do título, mas a tela não pode ficar sem
+                nome acessível enquanto ela está aberta. */}
+            <h1 className="sr-only">{title}</h1>
+            <SearchField
+              name="search"
+              className="w-full"
+              aria-label={`Pesquisar em ${title}`}
+              onChange={onSearch}
             >
-              {title}
-            </h1>
-          </div>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  autoFocus
+                  placeholder="Insira um termo para pesquisar..."
+                />
+                {isSearching ? (
+                  <>
+                    <Spinner size="sm" />
+                    <span className="sr-only">Buscando</span>
+                  </>
+                ) : null}
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+          </>
+        ) : (
+          <h1
+            className={cn(
+              "text-3xl font-semibold line-clamp-1 break-all flex-1",
+              variant === "white" && "text-white",
+            )}
+          >
+            {title}
+          </h1>
         )}
       </div>
-      {hasSearch ? (
-        <Button
-          isIconOnly
-          variant="tertiary"
-          aria-label={isSearchVisible ? "Fechar pesquisa" : "Pesquisar"}
-          onPress={toggleSearch}
-          size="lg"
-        >
-          <Search />
-        </Button>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+
+        {hasSearch ? (
+          <Button
+            isIconOnly
+            variant="tertiary"
+            aria-label={isSearchVisible ? "Fechar pesquisa" : "Pesquisar"}
+            onPress={toggleSearch}
+            size="lg"
+          >
+            <Search />
+          </Button>
+        ) : null}
+      </div>
     </header>
   );
 }

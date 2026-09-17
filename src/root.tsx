@@ -1,23 +1,35 @@
-import { Camera, Folders, Route as PathIcon, Timer, User } from "lucide-react";
+import {
+  Camera,
+  Folders,
+  Route as PathIcon,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  matchPath,
   useLocation,
 } from "react-router";
 
+import { Spinner } from "@heroui/react";
 import { cn } from "@heroui/styles";
 import "./app.css";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { SessionIsland } from "./components/SessionIsland";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { GoogleProvider } from "./contexts/GoogleContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
+import { LANDING_META, pageMeta } from "./utils/pageMeta";
 import { THEME_INIT_SCRIPT } from "./utils/themeInitScript";
 
 const links = [
@@ -42,15 +54,36 @@ const links = [
     icon: PathIcon,
   },
   {
+    to: "/turmas",
+    label: "Turmas",
+    icon: Users,
+  },
+  {
     to: "/perfil",
     label: "Perfil",
     icon: User,
   },
 ];
 
+// Reserva, não o título de ninguém: cada página exporta o seu `meta()`, e o
+// React Router troca estes metadados pelos da rota — ele substitui os do pai
+// em vez de mesclar. O que sobra para cá é o HTML antes da hidratação e
+// qualquer rota futura que esqueça de declarar os seus.
+//
+// São os da landing de propósito: em SPA o `index.html` gerado no build sai
+// com estes metadados dentro, e é ele que o host devolve em `/`. Só as duas
+// páginas legais têm HTML próprio (`prerender` em react-router.config.ts).
+//
+// Vive aqui, e não como <title> fixo no <head> abaixo, porque dois <title> no
+// documento fariam o navegador ficar com o primeiro, e nenhuma rota
+// conseguiria sobrescrever.
+export function meta() {
+  return pageMeta(LANDING_META);
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <head>
         {/* Antes de qualquer outra coisa no <head>: aplica o tema salvo em
             <html> antes do primeiro paint, para não haver flash do tema errado
@@ -66,12 +99,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
         <meta name="theme-color" content="#f4f4f5" />
-
-        <title>Revi - Página Inicial</title>
-        <meta
-          name="description"
-          content="Fotografe o caderno e estude o que está nele. O Revi IA reconhece a disciplina, arquiva a foto e transforma o seu próprio material em flash cards, resumo e simulado."
-        />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -96,6 +123,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function HydrateFallback() {
+  return (
+    <div
+      className="flex min-h-full flex-1 items-center justify-center p-6"
+      aria-busy="true"
+    >
+      <Spinner size="lg" />
+      <span className="sr-only">Carregando</span>
+    </div>
+  );
+}
+
 export default function App() {
   useServiceWorker();
 
@@ -103,11 +142,15 @@ export default function App() {
     <ThemeProvider>
       <PreferencesProvider>
         <AuthProvider>
-          <SpotifyProvider>
-            <SessionProvider>
-              <AppShell />
-            </SessionProvider>
-          </SpotifyProvider>
+          <OnboardingProvider>
+            <SpotifyProvider>
+              <GoogleProvider>
+                <SessionProvider>
+                  <AppShell />
+                </SessionProvider>
+              </GoogleProvider>
+            </SpotifyProvider>
+          </OnboardingProvider>
         </AuthProvider>
       </PreferencesProvider>
     </ThemeProvider>
@@ -115,12 +158,25 @@ export default function App() {
 }
 
 // Rotas fora da barra inferior que ainda devem exibi-la — acessadas a partir
-// de uma aba (aqui, Ascensão a partir do Perfil), não são elas mesmas uma aba.
-const extraBottomNavigationRoutes = ["/ascensao"];
+// de uma aba (Ascensão a partir do Perfil; Amigos e Ranking a partir de Turmas
+// e do Perfil; Tarefas a partir da Trilha e do Perfil; pasta e assunto a partir
+// de Pastas), não são elas mesmas uma aba.
+// Casadas com `matchPath`, que é exato por padrão: a pasta e o assunto entram,
+// mas as telas de estudo e a câmera abaixo deles continuam sem a barra.
+const extraBottomNavigationRoutes = [
+  "/ascensao",
+  "/tarefas",
+  "/amigos",
+  "/ranking",
+  "/pastas/:pastaId",
+  "/pastas/:pastaId/assuntos/:assuntoId",
+];
 
 // A landing tem o seu próprio cronômetro de demonstração e `/sessao` já mostra
 // o cronômetro inteiro: a ilha em cima de qualquer uma das duas seria eco.
-const islandFreeRoutes = ["/", "/sessao"];
+// `/onboarding` entra pela mesma lógica: a ilha por cima de um fluxo que o
+// aluno tem de concluir é ruído, e ele ainda nem sabe o que ela é.
+const islandFreeRoutes = ["/", "/sessao", "/onboarding"];
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -130,7 +186,9 @@ function AppShell() {
   const showBottomNavigation =
     status === "authenticated" &&
     (links.some(({ to }) => pathname === to) ||
-      extraBottomNavigationRoutes.includes(pathname));
+      extraBottomNavigationRoutes.some(
+        (pattern) => matchPath(pattern, pathname) !== null,
+      ));
 
   // `isReady` só vira true depois da leitura do `localStorage`, no cliente —
   // é o que impede a ilha de divergir entre o HTML do servidor e a hidratação.

@@ -42,6 +42,11 @@
     --accent-foreground: oklch(99.11% 0 0);
     --focus: oklch(49% 0.288 269.1);
     --background: oklch(19.2% 0.004 286);
+    /* O HeroUI zera a sombra ambiente no escuro, e aqui papel (21%) e mesa
+       (19.2%) ficam a menos de dois pontos de luminosidade: sem isto todo
+       cartão do app perde a separação do fundo. O anel de 1px devolve, por
+       borda, a hierarquia que no claro vem da sombra. */
+    --surface-shadow: 0 0 0 1px var(--border);
   }
 
   :root {
@@ -101,6 +106,17 @@
 
     .button--icon-only {
       min-width: 44px;
+    }
+
+    /* Um botão ancorado dentro de um campo não pode crescer para 44px: ele
+       vira o item mais alto do flex, estica o campo e vaza pelos cantos
+       arredondados — o `.input-group` não tem overflow-hidden para esconder
+       isso. Quem devolve o alvo de toque é o próprio botão, com um `::after`
+       transparente (veja PasswordField). */
+    .input-group__prefix > .button,
+    .input-group__suffix > .button {
+      min-height: 0;
+      min-width: 0;
     }
   }
 }
@@ -207,6 +223,19 @@
     }
   }
 
+  /* O painel de texto da imagem sobe da borda de baixo, e a altura anima entre
+     espiando e expandido — o salto seco esconde de onde o conteúdo veio. */
+  .sheet-in {
+    translate: 0 0;
+    transition:
+      translate 260ms var(--ease-out-strong),
+      max-height 260ms var(--ease-out-strong);
+
+    @starting-style {
+      translate: 0 100%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .celebrate,
     .celebrate-stagger > *,
@@ -214,7 +243,8 @@
     .camera-focus,
     .camera-focus-fade,
     .island-in-top,
-    .island-in-bottom {
+    .island-in-bottom,
+    .sheet-in {
       transition: none;
     }
   }

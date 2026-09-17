@@ -12,7 +12,7 @@
 export const THEME_INIT_SCRIPT = `(function () {
   try {
     var stored = JSON.parse(localStorage.getItem("revi:tema") || "null");
-    var pref = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    var pref = stored === "light" || stored === "dark" || stored === "system" ? stored : "light";
     var resolved = pref === "system"
       ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : pref;

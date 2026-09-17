@@ -1,23 +1,38 @@
-import { Spinner } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 
 import { listMotherFolders } from "@/api/folders";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { MotherFolder as FolderType } from "@/types/api/folder";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 import { DialogFormFolder } from "./components/DialogFormFolder";
 import { FolderCard } from "./components/FolderCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Pastas",
+    description:
+      "Todo o material que você já capturou, organizado por disciplina.",
+  });
+}
 
 export default function FolderListPage() {
   const [folders, setFolders] = useState<FolderType[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setFolders(null);
+    setLoadError(null);
 
     listMotherFolders()
       .then((result) => {
@@ -36,7 +51,7 @@ export default function FolderListPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const normalizedSearch = normalizeText(search);
   const filteredFolders =
@@ -76,7 +91,9 @@ export default function FolderListPage() {
           <span className="sr-only">Carregando pastas</span>
         </div>
       ) : loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : filteredFolders.length > 0 ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredFolders.map((folder) => (
@@ -88,18 +105,29 @@ export default function FolderListPage() {
             />
           ))}
         </div>
+      ) : normalizedSearch ? (
+        <EmptyState>
+          Nenhuma pasta encontrada para “{search.trim()}”.
+        </EmptyState>
       ) : (
-        <p className="text-muted text-center py-8">
-          {normalizedSearch
-            ? `Nenhuma pasta encontrada para "${search.trim()}".`
-            : "Você ainda não tem pastas. Crie a primeira no botão +."}
-        </p>
+        <EmptyState
+          action={
+            <Button variant="secondary" onPress={() => setIsAddOpen(true)}>
+              Criar pasta
+            </Button>
+          }
+        >
+          Você ainda não tem pastas. Crie a primeira para começar a organizar
+          seu material.
+        </EmptyState>
       )}
 
-      <FABButton
-        onPress={() => setIsAddOpen(true)}
-        className="bottom-[calc(var(--nav-inset)+1rem)]"
-      />
+      {folders !== null && loadError === null ? (
+        <FABButton
+          onPress={() => setIsAddOpen(true)}
+          className="bottom-[calc(var(--nav-inset)+1rem)]"
+        />
+      ) : null}
       <DialogFormFolder
         variant="add"
         isOpen={isAddOpen}

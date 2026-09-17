@@ -3,6 +3,14 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true,
+        // Toda rota do React Router exporta meta() ao lado do componente;
+        // sem isto a regra acusa os 40 arquivos de rota.
+        "allowExportNames": ["meta"]
+      }
+    ]
   }
 }

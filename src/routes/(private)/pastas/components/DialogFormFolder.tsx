@@ -2,10 +2,10 @@ import { Button, Input, Label, Modal, TextField } from "@heroui/react";
 import { FolderPen, FolderPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { createMotherFolder, updateMotherFolder } from "@/api/folders";
-import { useFeedback } from "@/hooks/useFeedback";
 import { ApiError } from "@/api/client";
+import { createMotherFolder, updateMotherFolder } from "@/api/folders";
 import { ColorPicker } from "@/components/ColorPicker";
+import { useFeedback } from "@/hooks/useFeedback";
 import type { MotherFolder } from "@/types/api/folder";
 import { getRandomColor } from "@/utils/color";
 
@@ -107,28 +107,28 @@ export function DialogFormFolder({
                   : `Editar pasta ${folder?.name ?? ""}`}
               </Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
-              <TextField className="w-full">
-                <Label htmlFor="nome-pasta">Nome da pasta</Label>
-                <Input
-                  placeholder="Matemática, Português..."
-                  id="nome-pasta"
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm({ ...form, name: event.target.value })
-                  }
+            <Modal.Body className="flex flex-col gap-4">
+                <TextField className="w-full">
+                  <Label htmlFor="nome-pasta">Nome da pasta</Label>
+                  <Input
+                    placeholder="Matemática, Português..."
+                    id="nome-pasta"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm({ ...form, name: event.target.value })
+                    }
+                  />
+                </TextField>
+                <ColorPicker
+                  label="Cor da pasta"
+                  value={form.color}
+                  onChange={(color) => setForm({ ...form, color })}
                 />
-              </TextField>
-              <ColorPicker
-                label="Cor da pasta"
-                value={form.color}
-                onChange={(color) => setForm({ ...form, color })}
-              />
-              {error !== null ? (
-                <p role="alert" className="text-danger text-sm text-pretty">
-                  {error}
-                </p>
-              ) : null}
+                {error !== null ? (
+                  <p role="alert" className="text-danger text-sm text-pretty">
+                    {error}
+                  </p>
+                ) : null}
             </Modal.Body>
             <Modal.Footer>
               <Button

@@ -1,17 +1,28 @@
-import { Spinner } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 
 import { listContent } from "@/api/content";
 import { listChildFolders, listMotherFolders } from "@/api/folders";
 import { ApiError } from "@/api/client";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Content } from "@/types/api/content";
 import type { ChildFolder } from "@/types/api/folder";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 import { DialogFormSubject } from "./components/DialogFormSubject";
 import { SubjectCard } from "./components/SubjectCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Assuntos da pasta",
+    description:
+      "Os assuntos desta disciplina e o material guardado em cada um deles.",
+  });
+}
 
 export default function SubjectListRoute() {
   const { pastaId } = useParams<"pastaId">() as { pastaId: string };
@@ -23,22 +34,33 @@ function SubjectListPage({ folderId }: { folderId: string }) {
   const [folderName, setFolderName] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<ChildFolder[] | null>(null);
   const [subjectContents, setSubjectContents] = useState<
-    Record<string, Content[]>
+    Record<string, Content[] | null>
   >({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    setSubjects(null);
+    setLoadError(null);
 
     Promise.all([listMotherFolders(), listChildFolders(folderId)])
       .then(([motherFolders, childFolders]) => {
         if (cancelled) return;
 
-        setFolderName(
-          motherFolders.find((item) => item.id === folderId)?.name ?? null,
-        );
+        const folder = motherFolders.find((item) => item.id === folderId);
+
+        // Sem isto, uma pasta inexistente (ou de outra conta) cai no estado
+        // vazio normal e se disfarça de "pasta sem assuntos".
+        if (folder === undefined) {
+          setLoadError("Esta pasta não existe ou não está mais disponível.");
+          return;
+        }
+
+        setFolderName(folder.name);
         setSubjects(childFolders);
       })
       .catch((error: unknown) => {
@@ -54,7 +76,7 @@ function SubjectListPage({ folderId }: { folderId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [folderId]);
+  }, [folderId, reloadKey]);
 
   const subjectIds = subjects?.map((subject) => subject.id).join(",") ?? "";
 
@@ -71,7 +93,10 @@ function SubjectListPage({ folderId }: { folderId: string }) {
         const next = { ...current };
 
         results.forEach((result, index) => {
-          if (result.status === "fulfilled") next[ids[index]] = result.value;
+          // `null` marca a falha: sem isso o id que rejeitou nunca sai de
+          // `undefined` e o esqueleto do cartão pisca indefinidamente.
+          next[ids[index]] =
+            result.status === "fulfilled" ? result.value : null;
         });
 
         return next;
@@ -126,12 +151,11 @@ function SubjectListPage({ folderId }: { folderId: string }) {
           <span className="sr-only">Carregando assuntos</span>
         </div>
       ) : loadError !== null ? (
-        <p className="text-danger text-center py-8">{loadError}</p>
+        <ErrorState onRetry={() => setReloadKey((key) => key + 1)}>
+          {loadError}
+        </ErrorState>
       ) : filteredSubjects.length > 0 ? (
-        <section
-          id="subjects"
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5"
-        >
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {filteredSubjects.map((subject) => (
             <SubjectCard
               key={subject.id}
@@ -142,15 +166,29 @@ function SubjectListPage({ folderId }: { folderId: string }) {
             />
           ))}
         </section>
+      ) : normalizedSearch ? (
+        <EmptyState>
+          Nenhum assunto encontrado para “{search.trim()}”.
+        </EmptyState>
       ) : (
-        <p className="text-muted text-center py-8">
-          {normalizedSearch
-            ? `Nenhum assunto encontrado para "${search.trim()}".`
-            : "Esta pasta ainda não tem assuntos. Crie o primeiro no botão +."}
-        </p>
+        <EmptyState
+          action={
+            <Button variant="secondary" onPress={() => setIsAddOpen(true)}>
+              Criar assunto
+            </Button>
+          }
+        >
+          Esta pasta ainda não tem assuntos. Crie o primeiro para guardar o
+          material dela.
+        </EmptyState>
       )}
 
-      <FABButton onPress={() => setIsAddOpen(true)} />
+      {subjects !== null && loadError === null ? (
+        <FABButton
+          onPress={() => setIsAddOpen(true)}
+          className="bottom-[calc(var(--nav-inset)+1rem)]"
+        />
+      ) : null}
       <DialogFormSubject
         variant="add"
         motherFolderId={folderId}

@@ -27,6 +27,12 @@ export default defineConfig({
       // Em framework mode não existe `index.html` onde injetar o script de
       // registro; ele é feito à mão em `useServiceWorker`.
       injectRegister: null,
+      // O layout referencia o manifesto também durante `react-router dev`.
+      // Sem isto o Vite responde o fallback HTML para essa URL, que o navegador
+      // tenta interpretar como JSON e reporta como "Manifest: syntax error".
+      devOptions: {
+        enabled: true,
+      },
       workbox: {
         // Fontes ficam de fora de propósito: as 59 variantes do KaTeX pesam
         // 1,2 MB e só servem a páginas com fórmula. Elas entram no cache no
@@ -99,6 +105,24 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    // Nenhuma destas é alcançável a partir da primeira tela, então a varredura
+    // de dependências do Vite não as encontra ao subir o servidor: ela só
+    // descobre cada uma quando a rota que a importa é aberta. Cada descoberta
+    // dispara uma reotimização, que troca o hash `?v=` de todos os deps já
+    // pré-bundlados e faz o navegador levar 504 ("Outdated Optimize Dep") nos
+    // módulos que já tinha pedido — foi o que quebrou o mapa mental, a rota
+    // com o dep mais pesado e mais isolado do resto do app.
+    //
+    // Declaradas aqui, elas entram no pré-bundle de largada, numa passada só.
+    include: [
+      "@xyflow/react",
+      "react-markdown",
+      "remark-gfm",
+      "remark-math",
+      "rehype-katex",
+    ],
+  },
   resolve: {
     alias: [
       {
