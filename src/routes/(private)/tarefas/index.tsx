@@ -11,11 +11,20 @@ import { NavMenu } from "@/components/NavMenu";
 import { useGoogle } from "@/contexts/GoogleContext";
 import type { Task } from "@/types/Task";
 import { googleIssueMessage } from "@/utils/googleIssues";
+import { pageMeta } from "@/utils/pageMeta";
 import { publishTaskEvent } from "@/utils/taskCalendar";
 import { isOverdue } from "@/utils/tasksStorage";
 import { DialogFormTarefa } from "./components/DialogFormTarefa";
 import { DialogTarefaExclusion } from "./components/DialogTarefaExclusion";
 import { TarefaRow } from "./components/TarefaRow";
+
+export function meta() {
+  return pageMeta({
+    title: "Tarefas",
+    description:
+      "As entregas e as provas que você anotou, com o que está mais perto de vencer no topo.",
+  });
+}
 
 export default function TasksPage() {
   const google = useGoogle();

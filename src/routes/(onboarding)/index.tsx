@@ -20,11 +20,20 @@ import {
   STEP_PARAM,
   stepPosition,
 } from "@/utils/onboardingSteps";
+import { pageMeta } from "@/utils/pageMeta";
 import { OnboardingSpine } from "./components/OnboardingSpine";
 import { StepAvatar } from "./components/StepAvatar";
 import { StepBoasVindas } from "./components/StepBoasVindas";
 import { StepConexoes } from "./components/StepConexoes";
 import { StepFuncionalidades } from "./components/StepFuncionalidades";
+
+export function meta() {
+  return pageMeta({
+    title: "Primeiros passos",
+    description:
+      "Escolha o seu avatar, conheça as funcionalidades e conecte as suas contas antes de começar a estudar.",
+  });
+}
 
 export default function OnboardingRoute() {
   // A rota mora fora do layout de `(private)` para não passar pelo

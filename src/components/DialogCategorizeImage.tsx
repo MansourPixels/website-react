@@ -233,7 +233,7 @@ export function DialogCategorizeImage({
                 </p>
               </Modal.Body>
             ) : (
-              <Modal.Body className="grid gap-4">
+              <Modal.Body className="flex flex-col gap-4">
                 <p className="text-muted text-sm">
                   Não encontramos uma pasta correspondente. Confira os nomes
                   sugeridos antes de criar.

@@ -11,8 +11,17 @@ import { NavMenu } from "@/components/NavMenu";
 import { SpeakButton } from "@/components/SpeakButton";
 import { useMindMap } from "@/hooks/useMindMap";
 import type { MindMap } from "@/types/api/mindMap";
+import { pageMeta } from "@/utils/pageMeta";
 import { mindMapSpeech } from "@/utils/speechText";
 import { MindMapSummary } from "./components/MindMapSummary";
+
+export function meta() {
+  return pageMeta({
+    title: "Mapa mental",
+    description:
+      "Veja como as ideias do assunto se ligam, num mapa montado a partir do seu material.",
+  });
+}
 
 // Enquanto o mapa ainda não foi gerado (raiz: null), reconsulta a cada ~3s;
 // desiste depois de ~60s para não pollar para sempre.

@@ -21,10 +21,19 @@ import type {
   PerformanceOverview,
 } from "@/types/api/performance";
 import type { StudyPlan } from "@/types/api/studyPlan";
+import { pageMeta } from "@/utils/pageMeta";
 import { groupStepsByDiscipline } from "@/utils/studyPlan";
 import { DialogSelecionarDisciplinas } from "./components/DialogSelecionarDisciplinas";
 import { DisciplinePerformanceList } from "./components/DisciplinePerformanceList";
 import { StudyPlanCard } from "./components/StudyPlanCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Trilha",
+    description:
+      "O caminho de estudo montado a partir das suas pastas, etapa por etapa.",
+  });
+}
 
 const GENERATE_POLL_INTERVAL_MS = 3_000;
 const GENERATE_POLL_TIMEOUT_MS = 30_000;

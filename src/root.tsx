@@ -29,6 +29,7 @@ import { SessionProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import { SpotifyProvider } from "./contexts/SpotifyContext";
+import { LANDING_META, pageMeta } from "./utils/pageMeta";
 import { THEME_INIT_SCRIPT } from "./utils/themeInitScript";
 
 const links = [
@@ -64,19 +65,20 @@ const links = [
   },
 ];
 
-// Título e descrição padrão de todas as telas. Vive aqui, e não como <title>
-// fixo no <head> abaixo, porque dois <title> no documento fariam o navegador
-// ficar com o primeiro — e as rotas que exportam `meta` (política de
-// privacidade e termos) nunca conseguiriam sobrescrever.
+// Reserva, não o título de ninguém: cada página exporta o seu `meta()`, e o
+// React Router troca estes metadados pelos da rota — ele substitui os do pai
+// em vez de mesclar. O que sobra para cá é o HTML antes da hidratação e
+// qualquer rota futura que esqueça de declarar os seus.
+//
+// São os da landing de propósito: em SPA o `index.html` gerado no build sai
+// com estes metadados dentro, e é ele que o host devolve em `/`. Só as duas
+// páginas legais têm HTML próprio (`prerender` em react-router.config.ts).
+//
+// Vive aqui, e não como <title> fixo no <head> abaixo, porque dois <title> no
+// documento fariam o navegador ficar com o primeiro, e nenhuma rota
+// conseguiria sobrescrever.
 export function meta() {
-  return [
-    { title: "Revi - Página Inicial" },
-    {
-      name: "description",
-      content:
-        "Fotografe o caderno e estude o que está nele. O Revi IA reconhece a disciplina, arquiva a foto e transforma o seu próprio material em flash cards, resumo e simulado.",
-    },
-  ];
+  return pageMeta(LANDING_META);
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

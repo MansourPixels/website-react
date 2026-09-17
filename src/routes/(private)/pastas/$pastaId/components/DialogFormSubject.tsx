@@ -95,7 +95,7 @@ export function DialogFormSubject({
                 {isAdding ? "Adicionar novo assunto" : "Renomear assunto"}
               </Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <TextField className="w-full">
                 <Label htmlFor="nome-assunto">Nome do assunto</Label>
                 <Input

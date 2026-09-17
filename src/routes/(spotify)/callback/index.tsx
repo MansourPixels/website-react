@@ -4,8 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { useSpotify } from "@/contexts/SpotifyContext";
+import { pageMeta } from "@/utils/pageMeta";
 import { exchangeCodeForTokens } from "@/utils/spotifyAuth";
 import { clearHandshake, readHandshake } from "@/utils/spotifyStorage";
+
+export function meta() {
+  return pageMeta({
+    title: "Conectando o Spotify",
+    description:
+      "Concluindo a conexão com o Spotify para tocar as suas playlists durante a sessão de estudo.",
+  });
+}
 
 const errorMessages = {
   denied: "Você cancelou a conexão com o Spotify.",

@@ -15,10 +15,19 @@ import type {
   FriendRequest,
   UserSearchResult,
 } from "@/types/api/friend";
+import { pageMeta } from "@/utils/pageMeta";
 
 import { FriendRequestRow } from "./components/FriendRequestRow";
 import { FriendRow } from "./components/FriendRow";
 import { UserSearchResults } from "./components/UserSearchResults";
+
+export function meta() {
+  return pageMeta({
+    title: "Amigos",
+    description:
+      "Os seus amigos no Revi, os pedidos pendentes e quem você ainda pode adicionar.",
+  });
+}
 
 /** Espera o usuário parar de digitar antes de buscar. */
 const SEARCH_DEBOUNCE_MS = 400;

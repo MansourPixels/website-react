@@ -86,7 +86,7 @@ export function DialogSessionSettings({
               <Modal.Heading>Ajustar a sessão</Modal.Heading>
             </Modal.Header>
 
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <DurationField
                 label="Foco (minutos)"
                 value={form.focusMinutes}

@@ -26,6 +26,7 @@ import {
   roleDescription,
   roleLabel,
 } from "@/utils/classroomPermissions";
+import { pageMeta } from "@/utils/pageMeta";
 import { profilePath } from "@/utils/profile";
 
 import { DialogFormClassroom } from "../components/DialogFormClassroom";
@@ -33,6 +34,14 @@ import { ClassroomFolderCard } from "./components/ClassroomFolderCard";
 import { DialogFormClassroomFolder } from "./components/DialogFormClassroomFolder";
 import { DialogInviteMember } from "./components/DialogInviteMember";
 import { DialogLeaveClassroom } from "./components/DialogLeaveClassroom";
+
+export function meta() {
+  return pageMeta({
+    title: "Turma",
+    description:
+      "O material compartilhado pela turma e os assuntos que ela está estudando.",
+  });
+}
 
 export default function ClassroomDetailPage() {
   const { turmaId } = useParams();

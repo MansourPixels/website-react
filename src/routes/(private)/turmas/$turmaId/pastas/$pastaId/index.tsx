@@ -15,11 +15,20 @@ import type {
   ClassroomFolder,
 } from "@/types/api/classroom";
 import { canAddContent, roleLabel } from "@/utils/classroomPermissions";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 
 import { ClassroomContentTile } from "./components/ClassroomContentTile";
 import { DialogAddContent } from "./components/DialogAddContent";
 import { StudyTypeCard } from "../../../../pastas/$pastaId/assuntos/$assuntoId/components/StudyTypeCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Pasta da turma",
+    description:
+      "O material que a turma compartilhou nesta pasta e os modos de estudo criados a partir dele.",
+  });
+}
 
 export default function ClassroomFolderPage() {
   const { turmaId, pastaId } = useParams();

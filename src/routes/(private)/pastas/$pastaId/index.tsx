@@ -11,9 +11,18 @@ import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Content } from "@/types/api/content";
 import type { ChildFolder } from "@/types/api/folder";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 import { DialogFormSubject } from "./components/DialogFormSubject";
 import { SubjectCard } from "./components/SubjectCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Assuntos da pasta",
+    description:
+      "Os assuntos desta disciplina e o material guardado em cada um deles.",
+  });
+}
 
 export default function SubjectListRoute() {
   const { pastaId } = useParams<"pastaId">() as { pastaId: string };

@@ -31,9 +31,18 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isHapticsSupported } from "@/utils/haptics";
+import { pageMeta } from "@/utils/pageMeta";
 import { SPEECH_RATE_LIMITS } from "@/utils/preferencesStorage";
 import { isSpeechSupported } from "@/utils/speech";
 import { DialogSignOut } from "./components/DialogSignOut";
+
+export function meta() {
+  return pageMeta({
+    title: "Perfil",
+    description:
+      "As suas estatísticas de estudo, as suas conexões e as configurações da conta.",
+  });
+}
 
 export default function PerfilPage() {
   const { user } = useAuth();

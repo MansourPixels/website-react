@@ -1,16 +1,15 @@
 import { Link } from "react-router";
 
+import { pageMeta } from "@/utils/pageMeta";
 import { LegalPage, type LegalSection } from "../components/LegalPage";
 
 export function meta() {
-  return [
-    { title: "Política de Privacidade — Revi" },
-    {
-      name: "description",
-      content:
-        "Como o Revi trata os seus dados: o que coletamos, por quê, com quem compartilhamos e como você exerce os seus direitos.",
-    },
-  ];
+  return pageMeta({
+    title: "Política de Privacidade",
+    description:
+      "Como o Revi trata os seus dados: o que coletamos, por quê, com quem compartilhamos e como você exerce os seus direitos.",
+    indexable: true,
+  });
 }
 
 const sections: LegalSection[] = [

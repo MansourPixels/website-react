@@ -7,7 +7,16 @@ import { useSession } from "@/contexts/SessionContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { formatCountdown, phaseLabels } from "@/hooks/useStudySession";
 import type { SessionSettings } from "@/types/StudySession";
+import { pageMeta } from "@/utils/pageMeta";
 import { DialogSessionSettings } from "./components/DialogSessionSettings";
+
+export function meta() {
+  return pageMeta({
+    title: "Sessão de estudo",
+    description:
+      "O cronômetro de foco e pausa, com música e som ambiente, para estudar sem perder o ritmo.",
+  });
+}
 
 export default function SessaoPage() {
   const session = useSession();

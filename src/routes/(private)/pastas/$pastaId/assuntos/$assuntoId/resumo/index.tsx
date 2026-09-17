@@ -15,8 +15,17 @@ import { SpeakButton } from "@/components/SpeakButton";
 import { readReturnPath } from "../components/StudySummary";
 import type { FolderSummary } from "@/types/api/summary";
 import { normalizeLatexDelimiters } from "@/utils/markdown";
+import { pageMeta } from "@/utils/pageMeta";
 import { markdownToSpeech } from "@/utils/speechText";
 import { formatUploadDate } from "@/utils/time";
+
+export function meta() {
+  return pageMeta({
+    title: "Resumo",
+    description:
+      "A síntese do assunto escrita a partir do material que você capturou.",
+  });
+}
 
 // O `prose` do plugin traz a própria paleta cinza; estas variáveis a
 // reamarram aos tokens do tema, que já viram no escuro sozinhos.

@@ -11,11 +11,20 @@ import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import type { Classroom, ClassroomInvite } from "@/types/api/classroom";
+import { pageMeta } from "@/utils/pageMeta";
 
 import { ClassroomCard } from "./components/ClassroomCard";
 import { ClassroomInviteRow } from "./components/ClassroomInviteRow";
 import { DialogFormClassroom } from "./components/DialogFormClassroom";
 import { DialogJoinByCode } from "./components/DialogJoinByCode";
+
+export function meta() {
+  return pageMeta({
+    title: "Turmas",
+    description:
+      "As turmas de que você participa e o material que a turma compartilha.",
+  });
+}
 
 const shortcuts = [
   {

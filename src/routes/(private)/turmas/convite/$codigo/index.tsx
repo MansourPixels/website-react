@@ -11,6 +11,14 @@ import { UserIdentity } from "@/components/UserIdentity";
 import { useFeedback } from "@/hooks/useFeedback";
 import type { ClassroomInvitePreview } from "@/types/api/classroom";
 import { roleDescription, roleLabel } from "@/utils/classroomPermissions";
+import { pageMeta } from "@/utils/pageMeta";
+
+export function meta() {
+  return pageMeta({
+    title: "Convite para turma",
+    description: "Você recebeu um convite para entrar em uma turma do Revi.",
+  });
+}
 
 export default function ClassroomInvitePage() {
   const { codigo } = useParams();

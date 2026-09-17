@@ -2,6 +2,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { NavMenu } from "@/components/NavMenu";
 import { ApiError } from "@/api/client";
 import { getStudyPlan } from "@/api/studyPlan";
+import { pageMeta } from "@/utils/pageMeta";
 import { groupProgress, groupStepsByDiscipline } from "@/utils/studyPlan";
 import { Spinner, Meter } from "@heroui/react";
 import { buttonVariants } from "@heroui/styles";
@@ -10,6 +11,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { PlanStepRow } from "./components/PlanStepRow";
+
+export function meta() {
+  return pageMeta({
+    title: "Plano de estudos",
+    description:
+      "As etapas deste plano, o que já foi concluído e o que vem a seguir.",
+  });
+}
 
 export default function StudyPlanPage() {
   const { planoId } = useParams<"planoId">() as { planoId: string };

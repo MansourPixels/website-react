@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
+import { pageMeta } from "@/utils/pageMeta";
 import {
   getEmailError,
   getPasswordError,
@@ -14,6 +15,14 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "@/utils/validation";
 import { PasswordField } from "../components/PasswordField";
+
+export function meta() {
+  return pageMeta({
+    title: "Criar conta",
+    description:
+      "Crie a sua conta no Revi e comece a transformar as fotos do seu material em flash cards, resumo e simulado.",
+  });
+}
 
 export default function CadastroPage() {
   const { signUp } = useAuth();

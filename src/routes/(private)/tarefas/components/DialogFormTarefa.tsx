@@ -247,7 +247,7 @@ export function DialogFormTarefa({
               </Modal.Heading>
             </Modal.Header>
 
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <TextField className="w-full">
                 <Label htmlFor="titulo-tarefa">
                   O que precisa ser entregue

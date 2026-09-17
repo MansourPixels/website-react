@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { NEXT_ROUTE_PARAM } from "@/utils/authRedirect";
+import { pageMeta } from "@/utils/pageMeta";
 import {
   getEmailError,
   getPasswordError,
@@ -12,6 +13,14 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "../../../utils/validation";
 import { PasswordField } from "../components/PasswordField";
+
+export function meta() {
+  return pageMeta({
+    title: "Entrar",
+    description:
+      "Entre na sua conta para retomar as suas pastas, a sua trilha de estudos e as suas turmas.",
+  });
+}
 
 export default function EntrarPage() {
   const { signIn } = useAuth();

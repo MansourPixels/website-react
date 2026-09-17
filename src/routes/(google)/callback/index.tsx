@@ -8,6 +8,15 @@ import {
   clearGoogleHandshake,
   readGoogleHandshake,
 } from "@/utils/googleStorage";
+import { pageMeta } from "@/utils/pageMeta";
+
+export function meta() {
+  return pageMeta({
+    title: "Conectando o Google",
+    description:
+      "Concluindo a conexão com a sua conta Google para usar a agenda e o Drive junto do Revi.",
+  });
+}
 
 const errorMessages = {
   denied: "Você cancelou a conexão com o Google.",

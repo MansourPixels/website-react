@@ -90,7 +90,7 @@ export function DialogJoinByCode({
               </Modal.Icon>
               <Modal.Heading>Entrar com código</Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <TextField className="w-full">
                 <Label htmlFor="codigo-convite">Código do convite</Label>
                 <Input

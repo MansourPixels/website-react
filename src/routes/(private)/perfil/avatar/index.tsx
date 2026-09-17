@@ -16,6 +16,15 @@ import {
   randomAvatarConfig,
   type AvatarConfig,
 } from "@/utils/avatar";
+import { pageMeta } from "@/utils/pageMeta";
+
+export function meta() {
+  return pageMeta({
+    title: "Seu avatar",
+    description:
+      "Monte o avatar que aparece no seu perfil, no ranking e para os seus amigos.",
+  });
+}
 
 export default function AvatarPage() {
   const navigate = useNavigate();

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveNextRoute } from "@/utils/authRedirect";
+import { LANDING_META, pageMeta } from "@/utils/pageMeta";
 
 import { FinalCta } from "./components/FinalCta";
 import { Hero } from "./components/Hero";
@@ -14,6 +15,10 @@ import { Progress } from "./components/Progress";
 import { StudyModes } from "./components/StudyModes";
 import { StudySession } from "./components/StudySession";
 import { Team } from "./components/Team";
+
+export function meta() {
+  return pageMeta(LANDING_META);
+}
 
 export default function LandingPage() {
   const { status } = useAuth();

@@ -1,6 +1,15 @@
 import { buttonVariants } from "@heroui/styles";
 import { Link } from "react-router";
 
+import { pageMeta } from "@/utils/pageMeta";
+
+export function meta() {
+  return pageMeta({
+    title: "Página não encontrada",
+    description: "O endereço que você abriu não existe ou saiu do ar.",
+  });
+}
+
 export default function NotFoundPage() {
   return (
     <main className="flex flex-1 items-center justify-center p-6">

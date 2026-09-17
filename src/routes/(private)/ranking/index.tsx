@@ -19,12 +19,21 @@ import type {
   RankingSummary,
   SeasonChampion,
 } from "@/types/api/ranking";
+import { pageMeta } from "@/utils/pageMeta";
 import { buttonVariants } from "@heroui/styles";
 
 import { ChampionCard } from "./components/ChampionCard";
 import { ClassroomScopePicker } from "./components/ClassroomScopePicker";
 import { RankingList } from "./components/RankingList";
 import { SeasonSummary } from "./components/SeasonSummary";
+
+export function meta() {
+  return pageMeta({
+    title: "Ranking",
+    description:
+      "Como você está em relação aos seus amigos e às suas turmas no tempo estudado.",
+  });
+}
 
 const PAGE_SIZE = 20;
 

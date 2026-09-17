@@ -82,7 +82,7 @@ export function DialogSelecionarDisciplinas({
               </Modal.Icon>
               <Modal.Heading>Escolher disciplinas</Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="grid gap-4">
+            <Modal.Body className="flex flex-col gap-4">
               <p className="text-sm text-muted">
                 Selecione até {MAX_DISCIPLINES} disciplinas para focar a
                 trilha, ou gere automaticamente com base no seu desempenho.

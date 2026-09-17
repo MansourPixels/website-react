@@ -12,10 +12,19 @@ import { NavMenu } from "@/components/NavMenu";
 import { StatTile } from "@/components/StatTile";
 import { UserIdentity } from "@/components/UserIdentity";
 import type { PublicProfile } from "@/types/api/profile";
+import { pageMeta } from "@/utils/pageMeta";
 import { formatPosition, formatXp } from "@/utils/ranking";
 import { getInitials } from "@/utils/text";
 
 import { FriendshipAction } from "./components/FriendshipAction";
+
+export function meta() {
+  return pageMeta({
+    title: "Perfil do estudante",
+    description:
+      "O nível, as conquistas e as estatísticas de estudo de outro estudante.",
+  });
+}
 
 export default function PublicProfilePage() {
   const { username } = useParams();

@@ -1,16 +1,15 @@
 import { Link } from "react-router";
 
+import { pageMeta } from "@/utils/pageMeta";
 import { LegalPage, type LegalSection } from "../components/LegalPage";
 
 export function meta() {
-  return [
-    { title: "Termos de Uso — Revi" },
-    {
-      name: "description",
-      content:
-        "As regras para usar o Revi: quem pode criar conta, o que você pode enviar, os limites da Revi IA e o que o aplicativo garante (e o que não garante).",
-    },
-  ];
+  return pageMeta({
+    title: "Termos de Uso",
+    description:
+      "As regras para usar o Revi: quem pode criar conta, o que você pode enviar, os limites da Revi IA e o que o aplicativo garante (e o que não garante).",
+    indexable: true,
+  });
 }
 
 const sections: LegalSection[] = [

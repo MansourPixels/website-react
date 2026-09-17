@@ -13,9 +13,18 @@ import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
 import type { Content } from "@/types/api/content";
 import type { ViewableFile } from "@/types/capture";
+import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
 import { MaterialTile } from "./components/MaterialTile";
 import { StudyTypeCard } from "./components/StudyTypeCard";
+
+export function meta() {
+  return pageMeta({
+    title: "Materiais do assunto",
+    description:
+      "As fotos e os arquivos deste assunto e os modos de estudo gerados a partir deles.",
+  });
+}
 
 // Enquanto algum item ainda não tem resumo (hasSummary: false), reconsulta
 // a lista a cada ~3s; desiste depois de ~60s para não pollar para sempre.
