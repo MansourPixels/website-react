@@ -1,9 +1,10 @@
 # Google Workspace e o sistema de Tarefas
 
-O frontend do Revi já importa material do Google Drive e publica cada tarefa na
-Google Agenda, **inteiramente pelo navegador**, sem nenhum endpoint novo no
-`revi_back`. As tarefas ficam em `localStorage`, atrás de uma fachada que já tem a
-forma das chamadas de API.
+**Estado: integrado ao `revi-back`.** As tarefas moram no servidor, a Google Agenda é
+sincronizada por ele e o material do Drive é baixado direto pelo backend. O modo
+navegador continua existindo como driver (`VITE_GOOGLE_BACKEND=false`), mas não é mais
+o caminho de produção — e, com a sincronização no servidor, ele não publica evento
+nenhum.
 
 **Motivação**: o Revi terminava no material. O aluno capturava, categorizava e
 estudava, mas nada no app sabia que a prova de Biologia é sexta — e a única porta de
@@ -11,12 +12,9 @@ entrada de material era a câmera, o que deixava de fora o aluno cujo professor
 distribui tudo por Drive. As tarefas trazem o **prazo** para dentro do produto, e a
 Agenda é o que faz o lembrete tocar no celular mesmo com o Revi fechado.
 
-> **Nota importante**: o modo navegador é uma entrega completa, não um mock. O que
-> ele **não** consegue é manter a conexão viva além de ~1 h nem tocar um lembrete
-> sem o aluno abrir o app. É esse limite, e só ele, que justifica este documento.
-
-Os contratos deste documento já viraram pedido de implementação: seis prompts prontos para
-`/opsx:propose` no `revi-back`, em [`docs/prompts/`](docs/prompts/00-README.md).
+> **O contrato vigente é o do backend**, em `revi-back/docs/API.md` (seções *Tasks*,
+> *Google*, *Contents* e *Identity*). O que está aqui é o **porquê** de cada decisão e
+> o mapa do lado do frontend; onde os dois divergirem, vale o `API.md`.
 
 ---
 
@@ -31,12 +29,11 @@ com driver trocável, registrado uma única vez no provider.
 | --- | --- |
 | `src/utils/googleAuth.ts` | **A fachada.** `isConfigured`, `getAuthMode`, `ensureAccessToken`, `requestConsent`, `revokeAccess`, `hasScope`, e a interface `GoogleAuthDriver`. **`setGoogleAuthDriver(driver)` é o ponto de troca.** |
 | `src/utils/googleAuthDrivers/browserGis.ts` | Driver padrão: Google Identity Services token client. |
-| `src/utils/googleAuthDrivers/backendProxy.ts` | Driver de backend, **já escrito**, atrás de `VITE_GOOGLE_BACKEND=true`. Consome os contratos da seção 3. |
+| `src/utils/googleAuthDrivers/backendProxy.ts` | **O driver de produção** (`VITE_GOOGLE_BACKEND=true`). Manda `returnTo` e `timeZone` no `authorize-url`. |
 | `src/utils/googleStorage.ts` | Chave `revi:google` (`{ accessToken, expiresAt, scope }`) e o handshake de `sessionStorage`, espelhando `spotifyStorage.ts`. |
 | `src/utils/googleScripts.ts` | Carregadores idempotentes, sob demanda, do GIS e do `gapi`. |
-| `src/utils/googleDrive.ts` | `downloadDriveFile(ref)` → `File` pronto para o upload. |
-| `src/utils/googlePicker.ts` | `openDrivePicker(token)` → `DriveFileRef \| null`. |
-| `src/utils/googleCalendar.ts` | `createTaskEvent` / `updateTaskEvent` / `deleteTaskEvent` / `findTaskEvent`. |
+| `src/utils/googleDrive.ts` | Só o filtro de MIME types do Picker. O download virou trabalho do servidor. |
+| `src/utils/googlePicker.ts` | `openDrivePicker(token)` → `DriveFileRef \| null`. Continua no navegador. |
 | `src/contexts/GoogleContext.tsx` | Máquina de estados e o único lugar que registra o driver. |
 | `src/components/GoogleConnectCard.tsx` | O cartão de conexão, na seção Google do Perfil. |
 
@@ -44,33 +41,42 @@ Drive e Agenda **nunca** sabem de onde veio o token: pedem `ensureAccessToken()`
 
 ### Importar material do Drive
 
-Nenhum fluxo novo. O arquivo do Drive entra onde entra um arquivo do disco:
+O aluno escolhe no Picker; o **servidor** busca os bytes no Drive. Eles nunca passam
+pelo aparelho:
 
 ```
-Picker → DriveFileRef → downloadDriveFile() → File
-      → showPreview()  (Camera.tsx, já existia)
-      → PhotoReview → DialogCategorizeImage → suggestFolder → uploadContent
+Picker → DriveFileRef (id, nome, tipo)
+      → DialogImportFromDrive  (matéria + assunto, com atalho para criar)
+      → POST /api/contents/from-drive { fileId, childFolderId }
 ```
+
+Na câmera do assunto o destino já está decidido pela própria rota, então o diálogo não
+aparece: `driveChildFolderId` vai direto para a importação.
+
+**O que se perdeu, de propósito**: a sugestão da Revi IA não existe neste caminho. O
+`folder-suggestion` é multipart e precisa dos bytes no navegador — exatamente o que
+deixou de acontecer. Trocar a sugestão automática por dois selects foi o preço de não
+baixar e resubir um PDF de 40 MB no 4G do ônibus. A câmera e o upload de arquivo
+continuam com a sugestão intacta.
 
 O botão aparece nas duas superfícies de captura — pílula acima do obturador no
 ponteiro grosso (`Camera.tsx`), botão tertiary abaixo da dropzone no ponteiro fino
 (`CaptureDesk.tsx`) — e **só** quando há configuração do Google no ambiente. Como as
 duas são o mesmo componente, a câmera do assunto ganhou o recurso de graça.
 
-Documento, apresentação e planilha do Google não têm bytes para baixar: são
-exportados como PDF (`/drive/v3/files/{id}/export`). O resto vem por `?alt=media`. O
-resultado passa por `contentTypeOf()` e `ensureUploadFilename()` de
-`src/utils/materials.ts` — as regras do upload continuam num lugar só.
+Documento, apresentação e planilha do Google não têm bytes para baixar: o servidor os
+exporta como PDF. A lista de MIME types em `googleDrive.ts` existe só para o Picker não
+oferecer um arquivo que a importação recusaria depois — o servidor revalida, porque
+esconder não é validar.
 
 ### Tarefas
 
 | Arquivo | Papel |
 | --- | --- |
 | `src/types/Task.ts` | O tipo de domínio. |
-| `src/utils/tasksStorage.ts` | Chave `revi:tarefas`, `sanitizeTask`/`sanitizeTasks`, `isOverdue`. Puro e testado (`tasksStorage.test.ts`). |
-| `src/api/tasks.ts` | **A fachada de persistência.** É o único arquivo que muda quando `/api/tasks` existir. |
+| `src/api/tasks.ts` | As chamadas a `/api/tasks`, incluindo `createClassroomTask` e `requestTaskSync`. |
+| `src/utils/tasks.ts` | `isOverdue`, puro e testado. É o que sobrou de `tasksStorage.ts`. |
 | `src/routes/(private)/tarefas/` | A tela: `index.tsx`, `DialogFormTarefa`, `TarefaRow`, `DialogTarefaExclusion`. |
-| `src/utils/taskCalendar.ts` | A ponte tarefa ↔ evento. Nunca lança: o resultado vira `syncState`. |
 
 A rota `/tarefas` é alcançada pela Trilha e pelo Perfil, e entra em
 `extraBottomNavigationRoutes` — **não** é uma sétima aba.
@@ -79,6 +85,15 @@ Estados cobertos: carregando, erro com `reloadKey`/retry, vazio com saída,
 **Atrasadas** (derivado do relógio, nunca persistido), **Próximas**, **Concluídas**
 (recolhida), sincronizada, falha de sincronização com "Tentar de novo" na própria
 linha, e a faixa opcional de sincronizar em lote — sempre por clique.
+
+A lista traz também as entregas das turmas do aluno, com o nome da turma na linha.
+Editar e excluir aparecem conforme o papel: a tela cruza `classroomId` com o
+`listClassrooms()` para não oferecer um botão que o servidor recusaria. Concluir fica
+sempre disponível — a conclusão é de cada membro, inclusive do leitor.
+
+**A resposta de toda mutação diz `syncState: "local"`**, porque o servidor publica na
+Agenda depois de responder. A tela espera a fila assentar (`SYNC_SETTLE_MS`) e relê a
+lista, em vez de pintar um "sincronizada" que talvez não tenha acontecido.
 
 ### O consentimento parcial
 
@@ -120,6 +135,16 @@ perde tudo, e a turma não tem como compartilhar uma entrega.
 ---
 
 ## 3. Contratos de backend
+
+> **Implementados.** O que segue descreve o que foi pedido e por quê; o contrato de
+> verdade, com códigos de erro e limites, está em `revi-back/docs/API.md`. Duas
+> divergências do plano original valem registro:
+>
+> - **`syncState` e `googleEventId` são por pessoa**, não por tarefa: dois membros da
+>   mesma turma veem estados diferentes para a mesma entrega.
+> - **A publicação é incondicional.** O servidor enfileira a sincronização em toda
+>   criação e edição; não há opção por tarefa. Quem não tem Google conectado fica em
+>   `local`, e isso não é falha.
 
 ### 3.1 Conexão com o Google
 
@@ -351,28 +376,31 @@ redirect URIs*.
 
 ---
 
-## 6. O que trocar no frontend quando o backend subir
+## 6. O que mudou no frontend na integração
 
-A lista exata, e ela é curta:
+1. `.env`: `VITE_GOOGLE_BACKEND=true`, e o `VITE_GOOGLE_CLIENT_SECRET` que estava ali
+   **saiu** — o secret é do backend, e tudo que é `VITE_*` vai para o bundle.
+2. `backendProxy.ts`: manda `timeZone` junto do `returnTo` no `authorize-url`.
+3. `src/api/tasks.ts` e `src/api/onboarding.ts`: cada corpo virou `apiFetch`. O
+   `ownerId` como parâmetro sumiu — o token já diz de quem é a linha.
+4. **Saíram**: `taskCalendar.ts`, `googleCalendar.ts`, `tasksStorage.ts`,
+   `onboardingStorage.ts`, `setTaskSync`, `downloadDriveFile` e `issueForStatus`. O
+   `isOverdue` migrou para `src/utils/tasks.ts`.
+5. `src/routes/(google)/callback/`: os três erros do redirect (`access_denied`,
+   `invalid_state`, `no_refresh_token`) passaram a ter mensagens distintas. Dizer
+   "você cancelou" para um `no_refresh_token` manda o aluno repetir o que falhou.
 
-1. `.env`: `VITE_GOOGLE_BACKEND=true`. O `backendProxyDriver` já está escrito e o
-   `GoogleProvider` já o registra a partir dessa variável.
-2. `src/utils/googleAuthDrivers/backendProxy.ts`: mandar `&timeZone=` junto do `returnTo` no
-   `authorize-url`. Uma linha.
-3. `src/api/tasks.ts`: trocar cada corpo por um `apiFetch` nos caminhos da seção
-   3.2. As assinaturas já estão nesse formato.
-4. `src/api/onboarding.ts`: idem, nos caminhos da seção 8.2. O `ownerId` como parâmetro some.
+**Duas telas mudaram de comportamento**, e as duas por honestidade:
 
-Com a sincronização da Agenda no servidor (3.3), `src/utils/taskCalendar.ts` e as chamadas a
-`publishTaskEvent`/`setTaskSync` em `src/routes/(private)/tarefas/index.tsx` saem — o
-`syncState` chega pronto na resposta, e o "Tentar de novo" vira um `POST /api/tasks/{id}/sync`.
+- **O switch "Adicionar ao Google Agenda" saiu do `DialogFormTarefa`.** A publicação é
+  incondicional no servidor, então o interruptor não ligava mais nada. No lugar ficou a
+  frase que diz o que vai acontecer.
+- **A importação do Drive ganhou o `DialogImportFromDrive`.** Sem os bytes no aparelho
+  não há sugestão da Revi IA; o destino passou a ser escolhido, com atalho para criar
+  matéria e assunto ali mesmo.
 
-Com o import do Drive no servidor (3.4), o handler de importação em `Camera.tsx` troca
-`downloadDriveFile()` + `uploadContent()` por uma chamada só. `openDrivePicker` continua no
-navegador, e `VITE_GOOGLE_API_KEY`/`VITE_GOOGLE_APP_ID` continuam necessários.
-
-**Nenhuma tela é reescrita.** Nenhum componente conhece `localStorage` nem
-`googleapis.com`.
+`openDrivePicker` continua no navegador, e `VITE_GOOGLE_API_KEY`/`VITE_GOOGLE_APP_ID`
+continuam necessários: o Picker roda no aparelho do aluno nos dois modos.
 
 ---
 
@@ -394,9 +422,10 @@ navegador, e `VITE_GOOGLE_API_KEY`/`VITE_GOOGLE_APP_ID` continuam necessários.
 5. **Revogação no logout — decidido: não revoga.** Sair do Revi não toca no Google. Com o
    refresh token no servidor, a conexão é da conta, não da sessão: sair no laboratório da
    escola não pode desligar a agenda do celular do aluno. Só o
-   `DELETE /api/google/connection` revoga em `https://oauth2.googleapis.com/revoke`. No modo
-   navegador o `clearGoogleTokens()` do `signOut` continua válido, porque lá o token *é* do
-   aparelho.
+   `DELETE /api/google/connection` revoga em `https://oauth2.googleapis.com/revoke`. O
+   `clearGoogleTokens()` do `signOut` continua, mas agora limpa só o **cache** do access
+   token neste aparelho. O texto do `DialogSignOut` e o `GoogleConnectCard` foram
+   ajustados para dizer isso — antes prometiam o contrário.
 6. **Limite de tamanho do arquivo importado — decidido: teto no servidor.**
    `revi.google.drive.max-file-size`, 50 MB por padrão, verificado pelos metadados do Drive
    **antes** do download. Google Docs nativos não trazem `size`, então para eles o teto é
@@ -409,13 +438,20 @@ navegador, e `VITE_GOOGLE_API_KEY`/`VITE_GOOGLE_APP_ID` continuam necessários.
    `authorize-url`. Cobre todo aluno que não viaja, sem mexer no contrato de 3.2 nem no tipo
    `TaskInput`. O aluno que viaja entre conectar e criar a entrega continua errando o fuso —
    limitação conhecida e aceita.
-9. **Tarefa de turma — decidido: o dono cria, a conclusão é individual.** `tasks` ganha
-   `classroom_id`, e `done`/`syncState` saem de `tasks` para tabelas por par (tarefa, pessoa).
-   Quem administra a turma (`ClassroomRole.canManageStructure()`) cria e edita; cada membro
-   conclui a sua e recebe o evento na **própria** agenda. É o mais caro dos seis changes e o
-   único que refatora o que os anteriores entregaram.
-10. **Quantas contas por usuário.** `uq_google_accounts_user` assume uma. Aluno com
+9. **Tarefa de turma — entregue.** `tasks` ganhou `classroom_id`, e `done`/`syncState`
+   saíram de `tasks` para tabelas por par (tarefa, pessoa). Dono e editor criam pelo
+   `POST /api/classrooms/{id}/tasks` — no frontend, o botão "Marcar entrega" na página da
+   turma. Cada membro conclui a sua e recebe o evento na **própria** agenda.
+10. **Quantas contas por usuário.** `uq_google_accounts_owner` assume uma. Aluno com
     conta pessoal e conta da escola vai querer escolher qual agenda recebe a entrega.
+    Continua em aberto.
+11. **A sugestão da Revi IA não alcança o Drive — em aberto.** O `folder-suggestion` é
+    multipart e o import server-side não tem bytes para mandar. Resolver de verdade
+    pede um `POST /api/contents/{id}/folder-suggestion` que rode sobre o material já
+    importado, ou uma sugestão assíncrona depois do `201`. Por ora, o aluno escolhe.
+12. **O relógio do `settleSync` é uma aposta.** Reler a lista 2,5 s depois cobre a fila
+    no caso comum, não no ruim. A saída honesta seria o servidor avisar (SSE ou
+    WebSocket); enquanto não avisa, o selo certo aparece na próxima visita à tela.
 
 ---
 
@@ -441,7 +477,6 @@ modos de estudo.
 | Arquivo | Papel |
 | --- | --- |
 | `src/api/onboarding.ts` | **A fachada de persistência.** É o único arquivo que muda quando o endpoint existir |
-| `src/utils/onboardingStorage.ts` | Chave `revi:onboarding`, no formato `{ [ownerId]: { completedAt } }`. Puro e testado |
 | `src/utils/onboardingSteps.ts` | Os slugs das etapas e o parse do `?passo=`. Puro e testado |
 | `src/contexts/OnboardingContext.tsx` | Resolve o estado uma vez por sessão e expõe `complete()` |
 | `src/components/RequireOnboarding.tsx` | O gate, irmão do `RequireAuth`, composto dentro dele em `(private)/layout.tsx` |
@@ -506,16 +541,19 @@ comportamento desejado, já que nenhuma delas passou por ele.
 `UserProfile` (o record em `profile/domain/`) ganha o campo e um
 `withOnboardingCompleted(now)`, no mesmo formato do `withAvatarUrl` que já existe.
 
-### 8.4 O que trocar no frontend quando o backend subir
+### 8.4 O que mudou no frontend na integração
 
-1. `src/api/onboarding.ts`: os dois corpos viram `apiFetch` nos caminhos de 8.2.
-   As assinaturas já estão nesse formato e devolvem `Promise` desde hoje.
-2. `src/contexts/OnboardingContext.tsx`: nada. Ele já trata o estado
-   `"loading"`, que hoje dura um tick e amanhã dura uma requisição.
-3. `src/utils/onboardingStorage.ts` e o `ownerId` como chave deixam de ser
-   necessários — o backend já sabe de quem é a linha pelo token.
+1. `src/api/onboarding.ts`: `getOnboardingState()` lê o `onboardingCompletedAt` do
+   `GET /api/whoami` (não há endpoint de leitura próprio, e nem precisa);
+   `completeOnboarding()` é o `POST /api/whoami/onboarding`. O `ownerId` saiu das duas
+   assinaturas.
+2. `src/contexts/OnboardingContext.tsx`: nada de forma. O `"loading"` que durava um
+   tick agora dura uma requisição, e já era tratado. O `ownerId` ficou só como gatilho
+   do efeito — trocar de conta no mesmo aparelho precisa reabrir a pergunta.
+3. `src/utils/onboardingStorage.ts` foi removido, com o teste dele.
 
-**Nenhuma tela é reescrita.**
+**Nenhuma tela foi reescrita**, e a limitação de 8.5 deixou de existir: quem se
+cadastra no celular não revê o onboarding no computador.
 
 ### 8.5 A limitação do modo atual
 
