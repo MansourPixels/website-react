@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/api/client";
 import { suggestFolder, uploadContent } from "@/api/content";
 import {
-  createChildFolder,
-  createMotherFolder,
+  createOrReuseChildFolder,
+  createOrReuseMotherFolder,
   listChildFolders,
   listMotherFolders,
 } from "@/api/folders";
@@ -58,6 +58,7 @@ export function DialogCategorizeImage({
 
   const requestIdRef = useRef(0);
   const createdDestinationRef = useRef<UploadDestination | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const resolveSuggestion = useCallback(async () => {
     if (file === null) return;
@@ -133,13 +134,14 @@ export function DialogCategorizeImage({
   async function handleSubmit() {
     if (
       !isValid ||
-      isSubmitting ||
+      isSubmittingRef.current ||
       file === null ||
       (suggestion.status !== "matched" && suggestion.status !== "unmatched")
     ) {
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -158,11 +160,11 @@ export function DialogCategorizeImage({
                 childFolderId: suggestion.childFolderId,
               }
             : await (async () => {
-                const motherFolder = await createMotherFolder(
+                const motherFolder = await createOrReuseMotherFolder(
                   suggestion.motherFolderName.trim(),
                   suggestion.color,
                 );
-                const childFolder = await createChildFolder(
+                const childFolder = await createOrReuseChildFolder(
                   motherFolder.id,
                   suggestion.childFolderName.trim(),
                 );
@@ -187,6 +189,7 @@ export function DialogCategorizeImage({
           : "Não foi possível enviar o material. Tente novamente.",
       );
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
