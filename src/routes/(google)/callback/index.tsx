@@ -3,12 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 import { takeGoogleReturnTo } from "@/utils/googleStorage";
-
-const errorMessages: Record<string, string> = {
-  access_denied: "Você cancelou a conexão com o Google.",
-  invalid_state: "Não foi possível confirmar a conexão com o Google. Tente novamente.",
-  no_refresh_token: "O Google não concedeu acesso contínuo. Tente conectar novamente.",
-};
+import { googleCallbackErrorMessage } from "@/utils/googleCallback";
 
 export default function GoogleCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -25,8 +20,10 @@ export default function GoogleCallbackPage() {
     const returnTo = takeGoogleReturnTo();
     const authError = searchParams.get("error");
 
-    if (authError !== null) {
-      setError(errorMessages[authError] ?? "Não foi possível concluir a conexão com o Google.");
+    const errorMessage = googleCallbackErrorMessage(authError);
+
+    if (errorMessage !== null) {
+      setError(errorMessage);
       return;
     }
 
@@ -34,9 +31,7 @@ export default function GoogleCallbackPage() {
     window.setTimeout(() => void navigate(returnTo, { replace: true }), 700);
   }, [navigate, searchParams]);
 
-  useEffect(() => {
-    if (error !== null) headingRef.current?.focus();
-  }, [error]);
+  useEffect(() => headingRef.current?.focus(), [error, message]);
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">

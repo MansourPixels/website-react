@@ -25,6 +25,7 @@ import { StatTile } from "@/components/StatTile";
 import { ThemePicker } from "@/components/ThemePicker";
 import { UserIdentity } from "@/components/UserIdentity";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGoogle } from "@/contexts/GoogleContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { useSpotify } from "@/contexts/SpotifyContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,10 +33,12 @@ import { isHapticsSupported } from "@/utils/haptics";
 import { SPEECH_RATE_LIMITS } from "@/utils/preferencesStorage";
 import { isSpeechSupported } from "@/utils/speech";
 import { DialogSignOut } from "./components/DialogSignOut";
+import { DialogGoogleDisconnect } from "./components/DialogGoogleDisconnect";
 
 export default function PerfilPage() {
   const { user } = useAuth();
   const spotify = useSpotify();
+  const google = useGoogle();
   const { preferences, setPreference } = usePreferences();
   const theme = useTheme();
 
@@ -105,6 +108,8 @@ export default function PerfilPage() {
   }, []);
 
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
+  const [isGoogleDisconnectOpen, setIsGoogleDisconnectOpen] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const [verificationState, setVerificationState] = useState<
     "idle" | "sending" | "sent" | "error"
   >("idle");
@@ -117,6 +122,16 @@ export default function PerfilPage() {
       setVerificationState("sent");
     } catch {
       setVerificationState("error");
+    }
+  }
+
+  async function handleGoogleConnect() {
+    setGoogleError(null);
+
+    try {
+      await google.connect("/perfil");
+    } catch {
+      setGoogleError("Não foi possível iniciar a conexão com o Google. Tente novamente.");
     }
   }
 
@@ -297,6 +312,39 @@ export default function PerfilPage() {
         ) : null}
       </section>
 
+      <section className="flex flex-col gap-4 rounded-3xl bg-surface p-4 shadow-surface">
+        <header className="flex min-w-0 flex-col gap-1">
+          <h2 className="font-semibold">Google</h2>
+          <p className="text-muted text-sm text-pretty">
+            Conecte sua conta para liberar integrações futuras com os recursos do Google.
+          </p>
+        </header>
+
+        {google.status === "loading" ? (
+          <p className="flex items-center gap-2 text-sm text-muted"><Spinner size="sm" />Verificando a conexão…</p>
+        ) : null}
+
+        {google.status === "connected" ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">Conectado como <strong className="font-medium">{google.connection?.email}</strong>.</p>
+            {google.connection?.scopes.length ? (
+              <p className="text-muted text-sm">Escopos concedidos: {google.connection.scopes.join(", ")}.</p>
+            ) : null}
+            <Button variant="secondary" className="w-full sm:w-fit" onPress={() => setIsGoogleDisconnectOpen(true)}>
+              <Unplug className="size-4" />Desconectar Google
+            </Button>
+          </div>
+        ) : null}
+
+        {google.status === "disconnected" ? (
+          <Button variant="secondary" className="w-full sm:w-fit" onPress={() => void handleGoogleConnect()}>
+            Conectar Google
+          </Button>
+        ) : null}
+
+        {googleError !== null ? <p role="alert" className="text-danger-soft-foreground text-sm">{googleError}</p> : null}
+      </section>
+
       <section className="bg-surface rounded-3xl shadow-surface p-4 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
           <h2 className="font-semibold">Preferências</h2>
@@ -403,6 +451,7 @@ export default function PerfilPage() {
       ) : null}
 
       <DialogSignOut isOpen={isSignOutOpen} onOpenChange={setIsSignOutOpen} />
+      <DialogGoogleDisconnect isOpen={isGoogleDisconnectOpen} onOpenChange={setIsGoogleDisconnectOpen} />
     </main>
   );
 }
