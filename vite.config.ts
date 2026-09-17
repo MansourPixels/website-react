@@ -105,6 +105,24 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    // Nenhuma destas é alcançável a partir da primeira tela, então a varredura
+    // de dependências do Vite não as encontra ao subir o servidor: ela só
+    // descobre cada uma quando a rota que a importa é aberta. Cada descoberta
+    // dispara uma reotimização, que troca o hash `?v=` de todos os deps já
+    // pré-bundlados e faz o navegador levar 504 ("Outdated Optimize Dep") nos
+    // módulos que já tinha pedido — foi o que quebrou o mapa mental, a rota
+    // com o dep mais pesado e mais isolado do resto do app.
+    //
+    // Declaradas aqui, elas entram no pré-bundle de largada, numa passada só.
+    include: [
+      "@xyflow/react",
+      "react-markdown",
+      "remark-gfm",
+      "remark-math",
+      "rehype-katex",
+    ],
+  },
   resolve: {
     alias: [
       {
