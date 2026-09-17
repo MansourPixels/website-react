@@ -15,6 +15,9 @@ Agenda é o que faz o lembrete tocar no celular mesmo com o Revi fechado.
 > ele **não** consegue é manter a conexão viva além de ~1 h nem tocar um lembrete
 > sem o aluno abrir o app. É esse limite, e só ele, que justifica este documento.
 
+Os contratos deste documento já viraram pedido de implementação: seis prompts prontos para
+`/opsx:propose` no `revi-back`, em [`docs/prompts/`](docs/prompts/00-README.md).
+
 ---
 
 ## 1. O que já está implementado no frontend
@@ -123,7 +126,7 @@ perde tudo, e a turma não tem como compartilhar uma entrega.
 | Método | Caminho | Descrição |
 |---|---|---|
 | `GET` | `/api/google/status` | Estado da conexão do usuário autenticado |
-| `GET` | `/api/google/authorize-url?returnTo=` | URL de consentimento, com `state` assinado |
+| `GET` | `/api/google/authorize-url?returnTo=&timeZone=` | URL de consentimento, com `state` assinado |
 | `GET` | `/api/google/callback?code&state` | Troca o código (com `client_secret`), guarda o refresh token e redireciona |
 | `GET` | `/api/google/token` | Access token cunhado do refresh token |
 | `DELETE` | `/api/google/connection` | Revoga e apaga a conexão |
@@ -137,12 +140,16 @@ perde tudo, e a turma não tem como compartilhar uma entrega.
              "https://www.googleapis.com/auth/userinfo.email"] }
 ```
 
-**`GET /api/google/authorize-url?returnTo=/tarefas`** → `{ "url": "https://accounts.google.com/o/oauth2/v2/auth?..." }`
+**`GET /api/google/authorize-url?returnTo=/tarefas&timeZone=America/Sao_Paulo`** → `{ "url": "https://accounts.google.com/o/oauth2/v2/auth?..." }`
 
 A URL precisa levar `access_type=offline` e `prompt=consent` — sem os dois o Google
 não devolve refresh token na segunda autorização. O `state` tem de ser assinado e
 amarrado ao usuário; `returnTo` só pode ser um caminho relativo do próprio app
 (barrar `//host` e URLs absolutas evita open redirect).
+
+`timeZone` é o fuso do aluno (`Intl.DateTimeFormat().resolvedOptions().timeZone`), guardado
+em `google_accounts.time_zone` e usado pelo servidor para montar o evento. É a única mudança
+que o `backendProxyDriver` precisa: uma linha a mais na query.
 
 **`GET /api/google/callback?code&state`**: troca com `client_secret`, persiste o
 refresh token **cifrado**, e redireciona para `{FRONT_URL}/google/callback?state=...`.
@@ -156,9 +163,14 @@ frontend (`src/routes/(google)/callback/index.tsx`).
 ```
 
 Deve ser cacheado no servidor até perto de expirar — o Google limita a emissão de
-tokens por refresh token. **`401`, `403` e `404` são lidos pelo frontend como
-"desconectado"**, não como erro: o `backendProxyDriver` já trata os três assim, e é
-por isso que ele não quebra a tela enquanto o endpoint não existir.
+tokens por refresh token.
+
+> **"Não conectado" tem de ser `404`, nunca `401`.** O `backendProxyDriver` trata 401, 403 e
+> 404 como "desconectado", e é por isso que ele não quebra a tela enquanto o endpoint não
+> existir — mas só o `404` chega até ele. O `apiFetch` (`src/api/client.ts`) intercepta todo
+> `401` antes do chamador, dispara `performRefresh()` do token do **Revi** e, no fracasso,
+> emite `revi:auth-expired` e derruba a sessão inteira. Um `401` aqui desloga o aluno do Revi
+> por ele não ter conectado o Google.
 
 > O `scope` devolvido tem de ser o **concedido**, não o pedido. É dele que saem
 > `hasDrive` e `hasCalendar`.
@@ -193,16 +205,25 @@ o importante é que venham na resposta.
 `atrasada` **não** é um campo: é derivado de `!done && dueAt < agora`. Estado
 persistido que depende do relógio fica errado sozinho.
 
-Se a sincronização ficar no servidor (ver 3.3), `syncState` e `googleEventId` são
-escritos por ele e o frontend só os exibe. Enquanto for no cliente, é preciso um
-jeito de gravar o resultado — hoje `src/api/tasks.ts` expõe
-`setTaskSync(id, syncState, googleEventId)`, que viraria um
-`PATCH /api/tasks/{id}/sync`.
+**A sincronização ficou no servidor** (ver 3.3): `syncState` e `googleEventId` são escritos
+por ele, e o frontend só os exibe. O `setTaskSync(id, syncState, googleEventId)` de
+`src/api/tasks.ts` deixa de existir, e o "Tentar de novo" de cada linha passa a chamar
+`POST /api/tasks/{id}/sync` → `202`, que só reenfileira.
 
-### 3.3 Sugestão forte: sincronizar a Agenda no servidor
+`motherFolderName` e `motherFolderColor` viajam no `TaskInput` por herança do modo
+`localStorage`, mas o servidor **ignora** os dois e resolve o snapshot a partir de
+`motherFolderId` — o cliente não é fonte de verdade para o nome de uma pasta que o servidor
+conhece.
 
-É o que faz o lembrete existir sem o app aberto, e é a razão principal de o backend
-valer a pena. O contrato do evento que o frontend já usa, para manter a paridade:
+### 3.3 Decisão: a Agenda é sincronizada no servidor
+
+É o que faz o lembrete existir sem o app aberto, e é a razão principal de o backend valer a
+pena. A publicação é **assíncrona, por RabbitMQ** (`revi.tasks.calendar.*`), espelhando
+`revi.content.categorization.*`: criar uma tarefa não espera o Google, e o Google fora do ar
+não impede o aluno de anotar uma entrega. Aluno sem conexão Google fica em `local` — isso não
+é falha, e não vai para a DLQ.
+
+O contrato do evento que o frontend já usa, para manter a paridade:
 
 ```jsonc
 {
@@ -224,11 +245,13 @@ antes de criar, `GET /events?privateExtendedProperty=reviTaskId=<id>`; se já ex
 `PATCH` em vez de um segundo evento. É isso que impede um retry de duplicar a
 entrega na agenda do aluno — vale tanto no cliente quanto no servidor.
 
-O fuso precisa ser o do aluno, não o do servidor. Hoje o front usa
-`Intl.DateTimeFormat().resolvedOptions().timeZone` com `America/Sao_Paulo` de
-reserva; se a sincronização migrar, o fuso tem de ser persistido junto da conta.
+O fuso precisa ser o do aluno, não o do servidor — um servidor em UTC criando evento para um
+aluno em São Paulo erra por três horas. O front resolve com
+`Intl.DateTimeFormat().resolvedOptions().timeZone`, com `America/Sao_Paulo` de reserva, e
+manda esse valor no `authorize-url`; o servidor o guarda em `google_accounts.time_zone` e lê
+de lá.
 
-### 3.4 Sugestão: importar do Drive sem passar pelo celular
+### 3.4 Decisão: importar do Drive sem passar pelo celular
 
 `POST /api/contents/from-drive { "fileId": "...", "childFolderId": "..." }`
 
@@ -241,13 +264,15 @@ corpo de um handler em `Camera.tsx`.
 
 ## 4. Modelo de dados
 
-Próxima migration livre: `V20`. Duas tabelas, no formato que o `revi-back` já usa.
+Próxima migration livre: **`V23`** — `V20`, `V21` e `V22` já estão ocupadas no `revi-back`
+(`content_extracted_text`, `classroom_ai_content`, `classroom_processing_failure_cascade`).
+Duas tabelas, no formato que o `revi-back` já usa.
 
-`V20__google_account.sql`
+`V23__create_google_accounts_table.sql`
 ```sql
 CREATE TABLE google_accounts (
     id UUID PRIMARY KEY,
-    user_id UUID NOT NULL,
+    owner_id UUID NOT NULL,
     google_subject VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     -- Cifrado na aplicação (ver seção 7). Nunca em texto puro.
@@ -256,13 +281,13 @@ CREATE TABLE google_accounts (
     time_zone VARCHAR(64) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_google_accounts_user UNIQUE (user_id)
+    CONSTRAINT uq_google_accounts_owner UNIQUE (owner_id)
 );
 
-CREATE INDEX idx_google_accounts_user_id ON google_accounts (user_id);
+CREATE INDEX idx_google_accounts_owner_id ON google_accounts (owner_id);
 ```
 
-`V21__tasks.sql`
+`V24__create_tasks_table.sql`
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY,
@@ -332,19 +357,26 @@ A lista exata, e ela é curta:
 
 1. `.env`: `VITE_GOOGLE_BACKEND=true`. O `backendProxyDriver` já está escrito e o
    `GoogleProvider` já o registra a partir dessa variável.
-2. `src/api/tasks.ts`: trocar cada corpo por um `apiFetch` nos caminhos da seção
+2. `src/utils/googleAuthDrivers/backendProxy.ts`: mandar `&timeZone=` junto do `returnTo` no
+   `authorize-url`. Uma linha.
+3. `src/api/tasks.ts`: trocar cada corpo por um `apiFetch` nos caminhos da seção
    3.2. As assinaturas já estão nesse formato.
+4. `src/api/onboarding.ts`: idem, nos caminhos da seção 8.2. O `ownerId` como parâmetro some.
 
-Se a sincronização da Agenda migrar para o servidor (3.3), `src/utils/taskCalendar.ts`
-e as chamadas a `publishTaskEvent` em `src/routes/(private)/tarefas/index.tsx` saem —
-o `syncState` passa a chegar pronto na resposta.
+Com a sincronização da Agenda no servidor (3.3), `src/utils/taskCalendar.ts` e as chamadas a
+`publishTaskEvent`/`setTaskSync` em `src/routes/(private)/tarefas/index.tsx` saem — o
+`syncState` chega pronto na resposta, e o "Tentar de novo" vira um `POST /api/tasks/{id}/sync`.
+
+Com o import do Drive no servidor (3.4), o handler de importação em `Camera.tsx` troca
+`downloadDriveFile()` + `uploadContent()` por uma chamada só. `openDrivePicker` continua no
+navegador, e `VITE_GOOGLE_API_KEY`/`VITE_GOOGLE_APP_ID` continuam necessários.
 
 **Nenhuma tela é reescrita.** Nenhum componente conhece `localStorage` nem
 `googleapis.com`.
 
 ---
 
-## 7. Segurança e pontos em aberto
+## 7. Segurança, decisões e pontos em aberto
 
 1. **App não verificado.** `calendar.events` é escopo sensível. Enquanto o app
    estiver em "Testing" no Google Cloud Console, só as contas na lista de usuários de
@@ -359,23 +391,29 @@ o `syncState` passa a chegar pronto na resposta.
    prevista. Um dump de banco não pode virar acesso à agenda de ninguém.
 4. **`state` assinado.** Sem isso o callback aceita um código de outra pessoa (CSRF
    de login). E `returnTo` só pode ser caminho relativo, ou vira open redirect.
-5. **Revogação no logout.** Hoje o front apaga o token local. Com o backend, sair da
-   conta deveria revogar em `https://oauth2.googleapis.com/revoke` — decidir se isso
-   é por aparelho ou por conta.
-6. **Limite de tamanho do arquivo importado.** O Picker não impõe um. Um PDF de 300
-   MB hoje desce inteiro para a memória do celular antes de subir. Definir um teto e
-   recusá-lo antes do download (o `sizeBytes` vem no `DriveFileRef`).
+5. **Revogação no logout — decidido: não revoga.** Sair do Revi não toca no Google. Com o
+   refresh token no servidor, a conexão é da conta, não da sessão: sair no laboratório da
+   escola não pode desligar a agenda do celular do aluno. Só o
+   `DELETE /api/google/connection` revoga em `https://oauth2.googleapis.com/revoke`. No modo
+   navegador o `clearGoogleTokens()` do `signOut` continua válido, porque lá o token *é* do
+   aparelho.
+6. **Limite de tamanho do arquivo importado — decidido: teto no servidor.**
+   `revi.google.drive.max-file-size`, 50 MB por padrão, verificado pelos metadados do Drive
+   **antes** do download. Google Docs nativos não trazem `size`, então para eles o teto é
+   aplicado durante o streaming. O Picker continua sem impor limite nenhum.
 7. **Pop-up em PWA standalone no iOS.** O consentimento do GIS abre em pop-up, e o
    iOS em `display: "standalone"` é historicamente hostil a isso. Precisa de teste em
    iPhone instalado na tela de início; se falhar, o caminho é o modo backend, que usa
    redirect em vez de pop-up — e já está implementado.
-8. **Fuso da tarefa.** Hoje o evento é criado no fuso do aparelho. Um aluno que
-   viaja cria uma entrega no fuso errado. Persistir o fuso junto da tarefa resolve,
-   mas muda o contrato de 3.2.
-9. **Tarefa de turma.** Uma entrega é quase sempre da turma inteira, não de uma
-   pessoa. `tasks` hoje é só `owner_id`; uma tarefa criada pelo dono da turma e
-   espelhada para os membros é a evolução natural — e precisa de decisão explícita
-   sobre quem pode criar e quem pode concluir.
+8. **Fuso da tarefa — decidido: fica na conta.** `google_accounts.time_zone`, informado no
+   `authorize-url`. Cobre todo aluno que não viaja, sem mexer no contrato de 3.2 nem no tipo
+   `TaskInput`. O aluno que viaja entre conectar e criar a entrega continua errando o fuso —
+   limitação conhecida e aceita.
+9. **Tarefa de turma — decidido: o dono cria, a conclusão é individual.** `tasks` ganha
+   `classroom_id`, e `done`/`syncState` saem de `tasks` para tabelas por par (tarefa, pessoa).
+   Quem administra a turma (`ClassroomRole.canManageStructure()`) cria e edita; cada membro
+   conclui a sua e recebe o evento na **própria** agenda. É o mais caro dos seis changes e o
+   único que refatora o que os anteriores entregaram.
 10. **Quantas contas por usuário.** `uq_google_accounts_user` assume uma. Aluno com
     conta pessoal e conta da escola vai querer escolher qual agenda recebe a entrega.
 
@@ -454,8 +492,8 @@ Não é tabela nova: é uma coluna em `user_profile` (`V14__create_user_profile_
 que já é a linha por usuário e já nasce sozinha no primeiro `GET /api/whoami`
 via `GetOrCreateUserProfileUseCase`.
 
-`V22__user_profile_onboarding.sql` — `V20` e `V21` estão reservadas para
-`google_accounts` e `tasks` (seção 4).
+`V26__user_profile_onboarding.sql`, ou a próxima livre no momento — `V23` em diante estão
+sendo consumidas pelos changes da seção 4 e da 3.3.
 
 ```sql
 ALTER TABLE user_profile ADD COLUMN onboarding_completed_at TIMESTAMPTZ;
