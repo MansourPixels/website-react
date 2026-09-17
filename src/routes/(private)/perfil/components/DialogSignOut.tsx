@@ -58,7 +58,8 @@ export function DialogSignOut({ isOpen, onOpenChange }: DialogSignOutProps) {
               <p className="text-muted">
                 Você vai precisar entrar de novo para continuar estudando. Se
                 houver uma sessão de estudo em andamento, ela é encerrada. A
-                conexão com o Google também é encerrada neste aparelho.
+                conexão com o Google continua valendo na sua conta — para
+                desfazê-la, use “Desconectar” na seção Google do perfil.
               </p>
               {error !== null ? (
                 <p

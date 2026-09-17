@@ -9,7 +9,6 @@ import {
   Modal,
   Select,
   Spinner,
-  Switch,
   TextField,
   TimeField,
 } from "@heroui/react";
@@ -25,12 +24,12 @@ import {
   today,
   type CalendarDate,
 } from "@internationalized/date";
-import { CalendarClock, CalendarPlus } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ApiError } from "@/api/client";
 import { listChildFolders, listMotherFolders } from "@/api/folders";
-import { createTask, updateTask } from "@/api/tasks";
+import { createClassroomTask, createTask, updateTask } from "@/api/tasks";
 import { useGoogle } from "@/contexts/GoogleContext";
 import { useFeedback } from "@/hooks/useFeedback";
 import type { ChildFolder, MotherFolder } from "@/types/api/folder";
@@ -39,10 +38,15 @@ import type { Task } from "@/types/Task";
 interface DialogFormTarefaProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** A tarefa já vem salva; `addToCalendar` diz se a Agenda ainda é pedida. */
-  onSubmit: (task: Task, addToCalendar: boolean) => void;
+  /** A tarefa já vem salva pelo servidor, com o snapshot das pastas resolvido. */
+  onSubmit: (task: Task) => void;
   variant?: "edit" | "add";
   task?: Task;
+  /**
+   * Quando presente, a criação vira entrega da turma inteira: aparece na lista
+   * de todo membro, e cada um conclui a sua. Só dono e editor chegam aqui.
+   */
+  classroomId?: string;
 }
 
 interface FormState {
@@ -51,25 +55,23 @@ interface FormState {
   childFolderId: string | null;
   date: CalendarDate | null;
   time: Time;
-  addToCalendar: boolean;
 }
 
 // 23:59 é o padrão porque "entregar até sexta" quase sempre significa o fim do
 // dia — quem precisa de outra hora troca, quem não precisa não pensa nisso.
 const DEFAULT_TIME = new Time(23, 59);
 
-function createEmptyForm(hasCalendar: boolean): FormState {
+function createEmptyForm(): FormState {
   return {
     title: "",
     motherFolderId: null,
     childFolderId: null,
     date: null,
     time: DEFAULT_TIME,
-    addToCalendar: hasCalendar,
   };
 }
 
-function formFromTask(task: Task, hasCalendar: boolean): FormState {
+function formFromTask(task: Task): FormState {
   const zoned = parseAbsoluteToLocal(task.dueAt);
 
   return {
@@ -78,7 +80,6 @@ function formFromTask(task: Task, hasCalendar: boolean): FormState {
     childFolderId: task.childFolderId,
     date: toCalendarDate(zoned),
     time: new Time(zoned.hour, zoned.minute),
-    addToCalendar: hasCalendar && task.syncState !== "local",
   };
 }
 
@@ -88,13 +89,12 @@ export function DialogFormTarefa({
   onSubmit,
   variant = "add",
   task,
+  classroomId,
 }: DialogFormTarefaProps) {
   const google = useGoogle();
   const feedback = useFeedback();
 
-  const [form, setForm] = useState<FormState>(() =>
-    createEmptyForm(google.hasCalendar),
-  );
+  const [form, setForm] = useState<FormState>(createEmptyForm);
   const [motherFolders, setMotherFolders] = useState<MotherFolder[] | null>(
     null,
   );
@@ -107,13 +107,9 @@ export function DialogFormTarefa({
   useEffect(() => {
     if (!isOpen) return;
 
-    setForm(
-      task === undefined
-        ? createEmptyForm(google.hasCalendar)
-        : formFromTask(task, google.hasCalendar),
-    );
+    setForm(task === undefined ? createEmptyForm() : formFromTask(task));
     setError(null);
-  }, [isOpen, task, google.hasCalendar]);
+  }, [isOpen, task]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -193,28 +189,29 @@ export function DialogFormTarefa({
       childFolders?.find((folder) => folder.id === form.childFolderId) ?? null;
 
     try {
+      // Só os ids: nome e cor da pasta são resolvidos e congelados pelo
+      // servidor, que é quem conhece a pasta de verdade.
       const input = {
         title: trimmedTitle,
         motherFolderId: mother.id,
-        motherFolderName: mother.name,
-        motherFolderColor: mother.color,
         childFolderId: child?.id ?? null,
-        childFolderName: child?.name ?? null,
         dueAt: toCalendarDateTime(form.date, form.time)
           .toDate(getLocalTimeZone())
           .toISOString(),
       };
 
-      // Grava local primeiro: a tarefa nunca se perde porque o Google falhou.
-      // Quem conversa com a Agenda é a tela, depois, e a falha vira estado na
-      // linha da tarefa em vez de um erro que bloqueia o formulário.
+      // A tarefa é salva antes de qualquer conversa com o Google: o servidor
+      // publica a Agenda de forma assíncrona depois de responder, então uma
+      // falha do Google vira `syncState` na linha, nunca um erro aqui.
       const saved =
-        isAdding || task === undefined
-          ? await createTask(input)
-          : await updateTask(task.id, input);
+        !isAdding && task !== undefined
+          ? await updateTask(task.id, input)
+          : classroomId !== undefined
+            ? await createClassroomTask(classroomId, input)
+            : await createTask(input);
 
       feedback("sucesso");
-      onSubmit(saved, form.addToCalendar && google.hasCalendar);
+      onSubmit(saved);
       onOpenChange(false);
     } catch (submitError) {
       feedback("erro");
@@ -243,7 +240,11 @@ export function DialogFormTarefa({
                 )}
               </Modal.Icon>
               <Modal.Heading>
-                {isAdding ? "Nova tarefa" : "Editar tarefa"}
+                {!isAdding
+                  ? "Editar tarefa"
+                  : classroomId === undefined
+                    ? "Nova tarefa"
+                    : "Nova tarefa da turma"}
               </Modal.Heading>
             </Modal.Header>
 
@@ -420,28 +421,23 @@ export function DialogFormTarefa({
                 </div>
               </I18nProvider>
 
-              {/* Desconectado, o lugar do switch vira o convite para conectar —
-                  um interruptor que não liga nada é só uma promessa falsa. */}
+              {/* Era um switch. Virou um aviso porque a publicação passou a ser
+                  do servidor, e com ela a escolha deixou de existir: com a
+                  Agenda ligada, toda entrega vai para lá. Manter o interruptor
+                  seria um controle que não controla nada — e, desconectado, o
+                  lugar dele continua sendo o convite para conectar. */}
               {google.hasCalendar ? (
-                <Switch
-                  isSelected={form.addToCalendar}
-                  className="w-full"
-                  onChange={(isSelected) =>
-                    setForm({ ...form, addToCalendar: isSelected })
-                  }
-                >
-                  <Switch.Content>
-                    <Switch.Control>
-                      <Switch.Thumb />
-                    </Switch.Control>
-                    <span className="flex flex-col">
-                      <Label>Adicionar ao Google Agenda</Label>
-                      <span className="text-muted text-xs">
-                        Com lembretes um dia e uma hora antes da entrega.
-                      </span>
-                    </span>
-                  </Switch.Content>
-                </Switch>
+                <p className="text-muted flex items-start gap-2 text-sm text-pretty">
+                  <CalendarCheck
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  <span>
+                    {classroomId === undefined
+                      ? "Esta entrega vai para a sua Google Agenda, com lembretes um dia e uma hora antes do prazo."
+                      : "Cada membro da turma recebe esta entrega na própria Google Agenda, com lembretes um dia e uma hora antes do prazo."}
+                  </span>
+                </p>
               ) : google.isConfigured ? (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-muted text-sm text-pretty">

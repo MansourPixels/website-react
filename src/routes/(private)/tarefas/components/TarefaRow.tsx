@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Checkbox, Popover, Spinner, cn } from "@heroui/react";
-import { CalendarCheck, CalendarX, Ellipsis, Pencil, Trash } from "lucide-react";
+import { CalendarCheck, CalendarX, Ellipsis, Pencil, Trash, Users } from "lucide-react";
 import { useState } from "react";
 
 import type { Task } from "@/types/Task";
@@ -10,6 +10,11 @@ interface TarefaRowProps {
   isOverdue: boolean;
   /** A Agenda só entra em cena com o Google conectado e o escopo concedido. */
   canSync: boolean;
+  /**
+   * Editar e excluir. Concluir fica de fora de propósito: a conclusão é de cada
+   * membro, e mesmo o leitor da turma conclui a própria cópia.
+   */
+  canManage: boolean;
   isSyncing: boolean;
   onToggleDone: (task: Task, done: boolean) => void;
   onEdit: (task: Task) => void;
@@ -21,6 +26,7 @@ export function TarefaRow({
   task,
   isOverdue,
   canSync,
+  canManage,
   isSyncing,
   onToggleDone,
   onEdit,
@@ -74,7 +80,20 @@ export function TarefaRow({
         >
           {task.title}
         </p>
-        <p className="text-muted truncate text-xs">{subject}</p>
+
+        <p className="text-muted flex min-w-0 items-center gap-1.5 text-xs">
+          <span className="truncate">{subject}</span>
+
+          {/* O selo diz de onde veio a entrega. Sem ele o aluno não distingue o
+              que ele mesmo anotou do que o professor marcou para a turma — e a
+              linha some dos motivos pelos quais ele não pode editar. */}
+          {task.classroomName !== null ? (
+            <span className="bg-default inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5">
+              <Users aria-hidden="true" className="size-3" />
+              <span className="max-w-24 truncate">{task.classroomName}</span>
+            </span>
+          ) : null}
+        </p>
 
         {/* A falha de sincronização mora na linha da tarefa que falhou, não numa
             faixa global: é ali que está a ação de refazê-la. */}
@@ -122,36 +141,40 @@ export function TarefaRow({
             : formatDueDate(task.dueAt)}
         </p>
 
-        <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <Button
-            variant="ghost"
-            isIconOnly
-            size="sm"
-            aria-label={`Opções da tarefa ${task.title}`}
-          >
-            <Ellipsis className="size-4" />
-          </Button>
-          <Popover.Content className="max-w-64 rounded-xl" placement="bottom end">
-            <Popover.Dialog className="p-2">
-              <ButtonGroup orientation="vertical">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start rounded-t-lg border-b text-accent-soft-foreground"
-                  onPress={() => openDialog(() => onEdit(task))}
-                >
-                  <Pencil /> Editar tarefa
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start rounded-b-lg text-danger"
-                  onPress={() => openDialog(() => onDelete(task))}
-                >
-                  <Trash /> Excluir tarefa
-                </Button>
-              </ButtonGroup>
-            </Popover.Dialog>
-          </Popover.Content>
-        </Popover>
+        {/* Sem permissão o menu inteiro sai, em vez de abrir com duas opções que
+            o servidor recusaria. */}
+        {canManage ? (
+          <Popover isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <Button
+              variant="ghost"
+              isIconOnly
+              size="sm"
+              aria-label={`Opções da tarefa ${task.title}`}
+            >
+              <Ellipsis className="size-4" />
+            </Button>
+            <Popover.Content className="max-w-64 rounded-xl" placement="bottom end">
+              <Popover.Dialog className="p-2">
+                <ButtonGroup orientation="vertical">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start rounded-t-lg border-b text-accent-soft-foreground"
+                    onPress={() => openDialog(() => onEdit(task))}
+                  >
+                    <Pencil /> Editar tarefa
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start rounded-b-lg text-danger"
+                    onPress={() => openDialog(() => onDelete(task))}
+                  >
+                    <Trash /> Excluir tarefa
+                  </Button>
+                </ButtonGroup>
+              </Popover.Dialog>
+            </Popover.Content>
+          </Popover>
+        ) : null}
       </div>
     </li>
   );

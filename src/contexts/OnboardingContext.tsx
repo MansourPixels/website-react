@@ -23,11 +23,11 @@ const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 /**
  * Resolve o estado do onboarding uma vez por sessão, aqui em cima, para que o
- * gate de `(private)` não dispare uma leitura por navegação.
+ * gate de `(private)` não dispare uma requisição por navegação.
  *
- * `status` começa em `"loading"` mesmo com a fachada síncrona de hoje: quando
- * `src/api/onboarding.ts` virar `apiFetch`, este provider não muda de forma — o
- * estado de carregamento já existe e já é tratado por quem consome.
+ * Quem sabe de quem é a linha é o token: o `ownerId` não viaja mais como
+ * parâmetro. Ele continua no `useEffect` só como gatilho — trocar de conta no
+ * mesmo aparelho precisa reabrir a pergunta.
  */
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const { user, status: authStatus } = useAuth();
@@ -47,7 +47,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    getOnboardingState(ownerId)
+    getOnboardingState()
       .then(({ completedAt }) => {
         if (!cancelled) setStatus(completedAt === null ? "pending" : "done");
       })
@@ -66,7 +66,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const complete = useCallback(async () => {
     if (ownerId === null) return;
 
-    await completeOnboarding(ownerId);
+    await completeOnboarding();
     setStatus("done");
   }, [ownerId]);
 

@@ -38,6 +38,32 @@ export function getDownloadUrl(contentId: string): Promise<DownloadUrlResponse> 
   return apiFetch<DownloadUrlResponse>(`/api/contents/${contentId}/download-url`);
 }
 
+/**
+ * Importa um arquivo que o aluno escolheu no Picker do próprio Drive.
+ *
+ * O servidor baixa os bytes direto do Google: eles **não** passam pelo aparelho,
+ * que é o ponto do endpoint — um PDF de aula de 40 MB no 4G do ônibus custaria o
+ * dobro do tráfego pelo pior caminho. Documento, apresentação e planilha do
+ * Google entram como a exportação em PDF.
+ *
+ * A resposta tem exatamente o shape do upload multipart, então quem consome não
+ * precisa de um segundo caminho. Só chegam aqui arquivos escolhidos no Picker:
+ * o escopo `drive.file` não alcança mais nada.
+ *
+ * Erros: `400` tipo ou tamanho recusado · `404` pasta não é sua, ou o Drive não
+ * acha o arquivo · `409` sem conexão Google com acesso ao Drive · `429` passou
+ * das 30 importações por hora · `503` Drive fora do ar.
+ */
+export function importFromDrive(
+  fileId: string,
+  childFolderId: string,
+): Promise<Content> {
+  return apiFetch<Content>("/api/contents/from-drive", {
+    method: "POST",
+    body: { fileId, childFolderId },
+  });
+}
+
 export function suggestFolder(
   file: File,
   contentType: ContentType,

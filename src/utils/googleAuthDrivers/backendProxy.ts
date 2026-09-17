@@ -34,6 +34,19 @@ function currentPath() {
   return `${window.location.pathname}${window.location.search}`;
 }
 
+/**
+ * O fuso do aluno, guardado pelo servidor em `google_accounts.time_zone` e usado
+ * para montar o evento da Agenda. Sem ele um servidor em UTC criaria a entrega
+ * de um aluno em São Paulo três horas fora do lugar.
+ */
+function currentTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
+  } catch {
+    return "America/Sao_Paulo";
+  }
+}
+
 async function fetchToken(): Promise<GoogleToken | null> {
   try {
     const response = await apiFetch<BackendTokenResponse>("/api/google/token");
@@ -44,8 +57,9 @@ async function fetchToken(): Promise<GoogleToken | null> {
       scope: response.scope,
     };
   } catch (error) {
-    // 401/403 = a conta Google não está ligada (ou foi revogada); 404 = o
-    // endpoint ainda não subiu. Nos três casos é "desconectado", não falha.
+    // 404 é a resposta documentada para "sem conexão Google utilizável"; 401 e
+    // 403 cobrem uma revogação do lado do Google. Nos três casos é
+    // "desconectado", não falha — a tela não pode quebrar por isso.
     if (
       error instanceof ApiError &&
       (error.status === 401 || error.status === 403 || error.status === 404)
@@ -68,8 +82,13 @@ export const backendProxyDriver: GoogleAuthDriver = {
 
     writeGoogleHandshake(state, returnTo);
 
+    const query = new URLSearchParams({
+      returnTo,
+      timeZone: currentTimeZone(),
+    });
+
     const { url } = await apiFetch<AuthorizeUrlResponse>(
-      `/api/google/authorize-url?returnTo=${encodeURIComponent(returnTo)}`,
+      `/api/google/authorize-url?${query.toString()}`,
     );
 
     if (typeof window === "undefined") {

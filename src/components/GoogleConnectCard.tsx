@@ -69,6 +69,14 @@ export function GoogleConnectCard() {
             </p>
           ) : null}
 
+          {/* A conexão é da conta, não deste aparelho: sair do Revi não a
+              desliga, e desconectar aqui a revoga no Google para todos os
+              aparelhos. Dizer isso evita a surpresa nos dois sentidos. */}
+          <p className="text-muted text-sm text-pretty">
+            A conexão vale em todos os seus aparelhos. Desconectar revoga o
+            acesso do Revi na sua conta Google.
+          </p>
+
           <Button
             variant="secondary"
             className="w-full sm:w-fit"

@@ -1,32 +1,28 @@
-import {
-  readOnboarding,
-  writeOnboarding,
-  type OnboardingState,
-} from "@/utils/onboardingStorage";
+import { apiFetch } from "./client";
+import { getWhoami } from "./user";
 
-/**
- * O seam de persistência do onboarding.
- *
- * Hoje é `localStorage`. Quando `/api/whoami/onboarding` existir no `revi-back`,
- * só este arquivo muda — cada corpo vira um `apiFetch` com o caminho documentado
- * em GOOGLE.md, e as assinaturas já estão nesse formato. Nenhuma tela é tocada.
- *
- * As funções já devolvem `Promise` mesmo com `localStorage` sendo síncrono: é
- * exatamente isso que permite a troca sem reescrever quem chama.
- */
-
-export function getOnboardingState(ownerId: string): Promise<OnboardingState> {
-  return Promise.resolve(readOnboarding(ownerId));
+export interface OnboardingState {
+  /** ISO 8601, ou `null` enquanto o aluno não terminou. */
+  completedAt: string | null;
 }
 
-export function completeOnboarding(ownerId: string): Promise<void> {
-  // Idempotente, como o endpoint terá de ser: reconcluir não reescreve a data,
-  // senão voltar ao onboarding pelo histórico do navegador moveria o marco.
-  const current = readOnboarding(ownerId);
+/**
+ * O onboarding é um fato da conta, não do aparelho: quem se cadastra no celular
+ * e entra pelo computador não revê o fluxo.
+ *
+ * Não existe endpoint de leitura próprio — a data vem junto do `GET /api/whoami`
+ * que o perfil já consome, e é `null` até a conclusão.
+ */
+export function getOnboardingState(): Promise<OnboardingState> {
+  return getWhoami().then(({ onboardingCompletedAt }) => ({
+    completedAt: onboardingCompletedAt,
+  }));
+}
 
-  if (current.completedAt === null) {
-    writeOnboarding(ownerId, { completedAt: new Date().toISOString() });
-  }
-
-  return Promise.resolve();
+/**
+ * `204`, sem corpo. É idempotente no servidor: reconcluir não move a data, então
+ * voltar ao onboarding pelo histórico do navegador não desloca o marco.
+ */
+export function completeOnboarding(): Promise<void> {
+  return apiFetch<void>("/api/whoami/onboarding", { method: "POST" });
 }

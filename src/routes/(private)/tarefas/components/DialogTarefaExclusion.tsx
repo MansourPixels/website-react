@@ -5,14 +5,11 @@ import { useEffect, useState } from "react";
 import { deleteTask } from "@/api/tasks";
 import { useFeedback } from "@/hooks/useFeedback";
 import type { Task } from "@/types/Task";
-import { removeTaskEvent } from "@/utils/taskCalendar";
 
 interface DialogTarefaExclusionProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onConfirm: (task: Task) => void;
-  /** A Agenda só é limpa se ainda houver permissão para isso. */
-  canSync: boolean;
   task: Task;
 }
 
@@ -20,7 +17,6 @@ export function DialogTarefaExclusion({
   isOpen,
   onOpenChange,
   onConfirm,
-  canSync,
   task,
 }: DialogTarefaExclusionProps) {
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +37,9 @@ export function DialogTarefaExclusion({
     setError(null);
 
     try {
-      // O evento sai primeiro: apagar a tarefa antes deixaria o id do evento
-      // inalcançável e um lembrete órfão tocando no celular do aluno.
-      if (hasEvent && canSync) await removeTaskEvent(task);
-
+      // Um `DELETE` só: o servidor publica a remoção do evento de forma
+      // assíncrona depois de responder, então não existe mais o risco de apagar
+      // a tarefa e deixar um lembrete órfão tocando no celular do aluno.
       await deleteTask(task.id);
 
       feedback("exclusao");
@@ -76,8 +71,8 @@ export function DialogTarefaExclusion({
                   {task.title}
                 </strong>{" "}
                 sai da sua lista de entregas
-                {hasEvent && canSync ? " e da sua Google Agenda" : ""}. Esta ação
-                não pode ser desfeita.
+                {hasEvent ? " e da sua Google Agenda" : ""}. Esta ação não pode
+                ser desfeita.
               </p>
               {error !== null ? (
                 <p role="alert" className="text-danger text-sm text-pretty">

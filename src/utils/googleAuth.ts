@@ -182,16 +182,3 @@ export async function revokeAccess(): Promise<void> {
     clearGoogleTokens();
   }
 }
-
-/**
- * Tradução única das respostas de erro das APIs do Google. 403 quase sempre é
- * escopo desmarcado no consentimento — e isso precisa virar `scopeMissing`, com
- * um botão que pede o consentimento de novo, nunca um erro genérico.
- */
-export function issueForStatus(status: number): Exclude<GoogleIssue, null> {
-  if (status === 401) return "consentDenied";
-  if (status === 403) return "scopeMissing";
-  if (status === 429) return "rateLimited";
-
-  return "requestFailed";
-}

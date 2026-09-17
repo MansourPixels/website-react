@@ -1,19 +1,21 @@
 import { Button, Disclosure, Spinner } from "@heroui/react";
 import { CalendarSync } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { listClassrooms } from "@/api/classrooms";
 import { ApiError } from "@/api/client";
-import { listTasks, setTaskDone, setTaskSync } from "@/api/tasks";
+import { listTasks, requestTaskSync, setTaskDone } from "@/api/tasks";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { FABButton } from "@/components/FABButton";
 import { NavMenu } from "@/components/NavMenu";
 import { useGoogle } from "@/contexts/GoogleContext";
+import type { ClassroomRole } from "@/types/api/classroom";
 import type { Task } from "@/types/Task";
+import { canManageClassroomTasks } from "@/utils/classroomPermissions";
 import { googleIssueMessage } from "@/utils/googleIssues";
 import { pageMeta } from "@/utils/pageMeta";
-import { publishTaskEvent } from "@/utils/taskCalendar";
-import { isOverdue } from "@/utils/tasksStorage";
+import { isOverdue } from "@/utils/tasks";
 import { DialogFormTarefa } from "./components/DialogFormTarefa";
 import { DialogTarefaExclusion } from "./components/DialogTarefaExclusion";
 import { TarefaRow } from "./components/TarefaRow";
@@ -26,10 +28,23 @@ export function meta() {
   });
 }
 
+/**
+ * A publicação na Agenda é assíncrona no servidor: toda mutação responde
+ * `syncState: "local"` e o desfecho só aparece numa leitura posterior. Em vez de
+ * inventar um "sincronizada" que talvez não tenha acontecido, esperamos a fila
+ * assentar e relemos a lista — o selo que aparece é o que o servidor viu.
+ */
+const SYNC_SETTLE_MS = 2500;
+
 export default function TasksPage() {
   const google = useGoogle();
 
   const [tasks, setTasks] = useState<Task[] | null>(null);
+  // Só para saber quem pode editar a entrega da turma: a resposta de /api/tasks
+  // traz o nome da turma, não o papel de quem está lendo.
+  const [rolesByClassroom, setRolesByClassroom] = useState<
+    Record<string, ClassroomRole>
+  >({});
   const [loadError, setLoadError] = useState<string | null>(null);
   // Separado do `loadError` de propósito: uma conclusão que falhou não pode
   // trocar a lista inteira por uma tela de erro.
@@ -59,17 +74,17 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     setTasks(null);
     setLoadError(null);
 
-    listTasks()
+    listTasks(controller.signal)
       .then((result) => {
-        if (!cancelled) setTasks(result);
+        if (!controller.signal.aborted) setTasks(result);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
 
         setLoadError(
           error instanceof ApiError
@@ -78,10 +93,57 @@ export default function TasksPage() {
         );
       });
 
-    return () => {
-      cancelled = true;
-    };
+    // As turmas são acessório: sem elas a lista aparece igual, só sem os botões
+    // de editar a entrega da turma. Por isso a falha aqui é silenciosa.
+    listClassrooms()
+      .then((classrooms) => {
+        if (controller.signal.aborted) return;
+
+        setRolesByClassroom(
+          Object.fromEntries(
+            classrooms.map((classroom) => [classroom.id, classroom.role]),
+          ),
+        );
+      })
+      .catch(() => {
+        // Sem papéis, nenhuma tarefa de turma oferece editar nem excluir.
+      });
+
+    return () => controller.abort();
   }, [reloadKey]);
+
+  const settleTimeoutRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (settleTimeoutRef.current !== null) {
+        window.clearTimeout(settleTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Relê a lista depois de a fila do servidor ter tido tempo de rodar. Silencioso
+   * de propósito: a lista já está na tela e não pode piscar para "carregando" a
+   * cada tarefa criada.
+   */
+  const settleSync = useCallback(() => {
+    if (settleTimeoutRef.current !== null) {
+      window.clearTimeout(settleTimeoutRef.current);
+    }
+
+    settleTimeoutRef.current = window.setTimeout(() => {
+      settleTimeoutRef.current = null;
+
+      listTasks()
+        .then((result) => setTasks(result))
+        .catch(() => {
+          // A lista em tela continua válida; só o selo pode estar atrasado.
+        })
+        .finally(() => setSyncingIds([]));
+    }, SYNC_SETTLE_MS);
+  }, []);
 
   function upsert(task: Task) {
     setTasks((current) => {
@@ -97,53 +159,75 @@ export default function TasksPage() {
 
   const canSync = google.status === "connected" && google.hasCalendar;
 
-  async function syncTask(task: Task) {
-    if (!canSync) return;
+  /**
+   * Só reenfileira: o `202` diz que o pedido entrou na fila, não que o evento
+   * existe. Quem conta o desfecho é o `settleSync`.
+   */
+  async function syncTasks(items: Task[]) {
+    if (items.length === 0) return;
 
-    setSyncingIds((current) => [...current, task.id]);
+    setActionError(null);
+    setSyncingIds((current) => [...current, ...items.map((item) => item.id)]);
 
-    try {
-      const eventId = await publishTaskEvent(task);
+    const results = await Promise.allSettled(
+      items.map((item) => requestTaskSync(item.id)),
+    );
 
-      upsert(
-        await setTaskSync(
-          task.id,
-          eventId === null ? "falhou" : "sincronizada",
-          eventId ?? task.googleEventId,
-        ),
+    const rejection = results.find((result) => result.status === "rejected");
+
+    if (rejection !== undefined && rejection.status === "rejected") {
+      setActionError(
+        rejection.reason instanceof ApiError
+          ? rejection.reason.detail
+          : "Não foi possível pedir a sincronização com a Agenda. Tente novamente.",
       );
-    } catch {
-      // A tarefa já está salva; só o registro do resultado falhou.
-    } finally {
-      setSyncingIds((current) => current.filter((id) => id !== task.id));
     }
+
+    settleSync();
   }
 
-  function handleSubmitted(task: Task, addToCalendar: boolean) {
+  function handleSubmitted(task: Task) {
     upsert(task);
 
-    if (addToCalendar) void syncTask(task);
+    // O servidor publica sozinho ao criar e ao editar — não há o que pedir, só
+    // o que reler quando a fila assentar.
+    if (canSync) settleSync();
   }
 
   async function handleToggleDone(task: Task, done: boolean) {
     setActionError(null);
 
     try {
-      const updated = await setTaskDone(task.id, done);
+      upsert(await setTaskDone(task.id, done));
 
-      upsert(updated);
-
-      // Só propaga para a Agenda o que já mora lá: concluir uma tarefa local
-      // não é motivo para criar um evento que o aluno nunca pediu.
-      if (updated.googleEventId !== null && canSync) void syncTask(updated);
-    } catch {
-      setActionError("Não foi possível atualizar a tarefa. Tente novamente.");
+      // Concluir reescreve o resumo do evento ("✓ <título>"), então o selo pode
+      // mudar — mas só para quem já tem a Agenda ligada.
+      if (canSync) settleSync();
+    } catch (error) {
+      setActionError(
+        error instanceof ApiError
+          ? error.detail
+          : "Não foi possível atualizar a tarefa. Tente novamente.",
+      );
     }
   }
 
   function handleDeleted(task: Task) {
     setTasks((current) => current?.filter((item) => item.id !== task.id) ?? null);
     setDeletingTask(null);
+  }
+
+  /**
+   * Tarefa pessoal é sempre de quem está lendo. A da turma depende do papel — e,
+   * sem a lista de turmas, o benefício da dúvida é não oferecer o botão: o
+   * servidor recusaria com `403` de qualquer forma.
+   */
+  function canManage(task: Task) {
+    if (task.classroomId === null) return true;
+
+    const role = rolesByClassroom[task.classroomId];
+
+    return role !== undefined && canManageClassroomTasks(role);
   }
 
   const all = tasks ?? [];
@@ -160,6 +244,8 @@ export default function TasksPage() {
       (b.completedAt ?? b.dueAt).localeCompare(a.completedAt ?? a.dueAt),
     );
 
+  // Conectar o Google depois não sincroniza o passado: cada tarefa criada
+  // enquanto a conta estava solta espera uma edição ou um pedido explícito.
   const pendingSync = all.filter(
     (task) => !task.done && task.syncState !== "sincronizada",
   );
@@ -175,11 +261,12 @@ export default function TasksPage() {
             task={task}
             isOverdue={isOverdue(task, now)}
             canSync={canSync}
+            canManage={canManage(task)}
             isSyncing={syncingIds.includes(task.id)}
             onToggleDone={(item, done) => void handleToggleDone(item, done)}
             onEdit={setEditingTask}
             onDelete={setDeletingTask}
-            onRetrySync={(item) => void syncTask(item)}
+            onRetrySync={(item) => void syncTasks([item])}
           />
         ))}
       </ul>
@@ -228,9 +315,7 @@ export default function TasksPage() {
                 variant="secondary"
                 size="sm"
                 isDisabled={syncingIds.length > 0}
-                onPress={() => {
-                  for (const task of pendingSync) void syncTask(task);
-                }}
+                onPress={() => void syncTasks(pendingSync)}
               >
                 <CalendarSync className="size-4" />
                 {pendingSync.length === 1
@@ -316,7 +401,6 @@ export default function TasksPage() {
       {deletingTask !== null ? (
         <DialogTarefaExclusion
           task={deletingTask}
-          canSync={canSync}
           isOpen
           onOpenChange={(isOpen) => {
             if (!isOpen) setDeletingTask(null);

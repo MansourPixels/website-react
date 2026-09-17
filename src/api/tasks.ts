@@ -1,113 +1,82 @@
-import type { Task, TaskInput, TaskSyncState } from "@/types/Task";
-import { readTasks, sanitizeTask, writeTasks } from "@/utils/tasksStorage";
+import type { Task, TaskInput } from "@/types/Task";
+
+import { apiFetch } from "./client";
 
 /**
- * O seam de persistência das tarefas.
+ * As tarefas do aluno e as das turmas a que ele pertence, numa lista só,
+ * ordenadas por prazo pelo servidor.
  *
- * Hoje é `localStorage`. Quando `/api/tasks` existir no `revi-back`, só este
- * arquivo muda — cada corpo vira um `apiFetch` com o caminho documentado em
- * GOOGLE.md, e as assinaturas já estão nesse formato. Nenhuma tela é tocada.
+ * A sincronização com a Google Agenda é **do servidor**: criar, editar e
+ * concluir publicam a sincronização de forma assíncrona depois de a resposta
+ * sair, então toda mutação devolve `syncState: "local"` e o estado real aparece
+ * num `listTasks()` posterior. Por isso não existe um `setTaskSync` aqui — o
+ * frontend exibe `syncState`, nunca o escreve.
  */
 
-const NOT_FOUND = "Tarefa não encontrada.";
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function createId() {
-  return crypto.randomUUID();
-}
-
-function applyInput(task: Task, input: TaskInput): Task {
+/** O servidor ignora nome/cor de pasta enviados pelo cliente; só os ids viajam. */
+function toRequestBody(input: TaskInput) {
   return {
-    ...task,
     title: input.title.trim(),
     motherFolderId: input.motherFolderId,
-    motherFolderName: input.motherFolderName,
-    motherFolderColor: input.motherFolderColor,
     childFolderId: input.childFolderId,
-    childFolderName: input.childFolderName,
     dueAt: input.dueAt,
-    updatedAt: nowIso(),
   };
 }
 
-function mutate(id: string, change: (task: Task) => Task): Promise<Task> {
-  const tasks = readTasks();
-  const index = tasks.findIndex((task) => task.id === id);
-
-  if (index === -1) return Promise.reject(new Error(NOT_FOUND));
-
-  const next = change(tasks[index]);
-
-  tasks[index] = next;
-  writeTasks(tasks);
-
-  return Promise.resolve(next);
-}
-
-export function listTasks(): Promise<Task[]> {
-  return Promise.resolve(readTasks());
+export function listTasks(signal?: AbortSignal): Promise<Task[]> {
+  return apiFetch<Task[]>("/api/tasks", { signal });
 }
 
 export function createTask(input: TaskInput): Promise<Task> {
-  const timestamp = nowIso();
-
-  const task = sanitizeTask({
-    id: createId(),
-    title: input.title.trim(),
-    motherFolderId: input.motherFolderId,
-    motherFolderName: input.motherFolderName,
-    motherFolderColor: input.motherFolderColor,
-    childFolderId: input.childFolderId,
-    childFolderName: input.childFolderName,
-    dueAt: input.dueAt,
-    done: false,
-    completedAt: null,
-    googleEventId: null,
-    syncState: "local",
-    createdAt: timestamp,
-    updatedAt: timestamp,
+  return apiFetch<Task>("/api/tasks", {
+    method: "POST",
+    body: toRequestBody(input),
   });
-
-  if (task === null) {
-    return Promise.reject(new Error("Dados da tarefa incompletos."));
-  }
-
-  writeTasks([...readTasks(), task]);
-
-  return Promise.resolve(task);
-}
-
-export function updateTask(id: string, input: TaskInput): Promise<Task> {
-  return mutate(id, (task) => applyInput(task, input));
-}
-
-export function setTaskDone(id: string, done: boolean): Promise<Task> {
-  return mutate(id, (task) => ({
-    ...task,
-    done,
-    completedAt: done ? nowIso() : null,
-    updatedAt: nowIso(),
-  }));
 }
 
 /**
- * O resultado da conversa com a Agenda. Separado do `updateTask` porque a
- * sincronização acontece *depois* de a tarefa já estar salva: a tarefa nunca se
- * perde porque o Google falhou.
+ * Cria uma entrega para a turma inteira. Só dono e editor passam; um membro
+ * comum toma `403`, e quem não é da turma toma `404`.
+ *
+ * A tarefa aparece na lista de todos os membros, mas a conclusão e o evento da
+ * Agenda são de cada um — quem cria não conclui pelos outros.
  */
-export function setTaskSync(
-  id: string,
-  syncState: TaskSyncState,
-  googleEventId: string | null,
+export function createClassroomTask(
+  classroomId: string,
+  input: TaskInput,
 ): Promise<Task> {
-  return mutate(id, (task) => ({ ...task, syncState, googleEventId }));
+  return apiFetch<Task>(`/api/classrooms/${classroomId}/tasks`, {
+    method: "POST",
+    body: toRequestBody(input),
+  });
+}
+
+export function updateTask(id: string, input: TaskInput): Promise<Task> {
+  return apiFetch<Task>(`/api/tasks/${id}`, {
+    method: "PATCH",
+    body: toRequestBody(input),
+  });
+}
+
+export function setTaskDone(id: string, done: boolean): Promise<Task> {
+  return apiFetch<Task>(`/api/tasks/${id}/complete`, {
+    method: "PATCH",
+    body: { done },
+  });
 }
 
 export function deleteTask(id: string): Promise<void> {
-  writeTasks(readTasks().filter((task) => task.id !== id));
+  return apiFetch<void>(`/api/tasks/${id}`, { method: "DELETE" });
+}
 
-  return Promise.resolve();
+/**
+ * Reenfileira a publicação na Agenda. Responde `202` sem corpo: é um pedido de
+ * nova tentativa, não o resultado dela — quem mostra o desfecho é o próximo
+ * `listTasks()`.
+ *
+ * `409` quando não há conexão Google utilizável; `404` quando a tarefa não é
+ * visível para quem chamou.
+ */
+export function requestTaskSync(id: string): Promise<void> {
+  return apiFetch<void>(`/api/tasks/${id}/sync`, { method: "POST" });
 }

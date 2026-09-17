@@ -22,9 +22,24 @@ const errorMessages = {
   denied: "Você cancelou a conexão com o Google.",
   invalidState:
     "Não foi possível confirmar a origem do pedido. Tente conectar de novo.",
+  noRefreshToken:
+    "O Google não devolveu a autorização de longo prazo. Remova o Revi em myaccount.google.com/permissions e conecte de novo.",
   exchangeFailed:
     "Não foi possível concluir a conexão com o Google. Tente de novo.",
 };
+
+/**
+ * Os três motivos que o `revi-back` devolve no redirect. Cada um tem uma saída
+ * diferente, então mapear todos para "você cancelou" mandaria o aluno tentar de
+ * novo exatamente o que acabou de falhar.
+ */
+function messageForError(error: string): string {
+  if (error === "access_denied") return errorMessages.denied;
+  if (error === "invalid_state") return errorMessages.invalidState;
+  if (error === "no_refresh_token") return errorMessages.noRefreshToken;
+
+  return errorMessages.exchangeFailed;
+}
 
 /**
  * Retorno do modo backend (`VITE_GOOGLE_BACKEND=true`). O `revi-back` já trocou
@@ -56,14 +71,14 @@ export default function GoogleCallbackPage() {
     async function finish() {
       try {
         if (authError !== null) {
-          setError(errorMessages.denied);
+          setError(messageForError(authError));
 
           return;
         }
 
-        // O `state` é opcional aqui porque quem o valida de verdade é o
-        // backend, antes da troca; esta conferência só pega uma volta que
-        // chegou noutra aba.
+        // O `state` é opcional aqui — o redirect de sucesso do `revi-back` nem
+        // o carrega — porque quem o valida de verdade é o backend, antes da
+        // troca; esta conferência só pega uma volta que chegou noutra aba.
         if (state !== null && handshake.state !== null && state !== handshake.state) {
           setError(errorMessages.invalidState);
 

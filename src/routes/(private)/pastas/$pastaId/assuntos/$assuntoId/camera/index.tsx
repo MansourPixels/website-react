@@ -29,6 +29,13 @@ export default function SubjectCameraPage() {
   }
 
   return (
-    <Camera title="Adicionar material" onSelectMaterial={handleSelectMaterial} />
+    <Camera
+      title="Adicionar material"
+      onSelectMaterial={handleSelectMaterial}
+      // O destino já é este assunto: o material do Drive entra direto, sem
+      // repetir uma pergunta que a própria rota já respondeu.
+      driveChildFolderId={assuntoId}
+      onDriveImported={() => navigate(-1)}
+    />
   );
 }

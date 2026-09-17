@@ -22,20 +22,10 @@ export interface GoogleToken {
   scope: string;
 }
 
-/** O que o Picker devolve, e o bastante para baixar o arquivo. */
+/** O que o Picker devolve. O `id` é o que o servidor usa para buscar o arquivo. */
 export interface DriveFileRef {
   id: string;
   name: string;
   mimeType: string;
   sizeBytes: number | null;
-}
-
-export interface CalendarEventInput {
-  taskId: string;
-  title: string;
-  motherFolderName: string;
-  childFolderName: string | null;
-  /** ISO. Vira o início do evento; o fim é 30 minutos depois. */
-  dueAt: string;
-  done: boolean;
 }

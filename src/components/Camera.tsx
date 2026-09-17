@@ -1,8 +1,9 @@
 import { ApiError } from "@/api/client";
+import { importFromDrive } from "@/api/content";
 import { useGoogle } from "@/contexts/GoogleContext";
 import type { CapturedFile } from "@/types/capture";
+import type { DriveFileRef } from "@/types/Google";
 import { DRIVE_SCOPE, GoogleError, hasScope } from "@/utils/googleAuth";
-import { DriveFileTypeError, downloadDriveFile } from "@/utils/googleDrive";
 import { googleIssueMessage } from "@/utils/googleIssues";
 import { openDrivePicker } from "@/utils/googlePicker";
 import { readGoogleToken } from "@/utils/googleStorage";
@@ -32,6 +33,7 @@ import {
   DialogCategorizeImage,
   type UploadDestination,
 } from "./DialogCategorizeImage";
+import { DialogImportFromDrive } from "./DialogImportFromDrive";
 import { NavMenu } from "./NavMenu";
 import { PhotoReview } from "./PhotoReview";
 
@@ -42,9 +44,22 @@ interface CameraProps {
   title?: string;
   footerClass?: string;
   onSelectMaterial?: (file: CapturedFile) => Promise<void>;
+  /**
+   * Destino já decidido para o material vindo do Drive — a câmera do assunto
+   * sabe em qual assunto está. Sem ele, o diálogo pergunta onde guardar.
+   */
+  driveChildFolderId?: string;
+  /** Chamado depois de o servidor confirmar a importação do Drive. */
+  onDriveImported?: () => void;
 }
 
-export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
+export function Camera({
+  title,
+  footerClass,
+  onSelectMaterial,
+  driveChildFolderId,
+  onDriveImported,
+}: CameraProps) {
   const isTouchPrimary = useTouchPrimary();
 
   const camera = useCamera({ autoStart: isTouchPrimary });
@@ -82,6 +97,9 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
   >(null);
   const [isImportingDrive, setIsImportingDrive] = useState(false);
   const [driveError, setDriveError] = useState<string | null>(null);
+  // O arquivo escolhido no Picker, esperando o destino. Só id, nome e tipo — os
+  // bytes ficam no Google e vão direto de lá para o servidor.
+  const [driveFile, setDriveFile] = useState<DriveFileRef | null>(null);
 
   const isFocusEnabled =
     isTouchPrimary &&
@@ -184,8 +202,10 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
    * consentimento e só então abre o Picker — nenhuma tela intermediária. O
    * consentimento precisa nascer *dentro* do clique, ou o pop-up é bloqueado.
    *
-   * O arquivo escolhido entra exatamente onde entra um arquivo do disco:
-   * `showPreview` → PhotoReview → DialogCategorizeImage → uploadContent.
+   * Do Picker em diante quem trabalha é o servidor: ele baixa os bytes direto
+   * do Drive, e eles nunca passam por este aparelho. É por isso que o caminho
+   * do Drive não tem PhotoReview nem sugestão da Revi IA — sem os bytes aqui
+   * não há o que pré-visualizar nem o que mandar para o `folder-suggestion`.
    */
   async function handleImportFromDrive() {
     if (isImportingDrive) return;
@@ -224,12 +244,22 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
       // Fechar o Picker sem escolher nada não é erro.
       if (reference === null) return;
 
-      showPreview(await downloadDriveFile(reference));
+      // A câmera do assunto já sabe o destino: perguntar "onde guardar?" dentro
+      // do próprio assunto seria uma pergunta já respondida.
+      if (driveChildFolderId !== undefined) {
+        await importFromDrive(reference.id, driveChildFolderId);
+        feedback("sucesso");
+        onDriveImported?.();
+
+        return;
+      }
+
+      setDriveFile(reference);
     } catch (importError) {
       feedback("erro");
       setDriveError(
-        importError instanceof DriveFileTypeError
-          ? `O Revi só analisa imagem e PDF, então ${importError.fileName} não pode ser enviado.`
+        importError instanceof ApiError
+          ? importError.detail
           : importError instanceof GoogleError
             ? (googleIssueMessage(importError.issue) ?? DRIVE_GENERIC_ERROR)
             : DRIVE_GENERIC_ERROR,
@@ -269,6 +299,19 @@ export function Camera({ title, footerClass, onSelectMaterial }: CameraProps) {
           onUploaded={handleUploaded}
         />
       ) : null}
+
+      <DialogImportFromDrive
+        isOpen={driveFile !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDriveFile(null);
+        }}
+        file={driveFile}
+        onImported={(destination) => {
+          setDriveFile(null);
+          feedback("sucesso");
+          handleUploaded(destination);
+        }}
+      />
     </>
   );
 
