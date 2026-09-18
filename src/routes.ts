@@ -12,6 +12,14 @@ export default [
   // consentimento, e os termos têm de ser legíveis antes do cadastro.
   route("politica-privacidade", "routes/(landing)/politica-privacidade/index.tsx"),
   route("termos-uso", "routes/(landing)/termos-uso/index.tsx"),
+  // Também fora de (auth) e de (private), e por razões opostas: (auth)
+  // redirecionaria para o app quem clica no link do e-mail com a sessão aberta,
+  // e (private) exigiria login num link que existe para funcionar sem ele.
+  // Fora da lista `prerender`: depende do token da query.
+  route(
+    "notificacoes/descadastrar",
+    "routes/(landing)/notificacoes/descadastrar/index.tsx",
+  ),
   layout("routes/(auth)/layout.tsx", [
     route("auth/entrar", "routes/(auth)/entrar/index.tsx"),
     route("auth/cadastro", "routes/(auth)/cadastro/index.tsx"),
