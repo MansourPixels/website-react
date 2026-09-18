@@ -6,6 +6,7 @@ import {
   Flame,
   LogOut,
   Mail,
+  MailCheck,
   Pencil,
   Trophy,
   Unplug,
@@ -259,6 +260,25 @@ export default function PerfilPage() {
             <h3 className="font-semibold">Ranking</h3>
             <p className="text-xs text-muted font-normal whitespace-normal">
               Seu XP no geral, entre amigos e por turma.
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          to="/perfil/notificacoes"
+          className={buttonVariants({
+            variant: "ghost",
+            className:
+              "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
+          })}
+        >
+          <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
+            <MailCheck className="size-5" />
+          </div>
+          <div className="flex-1 text-left">
+            <h3 className="font-semibold">Notificações por e-mail</h3>
+            <p className="text-xs text-muted font-normal whitespace-normal">
+              Escolha quais e-mails do Revi você quer receber.
             </p>
           </div>
         </Link>
