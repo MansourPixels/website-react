@@ -26,8 +26,15 @@
     { "key": "child_folder_id", "value": "", "type": "string" },
     { "key": "content_id", "value": "", "type": "string" },
     { "key": "question_id", "value": "", "type": "string" },
+    { "key": "task_id", "value": "", "type": "string" },
+    { "key": "classroom_task_id", "value": "", "type": "string" },
     { "key": "study_plan_step_id", "value": "", "type": "string" },
-    { "key": "classroom_id", "value": "", "type": "string" }
+    { "key": "classroom_id", "value": "", "type": "string" },
+    { "key": "classroom_folder_id", "value": "", "type": "string" },
+    { "key": "classroom_content_id", "value": "", "type": "string" },
+    { "key": "personal_child_folder_id", "value": "", "type": "string" },
+    { "key": "non_member_access_token", "value": "", "type": "string" },
+    { "key": "unsubscribe_token", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -261,7 +268,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "whoami"]
             },
-            "description": "Returns the ownerId resolved from the bearer token's `sub` claim, and the caller's avatar URL (never null -- a default is generated and persisted on first access)."
+            "description": "Returns the ownerId resolved from the bearer token's `sub` claim, the caller's avatar URL (never null -- a default is generated and persisted on first access), and onboardingCompletedAt (null until the caller completes onboarding, an ISO-8601 UTC instant afterward)."
           },
           "response": []
         },
@@ -282,6 +289,20 @@
               "path": ["api", "whoami"]
             },
             "description": "Updates the caller's avatar URL. Must be https, host must be api.dicebear.com, at most 2048 characters. Responds 204 No Content."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/whoami/onboarding",
+              "host": ["{{base_url}}"],
+              "path": ["api", "whoami", "onboarding"]
+            },
+            "description": "Marks the caller's onboarding flow as complete. Takes no request body. Responds 204 No Content. Idempotent -- a repeat call still responds 204 but does not move the recorded onboardingCompletedAt."
           },
           "response": []
         }
@@ -532,6 +553,39 @@
             },
             "description": "Synchronous, persists nothing. Matches the file against the caller's existing folders, or suggests a new name pair when nothing matches."
           },
+          "response": []
+        },
+        {
+          "name": "Import From Drive",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileId\": \"<drive-file-id-from-the-picker>\",\n  \"childFolderId\": \"{{child_folder_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contents/from-drive",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "from-drive"]
+            },
+            "description": "The server fetches the file directly from the caller's own Google Drive -- it never passes through the caller's device. A Google document/presentation/spreadsheet is imported as its PDF export. Requires a Google connection granting `drive.file` access (see Google > Get Authorize URL)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('imported', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('content_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -828,6 +882,171 @@
       ]
     },
     {
+      "name": "Classroom AI Content",
+      "description": "Set `classroom_id`, `classroom_folder_id`, and an uploaded `classroom_content_id` from the Classrooms requests before running these. For the non-member example, register/login a second account and put its token in `non_member_access_token`. All successful routes require classroom membership and never return a storage key.",
+      "item": [
+        {
+          "name": "Get Upload Processing Status",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/processing", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "processing"] }, "description": "Member success example. Poll after upload; status is pending, processing, completed, or failed. The response never includes storageKey." },
+          "response": []
+        },
+        {
+          "name": "Get Extracted Text",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/text", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "text"] }, "description": "Member success example. Text and extractedAt are null until extraction completes." },
+          "response": []
+        },
+        {
+          "name": "Get Upload Download URL",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/download-url", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "download-url"] }, "description": "Member success example. Returns a short-lived URL and expiresAt only after membership authorization." },
+          "response": []
+        },
+        {
+          "name": "Search Uploaded Content",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/search?q=mitocondria", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "search"], "query": [{ "key": "q", "value": "mitocondria" }] }, "description": "Member success example. Searches title/filename for all uploads and OCR text only once extraction is complete." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Summary",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/summary", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "summary"] }, "description": "Member success example. Returns 204 until the async classroom summary is ready." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Flashcards",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/flashcards", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "flashcards"] }, "description": "Member success example. Returns an empty array until generated." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Quiz",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/quiz", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "quiz"] }, "description": "Member success example. Returns an empty array until generated; classroom quiz data is not gradeable through the personal quiz route." },
+          "response": []
+        },
+        {
+          "name": "Get Generated Mind Map",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/mind-map", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "mind-map"] }, "description": "Member success example. Returns 204 until the async mind map is ready." },
+          "response": []
+        },
+        {
+          "name": "Create Personal Material Snapshot",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"sourceChildFolderId\": \"{{personal_child_folder_id}}\",\n  \"title\": \"Cálculo - revisão\",\n  \"description\": \"Material da semana\"\n}" }, "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/snapshots", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "snapshots"] }, "description": "Owner/editor success example. Copies all available generated material from the caller-owned personal child folder into a durable classroom snapshot. 403 for a viewer or another user's source; 409 if the source has no generated material." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('snapshot created', function () {", "    pm.response.to.have.status(201);", "    pm.collectionVariables.set('classroom_content_id', pm.response.json().contentId);", "});"] }}],
+          "response": []
+        },
+        {
+          "name": "Get Material Snapshot",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/snapshot", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "snapshot"] }, "description": "Any-member success example. Reads copied artifacts and source attribution after the personal source has changed or been deleted." },
+          "response": []
+        },
+        {
+          "name": "Processing Status Without Token (401)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/{{classroom_content_id}}/processing", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "{{classroom_content_id}}", "processing"] }, "description": "Negative authentication example: no bearer token returns 401." },
+          "response": []
+        },
+        {
+          "name": "Search As Non-member (404)",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{non_member_access_token}}", "type": "string" }] }, "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/folders/{{classroom_folder_id}}/contents/search?q=mitocondria", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "folders", "{{classroom_folder_id}}", "contents", "search"], "query": [{ "key": "q", "value": "mitocondria" }] }, "description": "Negative membership-authorization example: a valid token for a non-member returns 404, without revealing classroom content." },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        { "name": "List Tasks", "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/tasks", "host": ["{{base_url}}"], "path": ["api", "tasks"] } }, "response": [] },
+        { "name": "Create Task", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Revisar genética\",\n  \"motherFolderId\": \"{{mother_folder_id}}\",\n  \"childFolderId\": \"{{child_folder_id}}\",\n  \"dueAt\": \"2026-10-01T18:00:00Z\"\n}" }, "url": { "raw": "{{base_url}}/api/tasks", "host": ["{{base_url}}"], "path": ["api", "tasks"] } }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('created', function () {", "    pm.response.to.have.status(201);", "    pm.collectionVariables.set('task_id', pm.response.json().id);", "});"] }}], "response": [] },
+        { "name": "Create Classroom Task", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Prova de genética\",\n  \"motherFolderId\": \"{{mother_folder_id}}\",\n  \"childFolderId\": \"{{child_folder_id}}\",\n  \"dueAt\": \"2026-10-01T18:00:00Z\"\n}" }, "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/tasks", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "tasks"] } }, "description": "Owner/editor example. The response contains classroomId/classroomName; each member resolves their own done and calendar fields.", "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('classroom task created', function () {", "    pm.response.to.have.status(201);", "    pm.collectionVariables.set('classroom_task_id', pm.response.json().id);", "});"] }}], "response": [] },
+        { "name": "Create Classroom Task As Non-member (404)", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{non_member_access_token}}", "type": "string" }] }, "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Tentativa isolada\",\n  \"motherFolderId\": \"{{mother_folder_id}}\",\n  \"childFolderId\": null,\n  \"dueAt\": \"2026-10-01T18:00:00Z\"\n}" }, "url": { "raw": "{{base_url}}/api/classrooms/{{classroom_id}}/tasks", "host": ["{{base_url}}"], "path": ["api", "classrooms", "{{classroom_id}}", "tasks"] } }, "description": "Set non_member_access_token to another account's token. It receives 404 without learning whether the classroom exists.", "response": [] },
+        { "name": "Update Task", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Revisar genética atualizada\",\n  \"motherFolderId\": \"{{mother_folder_id}}\",\n  \"childFolderId\": \"{{child_folder_id}}\",\n  \"dueAt\": \"2026-10-02T18:00:00Z\"\n}" }, "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}"] } }, "response": [] },
+        { "name": "Complete Task", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"done\": true }" }, "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}/complete", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}", "complete"] } }, "response": [] },
+        { "name": "Delete Task", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}"] } }, "response": [] },
+        { "name": "Sync Task", "request": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}/sync", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}", "sync"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Google",
+      "description": "Set GOOGLE_CLIENT_ID and the other Google settings before using the browser consent flow. Run Auth > Register or Login first so the authenticated requests have {{access_token}}. The callback request is public and is normally reached by Google after consent.",
+      "item": [
+        {
+          "name": "Get Connection Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "google", "status"]
+            },
+            "description": "Returns connected, email, and the Google scopes actually granted to the authenticated owner. A disconnected owner receives 200 with connected: false."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Authorize URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google/authorize-url?returnTo=/tarefas&timeZone=America/Sao_Paulo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "google", "authorize-url"],
+              "query": [
+                { "key": "returnTo", "value": "/tarefas" },
+                { "key": "timeZone", "value": "America/Sao_Paulo" }
+              ]
+            },
+            "description": "Returns the Google consent URL. Open its url value in a browser to continue the interactive consent flow."
+          },
+          "response": []
+        },
+        {
+          "name": "Consent Callback",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google/callback?code={{google_code}}&state={{google_state}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "google", "callback"],
+              "query": [
+                { "key": "code", "value": "{{google_code}}" },
+                { "key": "state", "value": "{{google_state}}" }
+              ]
+            },
+            "description": "Public browser callback. Google supplies code and state after consent; a successful callback redirects to the configured frontend /google/callback path."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Access Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google/token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "google", "token"]
+            },
+            "description": "Mints or returns the cached Google access token. Returns 404, not 401, when this authenticated owner has no usable Google connection."
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect Google Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google/connection",
+              "host": ["{{base_url}}"],
+              "path": ["api", "google", "connection"]
+            },
+            "description": "Revokes the Google grant when reachable and always removes the local connection. This is idempotent and returns 204."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Ranking",
       "item": [
         {
@@ -909,6 +1128,57 @@
               "query": [{ "key": "scope", "value": "global" }]
             },
             "description": "Top-XP user of the previous season for scope=global. Responds 200 with a literal null body if nobody in scope had any nonzero activity last season -- including the platform's first-ever season."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Which categories of notification email the caller receives (friends, classrooms, tasks, reminders). Everyone receives everything until they turn a category off. The unsubscribe route is public: the signed token in an email's link is its whole credential, so it sends no bearer header. Set `unsubscribe_token` from the `token` query parameter of an email's unsubscribe link (the frontend's /notificacoes/descadastrar URL) or of its `List-Unsubscribe` header.",
+      "item": [
+        {
+          "name": "Get Preferences",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/preferences",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "preferences"]
+            },
+            "description": "Returns the four categories as booleans, true meaning the caller receives it. A user who never changed anything sees all four true. Never includes an email address."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Preferences (partial)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reminders\": false\n}" },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/preferences",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "preferences"]
+            },
+            "description": "Send any subset of friends, classrooms, tasks and reminders as booleans; a category left out is unchanged. Responds 200 with the resulting four. An empty body, a body with only unknown keys, or a non-boolean value is a 400 and changes nothing. PATCH and not PUT: the API's CORS does not allow PUT."
+          },
+          "response": []
+        },
+        {
+          "name": "Unsubscribe With Token (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/unsubscribe?token={{unsubscribe_token}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "unsubscribe"],
+              "query": [{ "key": "token", "value": "{{unsubscribe_token}}" }]
+            },
+            "description": "Public, no bearer token. Turns off the token's one category for the token's one person and responds 200 with an empty body; repeating it is also 200. A missing, malformed, tampered or wrong-key token is always the same 400. A GET here is a 405 on purpose, so a mail scanner cannot unsubscribe anyone. Rate limited per client address (429)."
           },
           "response": []
         }
