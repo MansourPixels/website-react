@@ -43,6 +43,10 @@ export default [
   layout("routes/(private)/layout.tsx", [
     route("perfil", "routes/(private)/perfil/index.tsx"),
     route("perfil/avatar", "routes/(private)/perfil/avatar/index.tsx"),
+    route(
+      "perfil/notificacoes",
+      "routes/(private)/perfil/notificacoes/index.tsx",
+    ),
     route("ascensao", "routes/(private)/ascensao/index.tsx"),
     route("sessao", "routes/(private)/sessao/index.tsx"),
     route("capturar", "routes/(private)/capturar/index.tsx"),
