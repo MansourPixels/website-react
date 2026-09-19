@@ -37,7 +37,7 @@ exist".
 
 Public, unauthenticated paths: `/actuator/health`, `/v3/api-docs/**`, `/swagger-ui/**`,
 `/api/auth/register`, `/api/auth/forgot-password`, `/api/auth/login`, `/api/auth/refresh`,
-`/api/auth/logout`.
+`/api/auth/logout`, `/api/google/callback`.
 
 ## Error format
 
@@ -50,10 +50,12 @@ All errors are RFC 7807 `ProblemDetail` JSON:
 | HTTP status | Meaning |
 |---|---|
 | `400 Bad Request` | Validation failure (bad input) |
-| `401 Unauthorized` | Wrong credentials, or an invalid/expired/revoked refresh token |
+| `401 Unauthorized` | No access token, an invalid or expired one, wrong credentials, or an invalid/expired/revoked refresh token. The body is a `ProblemDetail` like every other error and the response carries a `WWW-Authenticate: Bearer` challenge; the `detail` never says why a token was rejected |
 | `404 Not Found` | Resource doesn't exist, or exists but isn't owned by the caller |
 | `409 Conflict` | Duplicate name, or an operation's precondition isn't met |
+| `429 Too Many Requests` | A rate limit was exceeded. `Retry-After` holds the seconds to wait, and scripts running in the browser from an allowed origin can read it (it is exposed through CORS) |
 | `500 Internal Server Error` | Unexpected server-side failure |
+| `503 Service Unavailable` | A dependency the request needs cannot be reached, so retrying later is the right answer. This includes the identity provider (Keycloak) when it is needed to validate the access token: an authenticated request then answers `503` with no `WWW-Authenticate` challenge, and the same request works again once Keycloak is back. Endpoints that call other services document their own `503` |
 
 ## Endpoints
 
@@ -73,6 +75,21 @@ that's precisely what they exist to obtain, refresh, or end.
 | `POST` | `/api/auth/login` | Exchange email/password for a fresh token pair |
 | `POST` | `/api/auth/refresh` | Exchange a refresh token for a fresh token pair |
 | `POST` | `/api/auth/logout` | Revoke a refresh token, ending the session |
+
+Each of these is rate limited, and answers `429` with a `Retry-After` header past its allowance:
+
+| Path | Limit (default) | Counted per |
+|---|---|---|
+| `/api/auth/login` | 5 per minute | client address |
+| `/api/auth/register` | 3 per hour | client address |
+| `/api/auth/forgot-password` | 3 per hour | client address |
+| `/api/auth/refresh` | 20 per minute | client address |
+| `/api/auth/logout` | 20 per minute | client address |
+| `/api/auth/resend-verification-email` | 3 per hour | user (the token's `sub`) |
+
+A request rejected as unauthenticated does not count against a user's allowance. Behind the
+reverse proxy the client address is the real client's, not the proxy's, and a forwarded
+`X-Forwarded-For` sent by a client cannot pick another address.
 
 **Register request body**
 ```json
@@ -105,7 +122,8 @@ Always responds `202 Accepted`, whether or not the email has an associated accou
 response never reveals which emails are registered.
 
 **Resend-verification-email**: no body; authenticated. Resends to the caller's own account
-(resolved from the bearer token, not the request). Responds `202 Accepted`.
+(resolved from the bearer token, not the request). Responds `202 Accepted`, or `429` after
+the third request within an hour.
 
 **Login request body**
 ```json
@@ -130,27 +148,41 @@ used stops working.
 { "refreshToken": "eyJ..." }
 ```
 Revokes the token and responds `204 No Content` — identically whether or not that token was
-still valid, so logout is always safe to call more than once.
+still valid, so logout is safe to call more than once. It is rate limited per client
+address, though, so it can answer `429` under abuse: a client should end its local session
+(discard its tokens) whatever logout answers, and not keep the user signed in because the
+call was refused.
 
 Errors: `400` malformed email, malformed username, or too-short password (register only) ·
 `409` email already registered or username already taken (register only) · `401`
 unauthenticated (resend-verification-email only), wrong credentials (login only), or an
-invalid/expired/already-used refresh token (refresh only).
+invalid/expired/already-used refresh token (refresh only) · `429` too many requests (every
+endpoint above, see the table of limits) · `503` the identity provider (Keycloak) cannot be
+reached (register, forgot-password, login, refresh and logout; retrying later is the right
+answer, and it is not a `500`). `resend-verification-email` is best effort and answers `202`
+even when the email could not be sent. Behind `forgot-password`, a `503` says nothing about
+whether the email has an account: it depends only on Keycloak being up.
 
 ### Who Am I
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/whoami` | Returns the caller's resolved `ownerId` and avatar URL |
+| `GET` | `/api/whoami` | Returns the caller's resolved `ownerId`, avatar URL, and onboarding completion |
 | `PATCH` | `/api/whoami` | Updates the caller's avatar URL |
+| `POST` | `/api/whoami/onboarding` | Marks the caller's onboarding flow as complete |
 
 **Response** (`GET`, `200`)
 ```json
-{ "ownerId": "0198...", "avatarUrl": "https://api.dicebear.com/10.x/big-smile/svg?seed=0198..." }
+{
+  "ownerId": "0198...",
+  "avatarUrl": "https://api.dicebear.com/10.x/big-smile/svg?seed=0198...",
+  "onboardingCompletedAt": "2026-01-15T10:30:00Z"
+}
 ```
 `avatarUrl` is never `null`: on an account's first `GET`, the backend generates and persists
 a default avatar (a DiceBear URL seeded by the caller's `ownerId`) instead of leaving it
-unset.
+unset. `onboardingCompletedAt` is `null` until the caller has completed onboarding, and an
+ISO-8601 UTC instant afterward.
 
 **Update request body**
 ```json
@@ -159,6 +191,12 @@ unset.
 `avatarUrl`: required, non-blank, `https` only, host must be `api.dicebear.com`, at most
 2048 characters. Responds `204 No Content`. Succeeds whether or not the caller already has a
 stored avatar.
+
+**Complete onboarding**: `POST /api/whoami/onboarding` takes no request body and responds
+`204 No Content`. Idempotent — a repeat call still responds `204` but does not move the
+recorded `onboardingCompletedAt`, so returning to the flow through browser history and
+finishing it again does not change when the account is reported to have completed it. Works
+even if the caller has never called `GET /api/whoami` before.
 
 Errors: `400` blank avatar URL, non-`https` scheme, disallowed host, or over 2048 characters
 (`PATCH` only).
@@ -234,8 +272,9 @@ and the underlying MinIO objects. Returns `204 No Content`.
 | `POST` | `/api/child-folders/{childFolderId}/contents` | Upload a PDF or image (`multipart/form-data`) |
 | `GET` | `/api/child-folders/{childFolderId}/contents` | List a child folder's content items |
 | `GET` | `/api/contents/{id}/download-url` | Get a short-lived presigned download URL |
-| `GET` | `/api/contents/{id}/text` | Get the text extracted from a content item |
+| `GET` | `/api/contents/{contentId}/text` | Get the content's extracted text and processing state |
 | `POST` | `/api/contents/folder-suggestion` | Suggest a folder pairing for a loose file, before uploading (`multipart/form-data`) |
+| `POST` | `/api/contents/from-drive` | Import a file the caller picked from their own Google Drive |
 
 **Upload** — multipart fields:
 - `file`: the PDF or image (`.pdf`, `.jpg`/`.jpeg`, `.png`)
@@ -251,11 +290,11 @@ and the underlying MinIO objects. Returns `204 No Content`.
   "hasSummary": false
 }
 ```
-`hasSummary` flips to `true` once the async categorization pipeline finishes summarizing the
-file — usually within a few seconds. Images use OpenAI vision to extract text; PDFs use PDFBox
-to extract their text layer, before OpenAI generates the summary. The moment that happens, the
-child folder's quiz, aggregated summary, flashcards, and mind map (see below) all regenerate
-automatically in the background — no separate call is needed to refresh any of them.
+`hasSummary` flips to `true` once the async categorization pipeline (RabbitMQ + Groq for
+OCR, OpenAI for the text summarization itself) finishes summarizing the file — usually
+within a few seconds. The moment that happens, the child folder's quiz, aggregated summary,
+flashcards, and mind map (see below) all regenerate automatically in the background — no
+separate call is needed to refresh any of them.
 
 **Download URL response**
 ```json
@@ -266,17 +305,43 @@ automatically in the background — no separate call is needed to refresh any of
 ```json
 {
   "contentId": "0198...",
-  "text": "Text extracted from the material.",
+  "text": "Função do 1º grau\n\nToda função do 1º grau pode ser escrita como f(x) = ax + b...",
   "extractedAt": "2026-09-15T12:34:56Z"
 }
 ```
-While categorization is pending, the endpoint returns `200` with `text: ""` and
-`extractedAt: null`. A completed extraction without readable text also returns `text: ""`,
-but has a non-null `extractedAt` value.
+While categorization is in progress, the endpoint returns `200` with the requested `contentId`,
+`text: ""`, and `extractedAt: null`. A completed extraction with no text also has `text: ""`,
+but has a non-null timestamp. Images use vision OCR; PDFs use PDFBox to extract their existing
+text layer only, so scanned PDFs without a text layer can complete with empty text.
 
 Errors: `400` file extension doesn't match `contentType` · `404` child folder not owned by
-caller (upload/list) or content not owned by caller (download-url/text) · `401`
-unauthenticated.
+caller (upload/list) or content not owned by caller (download-url/text) · `401` missing or
+invalid authentication (download-url/text).
+
+**Import from Drive** — the server fetches the file directly from the caller's own Google
+Drive; the bytes never pass through the caller's device. A Google document, presentation, or
+spreadsheet has no downloadable bytes of its own and is imported as its PDF export instead;
+everything else downloads as-is. Requires a Google connection granting `drive.file` access
+(see **Google** below) — a `fileId` the student did not pick through the Picker is not
+reachable at all under that grant and answers `404`, the same as one that does not exist.
+Limited to 30 imports per hour per owner, the same allowance as the multipart upload.
+
+**Request body**
+```json
+{ "fileId": "1a2B3c...", "childFolderId": "0198..." }
+```
+
+**Response** — `201 Created` with exactly the same body shape as the multipart upload above,
+so the frontend handles both paths with one branch; `hasSummary` starts `false` and flips to
+`true` once categorization completes, same as any upload.
+
+Errors: `400` blank `fileId`, an unaccepted Drive MIME type (only JPEG/PNG/WebP images, PDFs,
+and Google docs/slides/sheets are accepted), or the file's size exceeds
+`revi.google.drive.max-file-size` (default 50MB, checked before any byte is downloaded) ·
+`404` `childFolderId` not owned by caller, or `fileId` Drive reports as not found/unreachable
+· `409` the caller has no Google connection, or one without `drive.file` access · `429` the
+hourly import allowance is exceeded (`Retry-After` header set) · `503` Drive is unreachable,
+erroring, or shielded by the circuit breaker · `401` missing or invalid authentication.
 
 **Folder suggestion** — synchronous, persists nothing (not an upload). Multipart fields are
 the same as upload (`file`, `contentType`). OCRs/extracts the file's text and matches it
@@ -808,6 +873,16 @@ Note this shape has no `xp` — it's classrooms' own resolution, not `friends`' 
 | `GET` | `/api/me/materials` | The caller's own generated material, as `{childFolderId, kinds}[]` — `kinds` is a subset of `flashcards`/`summary`/`quiz`/`mindmap`; use `childFolderId` as `reviMaterialId` below |
 | `GET`/`POST` | `/api/classrooms/{id}/folders/{folderId}/contents` | List/add content (reference or upload) |
 | `PATCH`/`DELETE` | `.../contents/{contentId}` | Edit (author only) / delete (author or owner) |
+| `GET` | `.../contents/{contentId}/processing` | Read an uploaded file's extraction status; any member |
+| `GET` | `.../contents/{contentId}/text` | Read an uploaded file's extracted text; any member |
+| `GET` | `.../contents/{contentId}/download-url` | Get a short-lived uploaded-file download URL; any member |
+| `GET` | `.../contents/search?q={query}` | Search uploaded-file title, filename, and completed OCR text; any member |
+| `GET` | `/api/classrooms/{id}/folders/{folderId}/summary` | Read generated classroom summary; any member |
+| `GET` | `.../flashcards` | Read generated classroom flashcards; any member |
+| `GET` | `.../quiz` | Read generated classroom quiz; any member |
+| `GET` | `.../mind-map` | Read generated classroom mind map; any member |
+| `POST` | `.../contents/snapshots` | Copy the caller's personal generated material into a classroom snapshot; owner/editor |
+| `GET` | `.../contents/{contentId}/snapshot` | Read a durable material snapshot; any member |
 | `POST` | `/api/classrooms/{id}/invites` | Invite a specific user by username; owner only |
 | `POST` | `/api/classrooms/{id}/invites/link` | Generate a reusable link invite; owner only |
 | `GET`/`DELETE` | `/api/classrooms/{id}/invites` / `/{inviteId}` | List/revoke pending invites; owner only |
@@ -850,6 +925,176 @@ content stays attributed to them. For a *reference* content (`kind` one of `flas
 `image` content is created via the separate multipart upload endpoint instead (no
 `reviMaterialId`).
 
+#### Classroom AI Content
+
+Uploaded classroom `pdf`/`image` content starts with processing status `pending` and is
+extracted asynchronously. Poll these member-only routes; none exposes an internal storage key:
+
+| Method | Path | Response / behavior |
+|---|---|---|
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/processing` | `{ "status": "pending\|processing\|completed\|failed", "textExtractedAt": null, "error": null }` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/text` | `{ "text": "extracted OCR text", "extractedAt": "2026-09-16T12:00:00Z" }`; pending/failed files have null text/timestamp |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/{contentId}/download-url` | `{ "url": "http://localhost:9000/...", "expiresAt": "2026-09-16T12:15:00Z" }` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/contents/search?q={query}` | Matching uploaded content, by title, original filename, or completed extracted text |
+
+Pending and failed uploads remain searchable by title/filename but cannot match unavailable OCR
+text. A completed extraction automatically queues a classroom-owned summary, flashcards, quiz,
+and mind map for that folder:
+
+| Method | Path | Not-ready representation |
+|---|---|---|
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/summary` | `204 No Content` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/flashcards` | `200 OK` with `[]` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/quiz` | `200 OK` with `[]` |
+| `GET` | `/api/classrooms/{classroomId}/folders/{folderId}/mind-map` | `204 No Content` |
+
+Generated responses use the existing classroom-owned shapes: summary has `markdown` and
+`generatedAt`; each flashcard has `position`, `front`, and `back`; quiz questions include
+`position`, `question`, `optionA` through `optionD`, and `correctOption`; and a mind map has
+`raiz`, `sourceVersion`, and `generatedAt`. These are shared classroom artifacts, never the
+caller's personal-folder artifacts.
+
+**Material snapshots** copy all currently available generated material from one of the caller's
+own personal child folders. The copied values remain readable if that personal source later
+changes or is deleted.
+
+```json
+POST /api/classrooms/{classroomId}/folders/{folderId}/contents/snapshots
+{ "sourceChildFolderId": "0198...", "title": "Cálculo - revisão", "description": "Material da semana" }
+```
+
+The `201` response, and `GET .../contents/{contentId}/snapshot`, return source attribution and
+the copied payload:
+
+```json
+{
+  "contentId": "0198...", "sourceOwnerId": "0198...", "sourceChildFolderId": "0198...",
+  "summary": "# Resumo", "flashcards": [{ "position": 0, "front": "...", "back": "..." }],
+  "quizQuestions": [{ "position": 0, "question": "...", "optionA": "...", "optionB": "...", "optionC": "...", "optionD": "...", "correctOption": "A" }],
+  "mindMapRoot": null, "snapshottedAt": "2026-09-16T12:00:00Z"
+}
+```
+
+Errors: `401` missing/invalid token · `404` caller is not a classroom member, the folder/content
+does not belong to the classroom, or the snapshot is absent · `403` viewer attempts snapshot
+creation, or the personal source folder is not owned by the caller · `400` missing snapshot
+title/source id or missing search `q` · `409` no generated personal material exists to copy.
+
+### Tasks
+
+Personal deadlines and classroom assignments associated with an owned subject and optionally a
+topic. Folder labels are resolved by the server and saved as a snapshot, so tasks remain readable
+after folders are deleted.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/tasks` | List the caller's tasks by `dueAt` ascending |
+| `POST` | `/api/tasks` | Create a task |
+| `POST` | `/api/classrooms/{classroomId}/tasks` | Create a classroom task (owner or editor) |
+| `PATCH` | `/api/tasks/{id}` | Update an owned task |
+| `PATCH` | `/api/tasks/{id}/complete` | Complete or reopen an owned task |
+| `DELETE` | `/api/tasks/{id}` | Delete an owned task |
+| `POST` | `/api/tasks/{id}/sync` | Re-queue calendar synchronization for an owned task |
+
+**Create/update request body**
+```json
+{ "title": "Revisar genética", "motherFolderId": "0198...", "childFolderId": "0198...", "dueAt": "2026-10-01T18:00:00Z" }
+```
+`childFolderId` may be `null`. `motherFolderName`, `motherFolderColor`, and `childFolderName`
+are resolved server-side and ignored if sent by older clients.
+
+**Complete/reopen request body**
+```json
+{ "done": true }
+```
+
+**Response** (create/update/complete, `201`/`200`)
+```json
+{
+  "id": "0198...", "title": "Revisar genética", "motherFolderId": "0198...",
+  "motherFolderName": "Biologia", "motherFolderColor": "#16a34a",
+  "childFolderId": "0198...", "childFolderName": "Genética",
+  "dueAt": "2026-10-01T18:00:00Z", "done": false, "completedAt": null,
+  "googleEventId": null, "syncState": "local", "classroomId": null, "classroomName": null,
+  "createdAt": "2026-09-17T12:00:00Z", "updatedAt": "2026-09-17T12:00:00Z"
+}
+```
+`classroomId` and `classroomName` are `null` for personal tasks. Classroom tasks appear in every
+member's list; owners and editors can create, edit, and delete them through the classroom route,
+while any member can complete their own copy. A non-member receives `404`; a viewer receives `403`
+for structural changes.
+
+`done`, `completedAt`, `googleEventId`, and `syncState` are resolved for the calling member, not
+properties of the task itself. Members of the same classroom can therefore see different completion
+and calendar state for the same task.
+
+Creating, editing, and completing a task publish a calendar sync asynchronously after the
+response is sent, so the mutation's own response always reports `syncState` as `"local"` — the
+synchronized state becomes visible on a later `GET /api/tasks`. Overdue is derived client-side
+from `dueAt` and `done`; it is never stored or returned. Delete responds `204 No Content` and, if
+the task had a calendar event, publishes its removal asynchronously as well.
+
+`syncState` is one of three literal values:
+- `"local"` — not yet published. This is the ordinary state for an owner with no Google
+  connection, or one that was not granted calendar access; it is never treated as a failure, and
+  is never retried on its own. Connecting Google later does **not** retroactively synchronize
+  tasks created while disconnected — each syncs on its next edit or on an explicit retry.
+- `"sincronizada"` — published to the caller's primary Google calendar; `googleEventId` is that
+  caller's event identifier.
+- `"falhou"` — publishing was attempted and, after three retries, given up on. The task itself
+  (title, folders, deadline) is unaffected and can be retried via `POST /api/tasks/{id}/sync`.
+
+**Sync response** (`202 Accepted`, no body) — re-queues synchronization for a task of the
+caller's, without waiting for the outcome. `404` if the task is unknown or not the caller's; `409`
+with a `ProblemDetail` explaining the unmet precondition if the caller has no usable Google
+Calendar connection.
+
+Errors: `400` blank/too-long title, invalid deadline, or topic under another subject · `403`
+editing/completing/deleting another owner's personal task, or a viewer structurally changing a
+classroom task · `404` unknown task, a non-member's classroom task access, unknown/not-owned task
+on `/sync`, or folder not owned by caller · `409` `/sync` without a usable Google Calendar connection.
+
+### Google
+
+Connects one Google account to the authenticated Revi account. The browser follows the consent
+URL, while the server exchanges and encrypts the durable refresh token. The callback is public
+because it is a browser navigation from Google; all other Google routes require a bearer token.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/google/status` | Read the caller's connection state and granted scopes |
+| `GET` | `/api/google/authorize-url` | Build a Google consent URL; accepts optional `returnTo` and `timeZone` |
+| `GET` | `/api/google/callback` | Complete consent and redirect to the frontend callback page |
+| `GET` | `/api/google/token` | Mint or retrieve a cached Google access token |
+| `DELETE` | `/api/google/connection` | Revoke and remove the caller's Google connection |
+
+**Status response** (`200`)
+```json
+{ "connected": true, "email": "person@gmail.com", "scopes": ["email", "calendar.events"] }
+```
+When no account is connected, the response is `{ "connected": false, "email": null, "scopes": [] }`.
+
+**Authorize URL response** (`200`)
+```json
+{ "url": "https://accounts.google.com/o/oauth2/v2/auth?..." }
+```
+`returnTo` must be an in-app path such as `/tarefas?filtro=hoje`; omitted values use the default
+path. `timeZone` accepts an IANA identifier and falls back to `America/Sao_Paulo` when omitted or
+invalid.
+
+**Token response** (`200`)
+```json
+{ "accessToken": "ya29...", "expiresIn": 3540, "scope": "email calendar.events" }
+```
+The access token is cached until shortly before expiry. The returned `scope` is what Google
+actually granted, not necessarily every requested scope. Disconnect responds `204 No Content`,
+whether or not a connection existed or Google revocation succeeded.
+
+Errors: `400` invalid `returnTo` · `401` missing/invalid bearer token (except the callback) ·
+`404` no usable Google connection for `GET /api/google/token`. The callback redirects to
+`/google/callback` with `error=access_denied`, `error=invalid_state`, or `error=no_refresh_token`
+when consent cannot be completed.
+
 **Response** (invite, `200`/`201`)
 ```json
 {
@@ -878,4 +1123,78 @@ Errors (general access-control convention, matches Friends/Ranking): `404` for "
 the resource" (non-member reading a classroom, an invite the caller isn't the invitee of) ·
 `403` for "confirmed relation but wrong role/party" (a non-owner attempting an owner-only
 action) · `400` for malformed input · `409`/`410` for state conflicts (already a member,
-duplicate invite, an invite that's expired/revoked/used).
+duplicate invite, an invite that's expired/revoked/used) · `503` inviting by username while the
+identity provider that resolves usernames cannot be reached.
+
+### Notifications
+
+Which categories of notification email the caller receives. Every email the app sends about someone
+else's action belongs to one of four categories, and everyone receives all of them until they turn
+one off. Only what a user turned **off** is stored.
+
+| Category | Emails |
+|---|---|
+| `friends` | a friend request received, a friend request accepted |
+| `classrooms` | a classroom invite received, someone joining a classroom |
+| `tasks` | a classroom task created |
+| `reminders` | a task deadline approaching |
+
+The test email has no category and is never blocked.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/notifications/preferences` | Read which categories the caller receives |
+| `PATCH` | `/api/notifications/preferences` | Turn categories on or off; categories left out are unchanged |
+| `POST` | `/api/notifications/unsubscribe?token={token}` | **Public.** Turn one category off from a link in an email, without signing in |
+
+**Preferences response** (`GET` and `PATCH`, `200`)
+```json
+{ "friends": true, "classrooms": true, "tasks": true, "reminders": false }
+```
+`true` means the caller receives that category. A user who never changed anything sees all four
+`true`. The response never contains an email address.
+
+**Update request body** — any subset of the four, as booleans
+```json
+{ "reminders": false }
+```
+`PATCH` and not `PUT`, because the API's CORS configuration does not allow `PUT`. Send only the keys
+that changed. Errors: `400` for an empty body, a body with only unknown keys, or a value that is
+not a boolean — and nothing changes · `401` without a bearer token.
+
+**Unsubscribe** — `POST /api/notifications/unsubscribe?token={token}`
+
+The `token` is the signed value carried by every categorised email, both in the footer link and in
+the `List-Unsubscribe` header. It names exactly one person and one category, so all it can do is turn
+that one category off for that one person. It does not expire, and rotating the server's signing key
+invalidates every link already sent.
+
+- No bearer token is sent or needed. The body is ignored, so a mail client's one-click request
+  (form body `List-Unsubscribe=One-Click`) and a call with no body behave the same.
+- `200` with an empty body on success. Repeating it is also `200`, and a valid token for someone the
+  system no longer knows is answered the same way, so the route cannot be used to test whether an
+  account exists.
+- `400` with the same `ProblemDetail` for a missing, malformed, tampered, or wrong-key token; the
+  response does not say which.
+- `405` on `GET`, deliberately: a mail scanner or link previewer that fetches the link must not
+  unsubscribe anyone.
+- `429` when one client address sends too many requests (30 per minute by default, see
+  `RATE_LIMIT_UNSUBSCRIBE_*` in `.env.example`).
+
+**What the emails carry.** Every categorised email has a footer with "Não quero mais receber e-mails
+deste tipo" and "Gerenciar preferências", and the two headers `List-Unsubscribe` (the API's
+unsubscribe URL with the token) and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The
+`TEST` email carries neither.
+
+**Frontend contract.** The footer's unsubscribe link opens a page of the frontend, which then calls
+the `POST` above (a link never unsubscribes on a plain `GET`):
+
+| Link | Points at |
+|---|---|
+| Unsubscribe | `{frontend-base-url}/notificacoes/descadastrar?token={token}` |
+| Manage preferences | `{frontend-base-url}/perfil/notificacoes` |
+
+Opting out makes a notification `SKIPPED` with the reason `opted out`, recorded like any other skip.
+For a deadline reminder that means the reminder for that particular deadline is settled: turning
+`reminders` back on restores reminders for later tasks and for a postponed deadline, not the one
+already skipped.
