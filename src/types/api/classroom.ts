@@ -46,7 +46,7 @@ export interface ClassroomFolder {
 
 /**
  * `flashcards | summary | quiz` são materiais gerados dentro do Revi;
- * `pdf | image` são arquivos enviados de fora.
+ * `pdf | image | audio` são arquivos enviados de fora.
  */
 export type ClassroomContentKind =
   | "flashcards"
@@ -55,7 +55,8 @@ export type ClassroomContentKind =
   | "mindmap"
   | "snapshot"
   | "pdf"
-  | "image";
+  | "image"
+  | "audio";
 
 /** Modalidades que podem ser publicadas como referência de uma pasta pessoal. */
 export type ClassroomReferenceKind = "flashcards" | "summary" | "quiz" | "mindmap";

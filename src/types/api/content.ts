@@ -1,4 +1,15 @@
-export type ContentType = "PDF" | "IMAGE";
+export type ContentType = "PDF" | "IMAGE" | "AUDIO";
+
+/**
+ * Onde o processamento assíncrono do material está. `PENDING` logo após o
+ * envio, `PROCESSING` enquanto um worker cuida dele, e termina em `COMPLETED`
+ * ou `FAILED` (final: enviar de novo é a saída).
+ */
+export type ProcessingStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED";
 
 export interface Content {
   id: string;
@@ -6,6 +17,15 @@ export interface Content {
   contentType: ContentType;
   childFolderId: string;
   hasSummary: boolean;
+  /**
+   * Opcionais no tipo porque um backend anterior à fase de áudio não os envia;
+   * quem lê trata a ausência como PDF/imagem antigos (ver `mediaStatus.ts`).
+   */
+  processingStatus?: ProcessingStatus;
+  /** Mensagem segura para exibir; só existe quando o status é `FAILED`. */
+  processingError?: string | null;
+  /** Duração em segundos; só para áudio, depois que a transcrição existe. */
+  durationSeconds?: number | null;
 }
 
 export interface FolderSuggestion {

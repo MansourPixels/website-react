@@ -20,6 +20,7 @@ import {
   listClassroomFlashcards,
   listClassroomQuiz,
   listReviMaterials,
+  uploadClassroomContent,
 } from "./classrooms";
 
 describe("classroom material sharing API", () => {
@@ -76,4 +77,58 @@ describe("classroom material sharing API", () => {
     await expect(getClassroomMindMap("class-1", "folder-1")).resolves.toBeNull();
   });
 
+});
+
+describe("uploadClassroomContent", () => {
+  beforeEach(() => apiFetch.mockReset());
+
+  function sent() {
+    return apiFetch.mock.calls[0][1].body as FormData;
+  }
+
+  it("deriva o kind da extensão e envia os campos do formulário", async () => {
+    apiFetch.mockResolvedValue({ id: "c1" });
+
+    await uploadClassroomContent("class-1", "folder-1", {
+      file: new File(["a"], "aula.MP3", { type: "audio/mpeg" }),
+      title: "Aula 1",
+      description: "Introdução",
+    });
+
+    expect(apiFetch.mock.calls[0][0]).toBe("/api/classrooms/class-1/folders/folder-1/contents/upload");
+    expect(apiFetch.mock.calls[0][1].method).toBe("POST");
+    expect(sent().get("kind")).toBe("audio");
+    expect(sent().get("title")).toBe("Aula 1");
+    expect(sent().get("description")).toBe("Introdução");
+    expect((sent().get("file") as File).name).toBe("aula.MP3");
+  });
+
+  it.each([
+    ["notas.pdf", "pdf"],
+    ["foto.jpg", "image"],
+    ["foto.png", "image"],
+    ["aula.m4a", "audio"],
+    ["aula.flac", "audio"],
+  ])("%s é enviado como %s", async (name, kind) => {
+    apiFetch.mockResolvedValue({});
+
+    await uploadClassroomContent("c", "f", { file: new File(["a"], name), title: "t" });
+
+    expect(sent().get("kind")).toBe(kind);
+  });
+
+  it("não envia descrição vazia", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await uploadClassroomContent("c", "f", { file: new File(["a"], "a.mp3"), title: "t", description: "" });
+
+    expect(sent().has("description")).toBe(false);
+  });
+
+  it("recusa no cliente uma extensão que a turma não aceita, sem chamar a API", () => {
+    expect(() =>
+      uploadClassroomContent("c", "f", { file: new File(["a"], "clip.mp4"), title: "t" }),
+    ).toThrowError(/áudio/);
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
 });

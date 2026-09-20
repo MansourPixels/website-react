@@ -169,3 +169,103 @@ export async function apiFetch<T>(
 
   return parseResponse<T>(response);
 }
+
+export interface UploadOptions {
+  signal?: AbortSignal;
+  /** Fração de 0 a 1 do que já saiu do aparelho; chamado várias vezes durante o envio. */
+  onProgress?: (fraction: number) => void;
+}
+
+interface UploadResult {
+  status: number;
+  body: string;
+}
+
+function sendWithXhr(
+  path: string,
+  body: FormData,
+  accessToken: string | null,
+  { signal, onProgress }: UploadOptions,
+): Promise<UploadResult> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Envio cancelado", "AbortError"));
+      return;
+    }
+
+    const request = new XMLHttpRequest();
+
+    request.open("POST", `${BASE_URL}${path}`);
+    // Sem Content-Type manual: o navegador monta o multipart com o boundary.
+    if (accessToken !== null) {
+      request.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    }
+
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        onProgress?.(Math.min(1, event.loaded / event.total));
+      }
+    };
+    request.onload = () =>
+      resolve({ status: request.status, body: request.responseText });
+    // Um arquivo muito acima do limite chega aqui, e não como 413: o servidor
+    // fecha a conexão no meio do envio. Quem chama diz o que provavelmente houve.
+    request.onerror = () =>
+      reject(new Error("Falha de rede durante o envio."));
+    request.onabort = () =>
+      reject(new DOMException("Envio cancelado", "AbortError"));
+
+    const abort = () => request.abort();
+
+    signal?.addEventListener("abort", abort, { once: true });
+    request.onloadend = () => signal?.removeEventListener("abort", abort);
+    request.send(body);
+  });
+}
+
+function parseUploadResult<T>({ status, body }: UploadResult): T {
+  if (status < 200 || status >= 300) {
+    let detail = GENERIC_ERROR_DETAIL;
+
+    try {
+      const problem = JSON.parse(body) as { detail?: unknown };
+
+      if (typeof problem.detail === "string" && problem.detail.length > 0) {
+        detail = problem.detail;
+      }
+    } catch {
+      // Corpo ausente ou não é JSON: fica a mensagem genérica.
+    }
+
+    throw new ApiError(status, detail);
+  }
+
+  return (body.length === 0 ? undefined : JSON.parse(body)) as T;
+}
+
+/**
+ * Envia um multipart com progresso, para arquivos grandes: `fetch` não expõe o
+ * quanto já foi enviado, e "Enviando…" por minutos num áudio de 200 MB parece
+ * travado. Renova o token como `apiFetch` (uma vez, e também num 401).
+ * `AbortSignal` cancela o envio com um `AbortError`.
+ */
+export async function apiUpload<T>(
+  path: string,
+  body: FormData,
+  options: UploadOptions = {},
+): Promise<T> {
+  const tokens = readTokens();
+  let accessToken: string | null =
+    tokens !== null && isAccessTokenExpiring(tokens)
+      ? await performRefresh()
+      : (tokens?.accessToken ?? null);
+
+  let result = await sendWithXhr(path, body, accessToken, options);
+
+  if (result.status === 401) {
+    accessToken = await performRefresh();
+    result = await sendWithXhr(path, body, accessToken, options);
+  }
+
+  return parseUploadResult<T>(result);
+}
