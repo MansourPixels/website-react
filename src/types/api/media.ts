@@ -1,4 +1,5 @@
 import type { ContentType, ProcessingStatus } from "./content";
+import type { MindMapBranch } from "./mindMap";
 
 /** Resumo gerado a partir da transcrição; o mesmo shape do resumo de qualquer material. */
 export interface MediaSummary {
@@ -45,4 +46,10 @@ export interface Transcript {
   durationSeconds: number | null;
   segments: TranscriptSegment[];
   transcribedAt: string | null;
+}
+
+/** O mapa mental de um áudio: `raiz` e `generatedAt` são `null` enquanto ele não foi gerado. */
+export interface MediaMindMap {
+  raiz: MindMapBranch | null;
+  generatedAt: string | null;
 }

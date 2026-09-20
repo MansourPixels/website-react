@@ -3,6 +3,8 @@ export interface MindMapBranch {
   label: string;
   detalhe?: string;
   formula?: string;
+  /** O segundo do áudio a que o nó se refere; só no mapa de um áudio. */
+  startSeconds?: number | null;
   children?: MindMapBranch[];
 }
 

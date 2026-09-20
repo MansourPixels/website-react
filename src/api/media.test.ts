@@ -17,7 +17,16 @@ const { apiFetch, apiUpload, ApiError } = vi.hoisted(() => {
 
 vi.mock("./client", () => ({ apiFetch, apiUpload, ApiError }));
 
-import { getMedia, getTranscript, uploadMedia } from "./media";
+import {
+  getMedia,
+  getMediaMindMap,
+  getTranscript,
+  gradeMediaQuiz,
+  listMediaFlashcards,
+  listMediaQuiz,
+  regenerateMediaArtifacts,
+  uploadMedia,
+} from "./media";
 
 describe("uploadMedia", () => {
   beforeEach(() => {
@@ -116,5 +125,63 @@ describe("getTranscript", () => {
 
     expect(result.segments).toEqual([]);
     expect(result.transcribedAt).toBeNull();
+  });
+});
+
+describe("artefatos do áudio", () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it("lista o simulado, os flashcards e o mapa do áudio pelo id do conteúdo", async () => {
+    apiFetch.mockResolvedValue([]);
+    const controller = new AbortController();
+
+    await listMediaQuiz("c1", controller.signal);
+    await listMediaFlashcards("c1", controller.signal);
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/contents/c1/quiz", { signal: controller.signal });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/contents/c1/flashcards", { signal: controller.signal });
+  });
+
+  it("corrige mandando o array de respostas como corpo", async () => {
+    apiFetch.mockResolvedValue({ results: [], correctCount: 0, totalQuestions: 0 });
+    const answers = [{ questionId: "q1", selectedOption: "B" as const }];
+
+    await gradeMediaQuiz("c1", answers);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/contents/c1/quiz/grade", {
+      method: "POST",
+      body: answers,
+      signal: undefined,
+    });
+  });
+
+  it("devolve o mapa normalizado, e raiz nula enquanto não foi gerado", async () => {
+    apiFetch.mockResolvedValueOnce({ raiz: null, generatedAt: null });
+    expect(await getMediaMindMap("c1")).toEqual({ raiz: null, generatedAt: null });
+
+    apiFetch.mockResolvedValueOnce({
+      raiz: { id: "r", label: "Aula", detalhe: null, formula: null, startSeconds: 0, children: null },
+      generatedAt: "2026-09-20T12:00:00Z",
+    });
+    expect(await getMediaMindMap("c1")).toEqual({
+      raiz: { id: "r", label: "Aula", startSeconds: 0 },
+      generatedAt: "2026-09-20T12:00:00Z",
+    });
+  });
+
+  it("regenera com POST sem corpo e deixa passar 409 e 429", async () => {
+    apiFetch.mockResolvedValueOnce(undefined);
+    await regenerateMediaArtifacts("c1");
+    expect(apiFetch).toHaveBeenCalledWith("/api/contents/c1/artifacts/generate", {
+      method: "POST",
+      signal: undefined,
+    });
+
+    apiFetch.mockRejectedValueOnce(new ApiError(409, "not ready"));
+    await expect(regenerateMediaArtifacts("c1")).rejects.toMatchObject({ status: 409 });
+    apiFetch.mockRejectedValueOnce(new ApiError(429, "slow down"));
+    await expect(regenerateMediaArtifacts("c1")).rejects.toMatchObject({ status: 429 });
   });
 });

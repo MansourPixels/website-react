@@ -10,11 +10,13 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import type { Edge, Node, NodeProps, NodeTypes } from "@xyflow/react";
-import { ChevronDown, Maximize2, Minus, Plus } from "lucide-react";
+import { ChevronDown, Maximize2, Minus, Play, Plus } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo } from "react";
 
 import { Math as MathText } from "@/components/Math";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { seekLabel } from "@/utils/mediaArtifacts";
+import { formatTimestamp } from "@/utils/mediaTime";
 import type { MindMapBranch } from "@/types/api/mindMap";
 import type { MindMapPlacement } from "@/utils/mindMapLayout";
 
@@ -25,15 +27,22 @@ type MindMapNodeData = {
   depth: number;
   childCount: number;
   isExpanded: boolean;
+  /** O momento do áudio a que o nó se refere; só no mapa de um áudio. */
+  startSeconds?: number | null;
 };
 
 type MindMapFlowNode = Node<MindMapNodeData, "mindMap">;
 
 const ToggleContext = createContext<(id: string) => void>(() => {});
 
+/** Só o mapa de um áudio tem atalho para o momento; nos demais o contexto é `null`. */
+const SeekContext = createContext<((seconds: number) => void) | null>(null);
+
 function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
   const toggle = useContext(ToggleContext);
-  const { label, detalhe, formula, depth, childCount, isExpanded } = data;
+  const seek = useContext(SeekContext);
+  const { label, detalhe, formula, depth, childCount, isExpanded, startSeconds } = data;
+  const seekable = seek !== null && seekLabel(startSeconds) !== null;
 
   const isRoot = depth === 0;
   const hasChildren = childCount > 0;
@@ -85,6 +94,8 @@ function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
           className={cn(
             "font-semibold leading-tight line-clamp-3",
             isRoot ? "text-base" : "text-sm",
+            // Espaço para o atalho de momento, no canto.
+            seekable && "pr-12",
           )}
         >
           {label}
@@ -121,6 +132,23 @@ function MindMapNodeCard({ id, data }: NodeProps<MindMapFlowNode>) {
           </span>
         ) : null}
       </button>
+
+      {/* Irmão do card, e não filho: um botão dentro de outro não é HTML válido. */}
+      {seekable && seek !== null && typeof startSeconds === "number" ? (
+        <button
+          type="button"
+          aria-label={seekLabel(startSeconds) ?? undefined}
+          onClick={() => seek(startSeconds)}
+          className={cn(
+            "nodrag nopan pointer-events-auto absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold tabular-nums",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+            isRoot ? "bg-white/25 text-white" : "bg-cyan-100 text-cyan-800",
+          )}
+        >
+          <Play className="size-3" aria-hidden />
+          {formatTimestamp(startSeconds)}
+        </button>
+      ) : null}
     </>
   );
 }
@@ -133,11 +161,18 @@ const defaultEdgeOptions = {
 };
 
 function BranchOutline({ branch }: { branch: MindMapBranch }) {
+  const seek = useContext(SeekContext);
+
   return (
     <li>
       {branch.label}
       {branch.formula !== undefined ? `. ${branch.formula}` : ""}
       {branch.detalhe !== undefined ? `. ${branch.detalhe}` : ""}
+      {seek !== null && typeof branch.startSeconds === "number" ? (
+        <button type="button" onClick={() => seek(branch.startSeconds as number)}>
+          {seekLabel(branch.startSeconds)}
+        </button>
+      ) : null}
       {branch.children !== undefined ? (
         <ol>
           {branch.children.map((child) => (
@@ -155,12 +190,14 @@ interface MindMapCanvasProps {
   onToggle: (id: string) => void;
   /** Muda para pedir um reenquadramento do mapa. */
   fitKey: number;
+  /** Liga o atalho "Ir para m:ss" dos nós que têm `startSeconds` (o mapa de um áudio). */
+  onSeek?: (seconds: number) => void;
   /** Fora da página do modo o canvas não captura pan nem zoom. */
   isInteractive?: boolean;
   className?: string;
 }
 
-type MindMapFlowProps = Omit<MindMapCanvasProps, "onToggle" | "className">;
+type MindMapFlowProps = Omit<MindMapCanvasProps, "onToggle" | "onSeek" | "className">;
 
 function MindMapFlow({
   root,
@@ -186,6 +223,7 @@ function MindMapFlow({
           depth: placement.depth,
           childCount: placement.childCount,
           isExpanded: placement.isExpanded,
+          startSeconds: placement.branch.startSeconds,
         },
       })),
     [placements],
@@ -296,16 +334,19 @@ function MindMapFlow({
 
 export function MindMapCanvas({
   onToggle,
+  onSeek,
   className,
   ...flow
 }: MindMapCanvasProps) {
   return (
     <ToggleContext.Provider value={onToggle}>
-      <div className={cn("relative size-full", className)}>
-        <ReactFlowProvider>
-          <MindMapFlow {...flow} />
-        </ReactFlowProvider>
-      </div>
+      <SeekContext.Provider value={onSeek ?? null}>
+        <div className={cn("relative size-full", className)}>
+          <ReactFlowProvider>
+            <MindMapFlow {...flow} />
+          </ReactFlowProvider>
+        </div>
+      </SeekContext.Provider>
     </ToggleContext.Provider>
   );
 }
