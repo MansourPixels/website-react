@@ -5,13 +5,21 @@ import { useParams } from "react-router";
 
 import { ApiError } from "@/api/client";
 import { getDownloadUrl } from "@/api/content";
-import { getMedia, getTranscript } from "@/api/media";
+import {
+  getMedia,
+  getMediaMindMap,
+  getTranscript,
+  listMediaFlashcards,
+  listMediaQuiz,
+} from "@/api/media";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { MediaPlayer } from "@/components/MediaPlayer";
 import { NavMenu } from "@/components/NavMenu";
 import { SpeakButton } from "@/components/SpeakButton";
-import type { MediaDetail, Transcript } from "@/types/api/media";
+import type { Flashcard } from "@/types/api/flashcard";
+import type { MediaDetail, MediaMindMap, Transcript } from "@/types/api/media";
+import type { QuizQuestion } from "@/types/api/quiz";
 import {
   MEDIA_POLL_LIMIT_MS,
   describeStatus,
@@ -24,6 +32,11 @@ import {
   formatTimestamp,
 } from "@/utils/mediaTime";
 import { pageMeta } from "@/utils/pageMeta";
+import { MediaFlashcardsTab } from "./components/MediaFlashcardsTab";
+import { MediaMindMapTab } from "./components/MediaMindMapTab";
+import { MediaQuizTab } from "./components/MediaQuizTab";
+import { RegenerateArtifacts } from "./components/RegenerateArtifacts";
+import { useArtifact } from "./components/useArtifact";
 
 export function meta() {
   return pageMeta({
@@ -53,6 +66,43 @@ export default function MediaMaterialPage() {
   const [isMissing, setIsMissing] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Simulado, flashcards e mapa mental só consultam depois de a aba ser aberta. Os três
+  // ficam aqui, e não em cada aba, para o que já chegou sobreviver à troca de aba e para
+  // um só "Gerar de novo" reiniciar os três.
+  const [openedTabs, setOpenedTabs] = useState<ReadonlySet<string>>(new Set(["resumo"]));
+  const audioStatus = detail?.processingStatus ?? "PENDING";
+  const quiz = useArtifact<QuizQuestion[]>({
+    load: (signal) => listMediaQuiz(contentId, signal),
+    isEmpty: (questions) => questions.length === 0,
+    signature: (questions) => questions.map((question) => question.id).join(","),
+    audioStatus,
+    enabled: openedTabs.has("simulado"),
+  });
+  const flashcards = useArtifact<Flashcard[]>({
+    load: (signal) => listMediaFlashcards(contentId, signal),
+    isEmpty: (cards) => cards.length === 0,
+    signature: (cards) => cards.map((card) => card.id).join(","),
+    audioStatus,
+    enabled: openedTabs.has("flashcards"),
+  });
+  const mindMap = useArtifact<MediaMindMap>({
+    load: (signal) => getMediaMindMap(contentId, signal),
+    isEmpty: (map) => map.raiz === null,
+    signature: (map) => map.generatedAt ?? "",
+    audioStatus,
+    enabled: openedTabs.has("mapa"),
+  });
+  const regenerateArtifacts = (
+    <RegenerateArtifacts
+      contentId={contentId}
+      onRegenerated={() => {
+        quiz.refresh();
+        flashcards.refresh();
+        mindMap.refresh();
+      }}
+    />
+  );
 
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -333,7 +383,12 @@ export default function MediaMaterialPage() {
           ) : null}
         </div>
       ) : (
-        <Tabs defaultSelectedKey="resumo">
+        <Tabs
+          defaultSelectedKey="resumo"
+          onSelectionChange={(key) =>
+            setOpenedTabs((opened) => new Set(opened).add(String(key)))
+          }
+        >
           <Tabs.ListContainer>
             <Tabs.List aria-label="Conteúdo do áudio">
               <Tabs.Tab id="resumo">
@@ -347,6 +402,18 @@ export default function MediaMaterialPage() {
               </Tabs.Tab>
               <Tabs.Tab id="transcricao">
                 Transcrição
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="simulado">
+                Simulado
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="flashcards">
+                Flashcards
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="mapa">
+                Mapa mental
                 <Tabs.Indicator />
               </Tabs.Tab>
             </Tabs.List>
@@ -482,6 +549,29 @@ export default function MediaMaterialPage() {
                 ))}
               </ol>
             )}
+          </Tabs.Panel>
+          <Tabs.Panel id="simulado" className="flex flex-col gap-4 pt-4">
+            {regenerateArtifacts}
+            <MediaQuizTab
+              key={quiz.data?.map((question) => question.id).join(",") ?? "vazio"}
+              contentId={contentId}
+              quiz={quiz}
+              onSeek={seekTo}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel id="flashcards" className="flex flex-col gap-4 pt-4">
+            {regenerateArtifacts}
+            <MediaFlashcardsTab
+              key={flashcards.data?.map((card) => card.id).join(",") ?? "vazio"}
+              cards={flashcards}
+              onSeek={seekTo}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel id="mapa" className="flex flex-col gap-4 pt-4">
+            {regenerateArtifacts}
+            <MediaMindMapTab map={mindMap} onSeek={seekTo} />
           </Tabs.Panel>
         </Tabs>
       )}
