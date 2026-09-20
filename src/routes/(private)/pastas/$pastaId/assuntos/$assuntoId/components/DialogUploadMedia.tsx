@@ -11,6 +11,7 @@ import {
   MAX_VIDEO_BYTES,
   MEDIA_ACCEPT,
   formatFileSize,
+  isAudioFile,
   isVideoFile,
   mediaProblem,
 } from "@/utils/materials";
@@ -54,7 +55,7 @@ export function DialogUploadMedia({
 
   const isSending = progress !== null;
   const problem = file === null ? null : mediaProblem(file);
-  const detected = file === null ? null : isVideoFile(file) ? "vídeo" : "áudio";
+  const detected = file === null ? null : isVideoFile(file) ? "vídeo" : isAudioFile(file) ? "áudio" : null;
 
   // Fechar o diálogo durante o envio o cancela (não fica upload órfão) e
   // limpa o formulário para a próxima vez.
@@ -143,7 +144,7 @@ export function DialogUploadMedia({
               <p className="text-muted text-xs text-pretty">
                 {file === null
                   ? `Áudio (MP3, M4A, WAV, OGG ou FLAC) até ${formatFileSize(MAX_AUDIO_BYTES)}, ou vídeo (MP4, MOV, MKV ou WEBM) até ${formatFileSize(MAX_VIDEO_BYTES)}. A transcrição, o resumo e os momentos-chave ficam prontos em alguns minutos.`
-                  : `${file.name}: ${detected}, ${formatFileSize(file.size)}`}
+                  : `${file.name}${detected === null ? "" : `: ${detected}`}, ${formatFileSize(file.size)}`}
               </p>
 
               {problem !== null ? (

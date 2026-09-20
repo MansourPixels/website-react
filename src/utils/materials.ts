@@ -139,6 +139,10 @@ export function classroomLimitFor(kind: ClassroomUploadKind): number {
   return kind === "audio" ? MAX_AUDIO_BYTES : MAX_DOCUMENT_BYTES;
 }
 
+function trimmed(value: number): string {
+  return value.toFixed(1).replace(".", ",").replace(/,0$/, "");
+}
+
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
 
@@ -146,7 +150,10 @@ export function formatFileSize(bytes: number) {
   if (kilobytes < 1024) return `${Math.round(kilobytes)} KB`;
 
   // "200 MB", não "200,0 MB": os limites de envio são números redondos.
-  return `${(kilobytes / 1024).toFixed(1).replace(".", ",").replace(/,0$/, "")} MB`;
+  const megabytes = kilobytes / 1024;
+  if (megabytes < 1024) return `${trimmed(megabytes)} MB`;
+
+  return `${trimmed(megabytes / 1024)} GB`;
 }
 
 // Fotos da câmera chegam como Blob sem nome/extensão, e o back valida a

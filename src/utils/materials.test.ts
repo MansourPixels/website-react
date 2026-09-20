@@ -61,6 +61,9 @@ describe("formatFileSize", () => {
   it("mostra MB com vírgula decimal (pt-BR)", () => {
     expect(formatFileSize(1024 * 1024 * 2.5)).toBe("2,5 MB");
     expect(formatFileSize(1024 * 1024 * 200)).toBe("200 MB");
+    expect(formatFileSize(1024 * 1024 * 1023)).toBe("1023 MB");
+    expect(formatFileSize(1024 * 1024 * 1024)).toBe("1 GB");
+    expect(formatFileSize(1024 * 1024 * 1024 * 1.5)).toBe("1,5 GB");
   });
 });
 
