@@ -1,7 +1,6 @@
 import type {
   Classroom,
   ClassroomContent,
-  ClassroomContentKind,
   ClassroomContentProcessing,
   ClassroomContentText,
   ClassroomDownloadUrl,
@@ -19,6 +18,7 @@ import type {
   OwnerMaterial,
 } from "@/types/api/classroom";
 
+import { classroomKindForFileName } from "@/utils/materials";
 import { ApiError, apiFetch } from "./client";
 
 export function listClassrooms(): Promise<Classroom[]> {
@@ -218,15 +218,15 @@ export function uploadClassroomContent(
   folderId: string,
   payload: UploadClassroomContentPayload,
 ): Promise<ClassroomContent> {
-  const extension = payload.file.name.split(".").pop()?.toLowerCase();
-  const kind: ClassroomContentKind =
-    extension === "pdf"
-      ? "pdf"
-      : extension === "jpg" || extension === "jpeg" || extension === "png"
-        ? "image"
-        : (() => {
-            throw new ApiError(400, "Envie um arquivo PDF, JPG, JPEG ou PNG.");
-          })();
+  const kind = classroomKindForFileName(payload.file.name);
+
+  if (kind === null) {
+    throw new ApiError(
+      400,
+      "Envie um PDF, uma imagem (JPG, JPEG ou PNG) ou um áudio (MP3, M4A, WAV, OGG ou FLAC).",
+    );
+  }
+
   const formData = new FormData();
   formData.append("file", payload.file, payload.file.name);
   formData.append("kind", kind);

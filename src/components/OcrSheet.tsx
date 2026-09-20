@@ -8,6 +8,7 @@ import { getClassroomContentProcessing, getClassroomContentText } from "@/api/cl
 import type { ContentText } from "@/types/api/content";
 import type { ClassroomContentProcessing, ClassroomContentText } from "@/types/api/classroom";
 import { getContentTextStatus } from "@/utils/contentTextStatus";
+import { MEDIA_POLL_LIMIT_MS, nextPollDelay } from "@/utils/mediaStatus";
 
 import { SpeakButton } from "./SpeakButton";
 
@@ -15,6 +16,11 @@ interface OcrSheetProps {
   contentId: string;
   classroomContent?: { classroomId: string; folderId: string; contentId: string };
   onContentUnavailable?: () => void;
+  /**
+   * Áudio: o "texto" é a transcrição, que leva minutos e não segundos, então o
+   * painel acompanha por mais tempo (com intervalo crescente) e diz "transcrição".
+   */
+  isMedia?: boolean;
 }
 
 const POLL_INTERVAL_MS = 3_000;
@@ -27,7 +33,9 @@ const POLL_MAX_DURATION_MS = 60_000;
  * Nasce espiando, não escondido: para quem não lê, o botão de ouvir precisa
  * estar visível sem depender de descobrir um gesto.
  */
-export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: OcrSheetProps) {
+export function OcrSheet({ contentId, classroomContent, onContentUnavailable, isMedia = false }: OcrSheetProps) {
+  const noun = isMedia ? "a transcrição" : "o texto extraído";
+  const title = isMedia ? "Transcrição" : "Texto extraído";
   const [content, setContent] = useState<ContentText | ClassroomContentText | undefined>(undefined);
   const [processing, setProcessing] = useState<ClassroomContentProcessing | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -43,6 +51,8 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
     let isStopped = false;
+    let attempt = 0;
+    const pollLimit = isMedia ? MEDIA_POLL_LIMIT_MS : POLL_MAX_DURATION_MS;
 
     setContent(undefined);
     setLoadError(null);
@@ -65,9 +75,10 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
           const elapsed = Date.now() - startedAt;
           if (
             (Array.isArray(result) ? result[0].status === "pending" || result[0].status === "processing" : nextContent.extractedAt === null) &&
-            elapsed + POLL_INTERVAL_MS <= POLL_MAX_DURATION_MS
+            elapsed + POLL_INTERVAL_MS <= pollLimit
           ) {
-            timeoutId = setTimeout(loadContentText, POLL_INTERVAL_MS);
+            timeoutId = setTimeout(loadContentText, isMedia ? nextPollDelay(attempt) : POLL_INTERVAL_MS);
+            attempt += 1;
           }
         })
         .catch((error: unknown) => {
@@ -92,7 +103,7 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       controller?.abort();
     };
-  }, [classroomContentId, classroomId, contentId, folderId]);
+  }, [classroomContentId, classroomId, contentId, folderId, isMedia]);
 
   const text = content?.text?.trim() ?? "";
   const contentStatus =
@@ -111,7 +122,7 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
 
   return (
     <section
-      aria-label="Texto extraído do material"
+      aria-label={isMedia ? "Transcrição do áudio" : "Texto extraído do material"}
       className={cn(
         "sheet-in bg-surface pointer-events-auto absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 rounded-t-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-surface",
         isExpanded ? "max-h-[70svh]" : "max-h-48",
@@ -122,7 +133,7 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
         type="button"
         aria-expanded={isExpanded}
         aria-label={
-          isExpanded ? "Recolher o texto extraído" : "Expandir o texto extraído"
+          isExpanded ? `Recolher ${noun}` : `Expandir ${noun}`
         }
         className="-mt-1 flex w-full shrink-0 justify-center py-1"
         onClick={() => setIsExpanded((previous) => !previous)}
@@ -139,25 +150,23 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <h2 className="font-semibold">Texto extraído</h2>
+          <h2 className="font-semibold">{title}</h2>
           <p className="text-muted text-xs">
             {hasText
-              ? "Extraído do material pelo Revi IA."
-              : "Leitura de texto do material pelo Revi IA."}
+              ? isMedia ? "Transcrita do áudio pelo Revi IA." : "Extraído do material pelo Revi IA."
+              : isMedia ? "Transcrição do áudio pelo Revi IA." : "Leitura de texto do material pelo Revi IA."}
           </p>
         </div>
 
         {hasText ? (
-          <SpeakButton label="o texto extraído deste material" text={text} />
+          <SpeakButton label={isMedia ? "a transcrição deste áudio" : "o texto extraído deste material"} text={text} />
         ) : null}
 
         <Button
           isIconOnly
           variant="ghost"
           size="lg"
-          aria-label={
-            isExpanded ? "Recolher o texto extraído" : "Expandir o texto extraído"
-          }
+          aria-label={isExpanded ? `Recolher ${noun}` : `Expandir ${noun}`}
           onPress={() => setIsExpanded((previous) => !previous)}
         >
           {isExpanded ? (
@@ -175,20 +184,20 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable }: 
       ) : content === undefined ? (
         <div className="flex shrink-0 items-center gap-2 py-1" aria-busy="true">
           <Spinner size="sm" />
-          <span className="text-muted text-sm">Lendo o texto do material…</span>
+          <span className="text-muted text-sm">{isMedia ? "Lendo a transcrição do áudio…" : "Lendo o texto do material…"}</span>
         </div>
       ) : contentStatus === "pending" ? (
         <p className="text-muted flex shrink-0 items-center gap-2 text-sm text-pretty">
           <Sparkles className="size-4 shrink-0" aria-hidden="true" />
-          O Revi IA ainda está processando este material.
+          {isMedia ? "O Revi IA ainda está transcrevendo este áudio. Isso leva alguns minutos." : "O Revi IA ainda está processando este material."}
         </p>
       ) : contentStatus === "failed" ? (
         <p role="alert" className="text-danger shrink-0 text-sm text-pretty">
-          {processing?.error || "Não foi possível extrair o texto. O download do arquivo continua disponível."}
+          {processing?.error || (isMedia ? "Não foi possível transcrever o áudio. Ele continua disponível para ouvir." : "Não foi possível extrair o texto. O download do arquivo continua disponível.")}
         </p>
       ) : contentStatus === "empty" ? (
         <p className="text-muted shrink-0 text-sm text-pretty">
-          Nenhum texto legível foi encontrado neste material.
+          {isMedia ? "Não encontramos fala neste áudio." : "Nenhum texto legível foi encontrado neste material."}
         </p>
       ) : (
         <div
