@@ -1,5 +1,8 @@
 import type { Content } from "@/types/api/content";
-import type { MediaDetail, Transcript } from "@/types/api/media";
+import type { Flashcard } from "@/types/api/flashcard";
+import type { MediaDetail, MediaMindMap, Transcript } from "@/types/api/media";
+import type { GradeRequestItem, GradeResponse, QuizQuestion } from "@/types/api/quiz";
+import { normalizeMindMapBranch } from "@/utils/mediaArtifacts";
 
 import { apiFetch, apiUpload, type UploadOptions } from "./client";
 
@@ -47,6 +50,84 @@ export function getTranscript(
   signal?: AbortSignal,
 ): Promise<Transcript> {
   return apiFetch<Transcript>(`/api/contents/${contentId}/transcript`, {
+    signal,
+  });
+}
+
+/**
+ * O simulado do próprio áudio, sem a alternativa certa. Vem vazio (não é erro)
+ * até a geração terminar, depois de o áudio ficar `COMPLETED`; `404` vale
+ * para material de outra pessoa e para o que não é mídia.
+ */
+export function listMediaQuiz(
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<QuizQuestion[]> {
+  return apiFetch<QuizQuestion[]>(`/api/contents/${contentId}/quiz`, {
+    signal,
+  });
+}
+
+/**
+ * Corrige as respostas: cada resultado traz a alternativa certa e o momento a
+ * rever. Registra a ofensiva do dia, mas não grava tentativa (não entra no
+ * desempenho nem no plano de estudo). `400` para pergunta de outro material ou
+ * alternativa fora de A a D.
+ */
+export function gradeMediaQuiz(
+  contentId: string,
+  answers: GradeRequestItem[],
+  signal?: AbortSignal,
+): Promise<GradeResponse> {
+  return apiFetch<GradeResponse>(`/api/contents/${contentId}/quiz/grade`, {
+    method: "POST",
+    body: answers,
+    signal,
+  });
+}
+
+/** Os flashcards do áudio, ordenados; vazio até a geração terminar. */
+export function listMediaFlashcards(
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<Flashcard[]> {
+  return apiFetch<Flashcard[]>(`/api/contents/${contentId}/flashcards`, {
+    signal,
+  });
+}
+
+/**
+ * O mapa mental do áudio; `raiz` é `null` até a geração terminar. O backend manda
+ * `null` nos campos opcionais de cada nó, e o resto do app (o mapa da pasta) usa
+ * campo ausente, então o mapa sai daqui normalizado (`normalizeMindMapBranch`).
+ */
+export async function getMediaMindMap(
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<MediaMindMap> {
+  const map = await apiFetch<MediaMindMap>(
+    `/api/contents/${contentId}/mind-map`,
+    { signal },
+  );
+
+  return {
+    raiz: map.raiz === null ? null : normalizeMindMapBranch(map.raiz),
+    generatedAt: map.generatedAt,
+  };
+}
+
+/**
+ * Gera de novo o simulado, os flashcards e o mapa mental do áudio, trocando os
+ * anteriores (é também a saída de uma geração que falhou: artefatos derivados não
+ * têm status próprio). Responde `202` sem corpo. `409` enquanto o áudio não
+ * está `COMPLETED` ou se não tem fala, `429` acima de 10 por hora (`Retry-After`).
+ */
+export function regenerateMediaArtifacts(
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  return apiFetch<void>(`/api/contents/${contentId}/artifacts/generate`, {
+    method: "POST",
     signal,
   });
 }
