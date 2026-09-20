@@ -391,28 +391,28 @@ export default function MediaMaterialPage() {
         >
           <Tabs.ListContainer>
             <Tabs.List aria-label="Conteúdo do áudio">
-              <Tabs.Tab id="resumo">
+              <Tabs.Tab id="resumo" className="whitespace-nowrap">
                 Resumo
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Tab id="momentos">
+              <Tabs.Tab id="momentos" className="whitespace-nowrap">
                 Momentos (
                 <span className="tabular-nums">{detail.keyMoments.length}</span>)
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Tab id="transcricao">
+              <Tabs.Tab id="transcricao" className="whitespace-nowrap">
                 Transcrição
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Tab id="simulado">
+              <Tabs.Tab id="simulado" className="whitespace-nowrap">
                 Simulado
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Tab id="flashcards">
+              <Tabs.Tab id="flashcards" className="whitespace-nowrap">
                 Flashcards
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Tab id="mapa">
+              <Tabs.Tab id="mapa" className="whitespace-nowrap">
                 Mapa mental
                 <Tabs.Indicator />
               </Tabs.Tab>
