@@ -1,10 +1,11 @@
 import type { Content } from "@/types/api/content";
 import { useContentThumbnail } from "@/hooks/useContentThumbnail";
+import { isMediaType } from "@/utils/materials";
 import { describeStatus, effectiveStatus } from "@/utils/mediaStatus";
 import { formatTimestamp } from "@/utils/mediaTime";
 import { Button } from "@heroui/react";
 import { cn } from "@heroui/styles";
-import { AudioLines, FileText, Loader2, TriangleAlert } from "lucide-react";
+import { AudioLines, FileText, Loader2, TriangleAlert, Video } from "lucide-react";
 
 interface MaterialTileProps {
   content: Content;
@@ -15,12 +16,13 @@ const kindPhrase = {
   PDF: "o PDF",
   IMAGE: "a imagem",
   AUDIO: "o áudio",
+  VIDEO: "o vídeo",
 } as const;
 
 export function MaterialTile({ content, onOpen }: MaterialTileProps) {
   const { name, contentType, processingError, durationSeconds } = content;
   const { isImage, imageSrc, markImageFailed } = useContentThumbnail(content);
-  const isAudio = contentType === "AUDIO";
+  const isMedia = isMediaType(contentType);
   const status = effectiveStatus(content);
   const { label, showError } = describeStatus(status, processingError);
   // O selo só aparece enquanto há algo a dizer: em andamento ou falhou.
@@ -37,7 +39,7 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
         `Abrir ${kindPhrase[contentType]} ${name}`,
         status === "COMPLETED" ? null : label.toLowerCase(),
         status === "FAILED" && showError ? processingError : null,
-        isAudio && durationSeconds != null
+        isMedia && durationSeconds != null
           ? `duração ${formatTimestamp(durationSeconds)}`
           : null,
       ]
@@ -60,7 +62,9 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
         </>
       ) : (
         <span className="size-full flex flex-col items-center justify-center gap-1.5 p-3 text-center">
-          {isAudio ? (
+          {contentType === "VIDEO" ? (
+            <Video className="size-7 text-accent shrink-0" aria-hidden />
+          ) : contentType === "AUDIO" ? (
             <AudioLines className="size-7 text-accent shrink-0" aria-hidden />
           ) : (
             <FileText className="size-7 text-accent shrink-0" aria-hidden />
@@ -70,7 +74,7 @@ export function MaterialTile({ content, onOpen }: MaterialTileProps) {
             {name}
           </span>
 
-          {isAudio && durationSeconds != null && status === "COMPLETED" ? (
+          {isMedia && durationSeconds != null && status === "COMPLETED" ? (
             <span className="text-muted text-[10px] tabular-nums">
               {formatTimestamp(durationSeconds)}
             </span>

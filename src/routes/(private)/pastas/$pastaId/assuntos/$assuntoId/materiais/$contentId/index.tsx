@@ -31,6 +31,7 @@ import {
   clampSeek,
   formatTimestamp,
 } from "@/utils/mediaTime";
+import { mediaNoun } from "@/utils/materials";
 import { pageMeta } from "@/utils/pageMeta";
 import { MediaFlashcardsTab } from "./components/MediaFlashcardsTab";
 import { MediaMindMapTab } from "./components/MediaMindMapTab";
@@ -40,9 +41,9 @@ import { useArtifact } from "./components/useArtifact";
 
 export function meta() {
   return pageMeta({
-    title: "Áudio",
+    title: "Áudio ou vídeo",
     description:
-      "Resumo, momentos-chave e transcrição do áudio, com o player para voltar ao ponto certo.",
+      "Resumo, momentos-chave e transcrição do áudio ou vídeo, com o player para voltar ao ponto certo.",
   });
 }
 
@@ -72,6 +73,8 @@ export default function MediaMaterialPage() {
   // um só "Gerar de novo" reiniciar os três.
   const [openedTabs, setOpenedTabs] = useState<ReadonlySet<string>>(new Set(["resumo"]));
   const audioStatus = detail?.processingStatus ?? "PENDING";
+  const noun = mediaNoun(detail?.contentType);
+  const isVideo = detail?.contentType === "VIDEO";
   const quiz = useArtifact<QuizQuestion[]>({
     load: (signal) => listMediaQuiz(contentId, signal),
     isEmpty: (questions) => questions.length === 0,
@@ -96,6 +99,7 @@ export default function MediaMaterialPage() {
   const regenerateArtifacts = (
     <RegenerateArtifacts
       contentId={contentId}
+      noun={noun}
       onRegenerated={() => {
         quiz.refresh();
         flashcards.refresh();
@@ -111,7 +115,7 @@ export default function MediaMaterialPage() {
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
 
   const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLMediaElement | null>(null);
   const segmentRefs = useRef(new Map<number, HTMLElement>());
   const lastManualScroll = useRef(0);
   const activeIndexRef = useRef(-1);
@@ -132,7 +136,7 @@ export default function MediaMaterialPage() {
         setAudioError(
           error instanceof ApiError
             ? error.detail
-            : "Não foi possível carregar o áudio.",
+            : "Não foi possível carregar o material.",
         );
       });
 
@@ -179,7 +183,7 @@ export default function MediaMaterialPage() {
         setLoadError(
           error instanceof ApiError
             ? error.detail
-            : "Não foi possível carregar este áudio. Tente novamente.",
+            : "Não foi possível carregar este material. Tente novamente.",
         );
       }
     }
@@ -260,7 +264,7 @@ export default function MediaMaterialPage() {
   if (isMissing) {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 md:p-8">
-        <NavMenu title="Áudio" hasBackButton backHref={backHref(pastaId, assuntoId)} />
+        <NavMenu title="Áudio ou vídeo" hasBackButton backHref={backHref(pastaId, assuntoId)} />
         <EmptyState>
           Este material foi removido ou não está mais disponível.
         </EmptyState>
@@ -283,7 +287,7 @@ export default function MediaMaterialPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6 md:p-8">
       <NavMenu
-        title={detail?.name ?? "Áudio"}
+        title={detail?.name ?? "Áudio ou vídeo"}
         hasBackButton
         backHref={backHref(pastaId, assuntoId)}
       />
@@ -293,7 +297,8 @@ export default function MediaMaterialPage() {
           <MediaPlayer
             key={audioUrl}
             src={audioUrl}
-            label={detail?.name ?? "Áudio"}
+            label={detail?.name ?? "Áudio ou vídeo"}
+            kind={isVideo ? "video" : "audio"}
             renewUrl={renewUrl}
             onElement={(element) => {
               audioRef.current = element;
@@ -307,7 +312,7 @@ export default function MediaMaterialPage() {
         ) : (
           <div className="flex items-center gap-2 py-2" aria-busy="true">
             <Spinner size="sm" />
-            <span className="text-muted text-sm">Carregando o áudio…</span>
+            <span className="text-muted text-sm">Carregando {isVideo ? "o vídeo" : "o áudio"}…</span>
           </div>
         )}
 
@@ -346,14 +351,14 @@ export default function MediaMaterialPage() {
       ) : detail === null ? (
         <div className="flex items-center justify-center p-6" aria-busy="true">
           <Spinner size="lg" />
-          <span className="sr-only">Carregando o áudio</span>
+          <span className="sr-only">Carregando {noun === "vídeo" ? "o vídeo" : "o áudio"}</span>
         </div>
       ) : detail.processingStatus === "FAILED" ? (
         <div role="alert" className="text-danger flex flex-col gap-2 text-sm text-pretty">
-          <p className="font-medium">Não foi possível processar este áudio.</p>
+          <p className="font-medium">Não foi possível processar {isVideo ? "este vídeo" : "este áudio"}.</p>
           {status?.showError ? <p>{detail.processingError}</p> : null}
           <p className="text-muted">
-            O áudio continua disponível para ouvir acima. Para ter a transcrição
+            {isVideo ? "O vídeo continua disponível para assistir acima." : "O áudio continua disponível para ouvir acima."} Para ter a transcrição
             e o resumo, envie o arquivo de novo.
           </p>
         </div>
@@ -362,8 +367,8 @@ export default function MediaMaterialPage() {
           <p className="flex items-center gap-2">
             <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
             {detail.processingStatus === "PENDING"
-              ? "O áudio está na fila para ser transcrito."
-              : "Estamos transcrevendo o áudio e preparando o resumo."}{" "}
+              ? `O ${noun} está na fila para ser transcrito.`
+              : `Estamos transcrevendo o ${noun} e preparando o resumo.`}{" "}
             Isso costuma levar alguns minutos, e você pode sair desta tela.
           </p>
           {timedOut ? (
@@ -390,7 +395,7 @@ export default function MediaMaterialPage() {
           }
         >
           <Tabs.ListContainer>
-            <Tabs.List aria-label="Conteúdo do áudio">
+            <Tabs.List aria-label={`Conteúdo do ${noun}`}>
               <Tabs.Tab id="resumo" className="whitespace-nowrap">
                 Resumo
                 <Tabs.Indicator />
@@ -421,7 +426,7 @@ export default function MediaMaterialPage() {
 
           <Tabs.Panel id="resumo" className="flex flex-col gap-4 pt-4">
             {detail.summary === null ? (
-              <EmptyState>Este áudio ainda não tem resumo.</EmptyState>
+              <EmptyState>Este {noun} ainda não tem resumo.</EmptyState>
             ) : (
               <>
                 <div className="flex items-start gap-2">
@@ -429,7 +434,7 @@ export default function MediaMaterialPage() {
                     {detail.summary.summary}
                   </p>
                   {summaryText.length > 0 ? (
-                    <SpeakButton label="o resumo do áudio" text={summaryText} />
+                    <SpeakButton label={`o resumo do ${noun}`} text={summaryText} />
                   ) : null}
                 </div>
                 {detail.summary.topics.length > 0 ? (
@@ -464,7 +469,7 @@ export default function MediaMaterialPage() {
           <Tabs.Panel id="momentos" className="pt-4">
             {detail.keyMoments.length === 0 ? (
               <EmptyState>
-                Nenhum momento-chave foi identificado neste áudio.
+                Nenhum momento-chave foi identificado neste {noun}.
               </EmptyState>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -507,7 +512,7 @@ export default function MediaMaterialPage() {
                 <span className="text-muted text-sm">Carregando a transcrição…</span>
               </div>
             ) : segments.length === 0 ? (
-              <EmptyState>Não encontramos fala neste áudio.</EmptyState>
+              <EmptyState>Não encontramos fala neste {noun}.</EmptyState>
             ) : (
               <ol
                 ref={showActiveSegment}
@@ -556,6 +561,7 @@ export default function MediaMaterialPage() {
               key={quiz.data?.map((question) => question.id).join(",") ?? "vazio"}
               contentId={contentId}
               quiz={quiz}
+              noun={noun}
               onSeek={seekTo}
             />
           </Tabs.Panel>
@@ -565,13 +571,14 @@ export default function MediaMaterialPage() {
             <MediaFlashcardsTab
               key={flashcards.data?.map((card) => card.id).join(",") ?? "vazio"}
               cards={flashcards}
+              noun={noun}
               onSeek={seekTo}
             />
           </Tabs.Panel>
 
           <Tabs.Panel id="mapa" className="flex flex-col gap-4 pt-4">
             {regenerateArtifacts}
-            <MediaMindMapTab map={mindMap} onSeek={seekTo} />
+            <MediaMindMapTab map={mindMap} noun={noun} onSeek={seekTo} />
           </Tabs.Panel>
         </Tabs>
       )}

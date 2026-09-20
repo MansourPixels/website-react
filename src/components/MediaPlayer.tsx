@@ -1,22 +1,24 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type SyntheticEvent } from "react";
 
 import { cancelSpeech } from "@/utils/speech";
-import { canRenewUrl, isUrlStale } from "@/utils/mediaUrl";
+import { canRenewUrl, classifyMediaError, isUrlStale } from "@/utils/mediaUrl";
 
 interface MediaPlayerProps {
   src: string;
   label: string;
+  /** `video` mostra a imagem e as mensagens de formato falam de vídeo; o resto é igual. */
+  kind?: "audio" | "video";
   /** Pede uma URL nova; a presignada expira em 15 minutos. */
   renewUrl?: () => Promise<string>;
   /** Chamado a cada `timeupdate`, com o tempo atual em segundos. */
   onTimeUpdate?: (seconds: number) => void;
   /** Entrega o elemento (ou `null` ao desmontar) a quem precisa saltar no áudio. */
-  onElement?: (element: HTMLAudioElement | null) => void;
+  onElement?: (element: HTMLMediaElement | null) => void;
   className?: string;
 }
 
 /**
- * O `<audio>` do Revi. Duas coisas que o elemento nu não faz:
+ * O `<audio>` ou `<video>` do Revi. Três coisas que o elemento nu não faz:
  *
  * - para a leitura em voz alta antes de tocar, porque `speechSynthesis` é
  *   global e as duas vozes se sobreporiam;
@@ -24,11 +26,15 @@ interface MediaPlayerProps {
  *   os bytes seguintes e o elemento dispara `error`; aqui a URL é trocada e o
  *   áudio volta ao mesmo segundo, tocando se estava tocando. Uma URL que falha
  *   de novo logo depois de renovada não está vencida (o arquivo sumiu ou o
- *   servidor caiu), então depois de poucas renovações seguidas mostra o erro.
+ *   servidor caiu), então depois de poucas renovações seguidas mostra o erro;
+ * - separa um formato que o navegador não toca (um `.mov` ou `.mkv` que não é
+ *   H.264/AAC) de uma URL vencida (`classifyMediaError`): o primeiro mostra o
+ *   aviso e um link para baixar o arquivo, sem tentar renovar em vão.
  */
 export function MediaPlayer({
   src,
   label,
+  kind = "audio",
   renewUrl,
   onTimeUpdate,
   onElement,
@@ -38,7 +44,8 @@ export function MediaPlayer({
   const [renewedUrl, setRenewedUrl] = useState<string | null>(null);
   const url = renewedUrl ?? src;
   const [hasFailed, setHasFailed] = useState(false);
-  const elementRef = useRef<HTMLAudioElement | null>(null);
+  const [isUnsupported, setIsUnsupported] = useState(false);
+  const elementRef = useRef<HTMLMediaElement | null>(null);
   // Quando a URL atual começou a carregar (`loadstart`), para saber se vai vencer.
   const loadedAt = useRef(0);
   const renewals = useRef<number[]>([]);
@@ -72,46 +79,88 @@ export function MediaPlayer({
     }
   }
 
+  const mediaProps = {
+    src: url,
+    controls: true,
+    preload: "metadata" as const,
+    "aria-label": label,
+    onLoadStart: () => {
+      loadedAt.current = Date.now();
+    },
+    onPlay: (event: SyntheticEvent<HTMLMediaElement>) => {
+      cancelSpeech();
+
+      // Começar a tocar com a URL perto de vencer trava daqui a pouco: troca antes.
+      if (isUrlStale(loadedAt.current, Date.now())) {
+        event.currentTarget.pause();
+        void renew();
+      }
+    },
+    onTimeUpdate: (event: SyntheticEvent<HTMLMediaElement>) =>
+      onTimeUpdate?.(event.currentTarget.currentTime),
+    onLoadedMetadata: (event: SyntheticEvent<HTMLMediaElement>) => {
+      const pending = resumeAt.current;
+
+      if (pending === null) return;
+
+      resumeAt.current = null;
+      event.currentTarget.currentTime = pending.time;
+      if (pending.play) void event.currentTarget.play().catch(() => {});
+    },
+    onError: (event: SyntheticEvent<HTMLMediaElement>) => {
+      const age = Date.now() - loadedAt.current;
+
+      if (classifyMediaError(event.currentTarget.error?.code, age) === "unsupported") {
+        setIsUnsupported(true);
+        return;
+      }
+
+      void renew();
+    },
+  };
+
   return (
     <div className={className}>
-      <audio
-        ref={(element) => {
-          elementRef.current = element;
-          onElement?.(element);
-        }}
-        src={url}
-        controls
-        preload="metadata"
-        aria-label={label}
-        className="w-full"
-        onLoadStart={() => {
-          loadedAt.current = Date.now();
-        }}
-        onPlay={(event) => {
-          cancelSpeech();
-
-          // Começar a tocar com a URL perto de vencer trava daqui a pouco: troca antes.
-          if (isUrlStale(loadedAt.current, Date.now())) {
-            event.currentTarget.pause();
-            void renew();
-          }
-        }}
-        onTimeUpdate={(event) => onTimeUpdate?.(event.currentTarget.currentTime)}
-        onLoadedMetadata={(event) => {
-          const pending = resumeAt.current;
-
-          if (pending === null) return;
-
-          resumeAt.current = null;
-          event.currentTarget.currentTime = pending.time;
-          if (pending.play) void event.currentTarget.play().catch(() => {});
-        }}
-        onError={() => void renew()}
-      />
+      {kind === "video" ? (
+        <video
+          ref={(element) => {
+            elementRef.current = element;
+            onElement?.(element);
+          }}
+          playsInline
+          className="max-h-[45vh] w-full rounded-xl bg-black"
+          {...mediaProps}
+        />
+      ) : (
+        <audio
+          ref={(element) => {
+            elementRef.current = element;
+            onElement?.(element);
+          }}
+          className="w-full"
+          {...mediaProps}
+        />
+      )}
+      {isUnsupported ? (
+        <div role="alert" className="text-danger mt-2 flex flex-col items-start gap-2 text-sm text-pretty">
+          <p>
+            Este navegador não reproduz este formato de {kind === "video" ? "vídeo" : "áudio"}. Baixe
+            o arquivo para {kind === "video" ? "assistir" : "ouvir"}; o resumo, os momentos e a
+            transcrição continuam disponíveis aqui.
+          </p>
+          <a
+            href={url}
+            download={label}
+            className="text-accent inline-flex min-h-11 items-center underline"
+          >
+            Baixar o arquivo
+          </a>
+        </div>
+      ) : null}
       {hasFailed ? (
         <p role="alert" className="text-danger mt-2 text-sm text-pretty">
-          Não foi possível carregar o áudio. Volte à lista e abra o material de
-          novo.
+          Não foi possível carregar {kind === "video" ? "o vídeo" : "o áudio"}. Volte à lista e abra
+          o material de novo.
         </p>
       ) : null}
     </div>

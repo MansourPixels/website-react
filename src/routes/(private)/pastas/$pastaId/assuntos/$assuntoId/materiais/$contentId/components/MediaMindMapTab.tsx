@@ -10,23 +10,24 @@ import type { ArtifactState } from "./useArtifact";
 
 interface MediaMindMapTabProps {
   map: ArtifactState<MediaMindMap>;
+  noun?: "áudio" | "vídeo";
   onSeek: (seconds: number) => void;
 }
 
 /** O mapa mental do próprio áudio; um nó com momento ganha o atalho "Ir para m:ss". */
-export function MediaMindMapTab({ map, onSeek }: MediaMindMapTabProps) {
+export function MediaMindMapTab({ map, onSeek, noun = "áudio" }: MediaMindMapTabProps) {
   if (map.data === null || map.data.raiz === null || map.phase !== "ready" || map.error !== null) {
-    return <ArtifactStatus name="o mapa mental" state={map} />;
+    return <ArtifactStatus name="o mapa mental" state={map} noun={noun} />;
   }
 
-  return <MapView root={map.data.raiz} onSeek={onSeek} />;
+  return <MapView root={map.data.raiz} onSeek={onSeek} noun={noun} />;
 }
 
-function MapView({ root, onSeek }: { root: MindMapBranch; onSeek: (seconds: number) => void }) {
+function MapView({ root, onSeek, noun }: { root: MindMapBranch; onSeek: (seconds: number) => void; noun: string }) {
   const { placements, toggle, expandAll } = useMindMap(root);
 
   return (
-    <section aria-label="Mapa mental do áudio" className="flex flex-col gap-3">
+    <section aria-label={`Mapa mental do ${noun}`} className="flex flex-col gap-3">
       <div className="flex justify-end">
         <Button variant="secondary" size="sm" onPress={expandAll}>
           <Maximize2 />

@@ -27,6 +27,7 @@ function optionText(question: QuizQuestion, option: QuizOption) {
 interface MediaQuizTabProps {
   contentId: string;
   quiz: ArtifactState<QuizQuestion[]>;
+  noun?: "áudio" | "vídeo";
   onSeek: (seconds: number) => void;
 }
 
@@ -35,7 +36,7 @@ interface MediaQuizTabProps {
  * correção mostra a alternativa certa e leva de volta ao momento do áudio em
  * que ela é explicada.
  */
-export function MediaQuizTab({ contentId, quiz, onSeek }: MediaQuizTabProps) {
+export function MediaQuizTab({ contentId, quiz, onSeek, noun = "áudio" }: MediaQuizTabProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<QuizOption | null>(null);
   const [answers, setAnswers] = useState<Map<string, QuizOption>>(new Map());
@@ -46,7 +47,7 @@ export function MediaQuizTab({ contentId, quiz, onSeek }: MediaQuizTabProps) {
   const questions = quiz.data;
 
   if (questions === null || quiz.phase !== "ready" || quiz.error !== null) {
-    return <ArtifactStatus name="o simulado" state={quiz} />;
+    return <ArtifactStatus name="o simulado" state={quiz} noun={noun} />;
   }
 
   const total = questions.length;
@@ -122,8 +123,8 @@ export function MediaQuizTab({ contentId, quiz, onSeek }: MediaQuizTabProps) {
           {toReview.length > 0 ? (
             <p className="text-muted text-sm text-pretty">
               {toReview.length === 1
-                ? "Uma resposta errada tem o momento do áudio onde ela é explicada."
-                : `${toReview.length} respostas erradas têm o momento do áudio onde são explicadas.`}
+                ? `Uma resposta errada tem o momento do ${noun} onde ela é explicada.`
+                : `${toReview.length} respostas erradas têm o momento do ${noun} onde são explicadas.`}
             </p>
           ) : null}
         </div>

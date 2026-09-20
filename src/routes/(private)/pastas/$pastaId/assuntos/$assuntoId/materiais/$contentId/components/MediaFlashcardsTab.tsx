@@ -11,16 +11,17 @@ import type { ArtifactState } from "./useArtifact";
 
 interface MediaFlashcardsTabProps {
   cards: ArtifactState<Flashcard[]>;
+  noun?: "áudio" | "vídeo";
   onSeek: (seconds: number) => void;
 }
 
 /** Os flashcards do próprio áudio, com o atalho para o momento a que cada um se refere. */
-export function MediaFlashcardsTab({ cards, onSeek }: MediaFlashcardsTabProps) {
+export function MediaFlashcardsTab({ cards, onSeek, noun = "áudio" }: MediaFlashcardsTabProps) {
   const [index, setIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
   if (cards.data === null || cards.phase !== "ready" || cards.error !== null) {
-    return <ArtifactStatus name="os flashcards" state={cards} />;
+    return <ArtifactStatus name="os flashcards" state={cards} noun={noun} />;
   }
 
   const total = cards.data.length;
@@ -32,7 +33,7 @@ export function MediaFlashcardsTab({ cards, onSeek }: MediaFlashcardsTabProps) {
   }
 
   return (
-    <section aria-label="Flashcards do áudio" className="flex flex-col gap-4">
+    <section aria-label={`Flashcards do ${noun}`} className="flex flex-col gap-4">
       <FlashCard
         question={card.front}
         answer={<MathText>{card.back}</MathText>}

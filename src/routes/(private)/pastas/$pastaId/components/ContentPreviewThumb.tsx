@@ -1,6 +1,6 @@
 import { useContentThumbnail } from "@/hooks/useContentThumbnail";
 import type { Content } from "@/types/api/content";
-import { AudioLines, FileText } from "lucide-react";
+import { AudioLines, FileText, Video } from "lucide-react";
 
 interface ContentPreviewThumbProps {
   content: Content;
@@ -19,6 +19,8 @@ export function ContentPreviewThumb({ content }: ContentPreviewThumbProps) {
           className="size-full object-cover"
           onError={markImageFailed}
         />
+      ) : content.contentType === "VIDEO" ? (
+        <Video className="size-4 text-accent shrink-0" aria-hidden />
       ) : content.contentType === "AUDIO" ? (
         <AudioLines className="size-4 text-accent shrink-0" aria-hidden />
       ) : (
