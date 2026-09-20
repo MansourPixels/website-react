@@ -64,6 +64,7 @@ export default function MediaMaterialPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const segmentRefs = useRef(new Map<number, HTMLElement>());
   const lastManualScroll = useRef(0);
+  const activeIndexRef = useRef(-1);
 
   // A URL de reprodução não depende do processamento: um áudio que falhou
   // continua tocando, e é o que resta ao usuário fazer com ele.
@@ -173,8 +174,22 @@ export default function MediaMaterialPage() {
   const segments = transcript?.segments ?? [];
   const activeIndex = activeSegmentIndex(segments, currentTime);
 
+  // Ao abrir a aba no meio da reprodução, a lista já nasce no trecho que está
+  // sendo falado, em vez de esperar o próximo segmento para rolar até ele.
+  const showActiveSegment = useCallback((list: HTMLElement | null) => {
+    if (list === null) return;
+
+    requestAnimationFrame(() =>
+      segmentRefs.current
+        .get(activeIndexRef.current)
+        ?.scrollIntoView({ block: "center" }),
+    );
+  }, []);
+
   // Acompanha a fala, a não ser que o usuário tenha acabado de rolar a lista.
   useEffect(() => {
+    activeIndexRef.current = activeIndex;
+
     if (activeIndex < 0) return;
     if (Date.now() - lastManualScroll.current < MANUAL_SCROLL_PAUSE_MS) return;
 
@@ -428,6 +443,7 @@ export default function MediaMaterialPage() {
               <EmptyState>Não encontramos fala neste áudio.</EmptyState>
             ) : (
               <ol
+                ref={showActiveSegment}
                 aria-label="Transcrição"
                 className="flex max-h-[60svh] flex-col gap-1 overflow-y-auto overscroll-contain"
                 onWheel={() => {
