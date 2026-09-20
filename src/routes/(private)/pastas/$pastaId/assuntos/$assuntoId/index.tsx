@@ -1,5 +1,5 @@
-import { Spinner } from "@heroui/react";
-import { Camera, FileText, ListCheck, Network, Zap } from "lucide-react";
+import { Button, Spinner } from "@heroui/react";
+import { AudioLines, Camera, FileText, ListCheck, Network, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
@@ -13,8 +13,10 @@ import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
 import type { Content } from "@/types/api/content";
 import type { ViewableFile } from "@/types/capture";
+import { needsPolling, nextPollDelay, pollLimitMs } from "@/utils/mediaStatus";
 import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
+import { DialogUploadAudio } from "./components/DialogUploadAudio";
 import { MaterialTile } from "./components/MaterialTile";
 import { StudyTypeCard } from "./components/StudyTypeCard";
 
@@ -26,11 +28,10 @@ export function meta() {
   });
 }
 
-// Enquanto algum item ainda não tem resumo (hasSummary: false), reconsulta
-// a lista a cada ~3s; desiste depois de ~60s para não pollar para sempre.
-const POLL_INTERVAL_MS = 3_000;
-const POLL_TIMEOUT_MS = 60_000;
-
+// Enquanto algum item ainda está em processamento, reconsulta a lista (ver
+// `mediaStatus.ts`: 3 s no começo e 10 s depois) e desiste quando passa do
+// limite, para não pollar para sempre. O limite é de 60 s para PDF e imagem e
+// de 30 min quando há um áudio em andamento: uma transcrição leva minutos.
 /** Espera o usuário parar de digitar antes de consultar a API. */
 const SEARCH_DEBOUNCE_MS = 400;
 const MIN_SEARCH_LENGTH = 2;
@@ -49,6 +50,8 @@ export default function SubjectDetailsPage() {
   );
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
+  const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false);
 
   // Guardado ao lado do material: `ViewableFile` é documentado como "não
   // corresponde a um Content da API", e o painel de OCR precisa do id.
@@ -90,9 +93,11 @@ export default function SubjectDetailsPage() {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const startedAt = Date.now();
+    let attempt = 0;
 
     setContents(null);
     setLoadError(null);
+    setPollTimedOut(false);
 
     async function poll() {
       try {
@@ -102,11 +107,14 @@ export default function SubjectDetailsPage() {
 
         setContents(result);
 
-        const stillProcessing = result.some((item) => !item.hasSummary);
-        const timedOut = Date.now() - startedAt > POLL_TIMEOUT_MS;
+        const stillProcessing = result.some(needsPolling);
+        const timedOut = Date.now() - startedAt > pollLimitMs(result);
 
         if (stillProcessing && !timedOut) {
-          timeoutId = setTimeout(poll, POLL_INTERVAL_MS);
+          timeoutId = setTimeout(poll, nextPollDelay(attempt));
+          attempt += 1;
+        } else {
+          setPollTimedOut(stillProcessing && timedOut);
         }
       } catch (error) {
         if (cancelled) return;
@@ -169,6 +177,13 @@ export default function SubjectDetailsPage() {
 
   async function handleOpenMaterial(content: Content) {
     setViewerError(null);
+
+    // Áudio tem tela própria (player, momentos e transcrição); PDF e imagem
+    // continuam no visualizador em modal.
+    if (content.contentType === "AUDIO") {
+      navigate(`materiais/${content.id}`);
+      return;
+    }
 
     try {
       const { url } = await getDownloadUrl(content.id);
@@ -245,8 +260,38 @@ export default function SubjectDetailsPage() {
         />
       </section>
 
+      <div className="flex justify-end">
+        <Button
+          variant="secondary"
+          className="min-h-11"
+          onPress={() => setIsAudioDialogOpen(true)}
+        >
+          <AudioLines className="size-4" />
+          Enviar áudio
+        </Button>
+      </div>
+
       {viewerError !== null ? (
         <ErrorState isCompact>{viewerError}</ErrorState>
+      ) : null}
+
+      {pollTimedOut ? (
+        <div
+          role="alert"
+          className="bg-default flex flex-wrap items-center gap-3 rounded-xl p-3 text-sm text-pretty"
+        >
+          <span className="flex-1">
+            Alguns materiais estão demorando mais do que o normal para ficar
+            prontos. O processamento continua no servidor.
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={() => setReloadKey((k) => k + 1)}
+          >
+            Verificar de novo
+          </Button>
+        </div>
       ) : null}
 
       {contents === null && loadError === null ? (
@@ -290,6 +335,12 @@ export default function SubjectDetailsPage() {
         aria-label="Capturar material para este assunto"
         onPress={() => navigate("camera")}
         className="bottom-[calc(var(--nav-inset)+1rem)]"
+      />
+      <DialogUploadAudio
+        childFolderId={assuntoId}
+        isOpen={isAudioDialogOpen}
+        onOpenChange={setIsAudioDialogOpen}
+        onUploaded={() => setReloadKey((k) => k + 1)}
       />
       <MaterialViewer
         material={selectedMaterial}

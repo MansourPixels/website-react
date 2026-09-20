@@ -57,6 +57,10 @@ export default [
       "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/index.tsx",
     ),
     route(
+      "pastas/:pastaId/assuntos/:assuntoId/materiais/:contentId",
+      "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/materiais/$contentId/index.tsx",
+    ),
+    route(
       "pastas/:pastaId/assuntos/:assuntoId/camera",
       "routes/(private)/pastas/$pastaId/assuntos/$assuntoId/camera/index.tsx",
     ),

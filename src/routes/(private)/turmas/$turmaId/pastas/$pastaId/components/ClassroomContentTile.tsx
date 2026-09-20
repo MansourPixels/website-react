@@ -6,6 +6,7 @@ import {
   FileText,
   FileType,
   Download,
+  Headphones,
   Image as ImageIcon,
   Layers,
   Network,
@@ -25,6 +26,7 @@ import type {
   ClassroomRole,
 } from "@/types/api/classroom";
 import { canDeleteContent, canEditContent } from "@/utils/classroomPermissions";
+import { MEDIA_POLL_LIMIT_MS, nextPollDelay } from "@/utils/mediaStatus";
 import { profilePath } from "@/utils/profile";
 import type { ViewableFile } from "@/types/capture";
 
@@ -45,6 +47,7 @@ const kindMeta: Record<
   snapshot: { icon: Copy, label: "Cópia da pasta" },
   pdf: { icon: FileType, label: "PDF" },
   image: { icon: ImageIcon, label: "Imagem" },
+  audio: { icon: Headphones, label: "Áudio" },
 };
 
 function formatFileSize(bytes: number): string {
@@ -78,12 +81,14 @@ export function ClassroomContentTile({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [material, setMaterial] = useState<ViewableFile | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [snapshotContentId, setSnapshotContentId] = useState<string | null>(null);
 
   const canEdit = canEditContent(role, content, currentUserId);
   const canDelete = canDeleteContent(role, content, currentUserId);
-  const isFile = content.kind === "pdf" || content.kind === "image";
+  const isAudio = content.kind === "audio";
+  const isFile = content.kind === "pdf" || content.kind === "image" || isAudio;
   const isSnapshot = content.kind === "snapshot";
   const meta = kindMeta[content.kind];
   const Icon = meta.icon;
@@ -93,20 +98,44 @@ export function ClassroomContentTile({
     if (!isFile) return;
 
     const controller = new AbortController();
-    getClassroomContentProcessing(classroomId, folderId, content.id, controller.signal)
-      .then((result) => setStatus(result.status))
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) setStatus(null);
-      });
-    return () => controller.abort();
-  }, [classroomId, content.id, folderId, isFile]);
+    const startedAt = Date.now();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let attempt = 0;
+
+    const load = () => {
+      getClassroomContentProcessing(classroomId, folderId, content.id, controller.signal)
+        .then((result) => {
+          setStatus(result.status);
+          setProcessingError(result.error ?? null);
+
+          // PDF e imagem levam segundos e já eram consultados uma vez; uma
+          // transcrição leva minutos, então o áudio acompanha até terminar.
+          const inProgress = result.status === "pending" || result.status === "processing";
+
+          if (isAudio && inProgress && Date.now() - startedAt < MEDIA_POLL_LIMIT_MS) {
+            timeoutId = setTimeout(load, nextPollDelay(attempt));
+            attempt += 1;
+          }
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof DOMException && error.name === "AbortError")) setStatus(null);
+        });
+    };
+
+    load();
+
+    return () => {
+      controller.abort();
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
+  }, [classroomId, content.id, folderId, isAudio, isFile]);
 
   async function requestFile(open: boolean) {
     setActionError(null);
     try {
       const { url } = await getClassroomDownloadUrl(classroomId, folderId, content.id);
       if (open) {
-        setMaterial({ name: content.fileName || content.title, url, contentType: content.kind === "pdf" ? "PDF" : "IMAGE" });
+        setMaterial({ name: content.fileName || content.title, url, contentType: content.kind === "pdf" ? "PDF" : content.kind === "audio" ? "AUDIO" : "IMAGE" });
       } else {
         window.open(url, "_blank", "noopener,noreferrer");
       }
@@ -207,7 +236,13 @@ export function ClassroomContentTile({
 
       {isFile && status !== null ? (
         <p role="status" className="text-muted text-xs">
-          {status === "completed" ? "Texto extraído" : status === "failed" ? "Falha ao extrair texto. O download continua disponível." : "Processando texto…"}
+          {status === "completed"
+            ? isAudio ? "Transcrição pronta" : "Texto extraído"
+            : status === "failed"
+              ? isAudio
+                ? `Falha ao transcrever${processingError ? `: ${processingError}` : "."} O áudio continua disponível.`
+                : "Falha ao extrair texto. O download continua disponível."
+              : isAudio ? "Transcrevendo o áudio…" : "Processando texto…"}
         </p>
       ) : null}
       {isFile ? (

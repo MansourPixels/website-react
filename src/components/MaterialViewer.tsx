@@ -2,6 +2,7 @@ import type { ViewableFile } from "@/types/capture";
 import { pickImageForSeed } from "@/utils/imageFallback";
 import { Button, Modal } from "@heroui/react";
 
+import { MediaPlayer } from "./MediaPlayer";
 import { OcrSheet } from "./OcrSheet";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
@@ -30,6 +31,7 @@ export function MaterialViewer({
   onContentUnavailable,
 }: MaterialViewerProps) {
   const isPdf = material?.contentType === "PDF";
+  const isAudio = material?.contentType === "AUDIO";
   // Guardar a própria URL (em vez de um boolean) evita precisar de um efeito
   // para "resetar" o erro quando o material muda: a comparação já não bate.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function MaterialViewer({
       <Modal.Backdrop>
         <Modal.Container size="full">
           <Modal.Dialog
-            aria-label={isPdf ? "Visualização do PDF" : "Visualização da imagem"}
+            aria-label={isAudio ? "Reprodução do áudio" : isPdf ? "Visualização do PDF" : "Visualização da imagem"}
             className="relative bg-black/80"
           >
             <Modal.Header className="items-start justify-between gap-3">
@@ -82,7 +84,13 @@ export function MaterialViewer({
                 if (event.target === event.currentTarget) onClose();
               }}
             >
-              {material === null ? null : isPdf ? (
+              {material === null ? null : isAudio ? (
+                <MediaPlayer
+                  src={material.url}
+                  label={material.name}
+                  className="bg-surface w-full max-w-xl rounded-2xl p-4"
+                />
+              ) : isPdf ? (
                 <iframe
                   src={material.url}
                   title={material.name}
@@ -101,6 +109,7 @@ export function MaterialViewer({
             {(contentId !== undefined || classroomContent !== undefined) && material !== null ? (
               <OcrSheet
                 contentId={classroomContent?.contentId ?? contentId!}
+                isMedia={isAudio}
                 classroomContent={classroomContent}
                 onContentUnavailable={onContentUnavailable}
               />
