@@ -24,3 +24,24 @@ export function canRenewUrl(renewals: readonly number[], now: number): boolean {
     MAX_RENEWALS_IN_WINDOW
   );
 }
+
+/** `MediaError.code` de um arquivo que o navegador não sabe decodificar (`MEDIA_ERR_SRC_NOT_SUPPORTED`). */
+const MEDIA_ERR_SRC_NOT_SUPPORTED = 4;
+
+/**
+ * O que fazer quando o elemento de mídia dispara `error`. O navegador dá o mesmo
+ * código (`SRC_NOT_SUPPORTED`) a um formato que não toca e a uma URL vencida, que
+ * devolve um XML de erro em vez de mídia. O que separa os dois é a idade da URL:
+ * uma URL recém pedida que falha ao carregar não venceu, o formato é que não é
+ * suportado (um `.mov` ou `.mkv` que não é H.264/AAC, por exemplo), e renovar só
+ * repetiria o erro. Qualquer outra falha é tratada como URL vencida.
+ */
+export function classifyMediaError(
+  code: number | null | undefined,
+  urlAgeMs: number,
+): "unsupported" | "renew" {
+  return code === MEDIA_ERR_SRC_NOT_SUPPORTED &&
+    !isUrlStale(0, urlAgeMs)
+    ? "unsupported"
+    : "renew";
+}

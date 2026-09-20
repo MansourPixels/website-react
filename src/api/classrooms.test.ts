@@ -109,6 +109,10 @@ describe("uploadClassroomContent", () => {
     ["foto.png", "image"],
     ["aula.m4a", "audio"],
     ["aula.flac", "audio"],
+    ["aula.mp4", "video"],
+    ["aula.MOV", "video"],
+    ["aula.mkv", "video"],
+    ["aula.webm", "video"],
   ])("%s é enviado como %s", async (name, kind) => {
     apiFetch.mockResolvedValue({});
 
@@ -127,8 +131,8 @@ describe("uploadClassroomContent", () => {
 
   it("recusa no cliente uma extensão que a turma não aceita, sem chamar a API", () => {
     expect(() =>
-      uploadClassroomContent("c", "f", { file: new File(["a"], "clip.mp4"), title: "t" }),
-    ).toThrowError(/áudio/);
+      uploadClassroomContent("c", "f", { file: new File(["a"], "clip.avi"), title: "t" }),
+    ).toThrowError(/vídeo/);
     expect(apiFetch).not.toHaveBeenCalled();
   });
 });

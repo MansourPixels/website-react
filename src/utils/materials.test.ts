@@ -4,7 +4,9 @@ import {
   AUDIO_ACCEPT,
   MAX_AUDIO_BYTES,
   MAX_DOCUMENT_BYTES,
-  audioProblem,
+  MAX_VIDEO_BYTES,
+  MEDIA_ACCEPT,
+  VIDEO_ACCEPT,
   classroomKindForFileName,
   classroomLimitFor,
   contentTypeLabel,
@@ -13,6 +15,12 @@ import {
   formatFileSize,
   isAcceptedMaterial,
   isAudioFile,
+  isMediaFile,
+  isMediaType,
+  isVideoFile,
+  mediaLimitFor,
+  mediaNoun,
+  mediaProblem,
 } from "./materials";
 
 describe("isAcceptedMaterial", () => {
@@ -113,14 +121,14 @@ describe("áudio", () => {
   });
 
   it("aceita um áudio válido, inclusive exatamente no limite", () => {
-    expect(audioProblem(audio("aula.mp3"))).toBeNull();
-    expect(audioProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES } as File)).toBeNull();
+    expect(mediaProblem(audio("aula.mp3"))).toBeNull();
+    expect(mediaProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES } as File)).toBeNull();
   });
 
   it("explica por que recusa: extensão, vazio e tamanho", () => {
-    expect(audioProblem(audio("notas.pdf"))).toContain("áudio");
-    expect(audioProblem(audio("aula.mp3", 0))).toBe("O arquivo está vazio.");
-    expect(audioProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES + 1 } as File)).toContain("limite é 200 MB");
+    expect(mediaProblem(audio("notas.pdf"))).toContain("áudio");
+    expect(mediaProblem(audio("aula.mp3", 0))).toBe("O arquivo está vazio.");
+    expect(mediaProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES + 1 } as File)).toContain("limite é 200 MB");
   });
 
   it("não deixa a captura gerar um nome de imagem para áudio", () => {
@@ -131,6 +139,79 @@ describe("áudio", () => {
   });
 });
 
+describe("vídeo", () => {
+  const file = (name: string, bytes = 10) => new File([new Uint8Array(bytes)], name);
+
+  it("rotula o vídeo em português", () => {
+    expect(contentTypeLabel("VIDEO")).toBe("vídeo");
+    expect(mediaNoun("VIDEO")).toBe("vídeo");
+    expect(mediaNoun("AUDIO")).toBe("áudio");
+  });
+
+  it("monta os accept com as extensões de vídeo e as de mídia", () => {
+    expect(VIDEO_ACCEPT).toBe(".mp4,.mov,.mkv,.webm");
+    expect(MEDIA_ACCEPT).toBe(`${AUDIO_ACCEPT},${VIDEO_ACCEPT}`);
+  });
+
+  it("reconhece as quatro extensões, em qualquer caixa, e nada que seja de áudio", () => {
+    for (const name of ["a.mp4", "a.mov", "a.mkv", "a.webm", "AULA 3.MP4"]) {
+      expect(isVideoFile(file(name))).toBe(true);
+      expect(isAudioFile(file(name))).toBe(false);
+      expect(isMediaFile(file(name))).toBe(true);
+    }
+    for (const name of ["a.avi", "a.wmv", "a.mp3", "a.pdf", "a.mp4.txt", "mp4"]) {
+      expect(isVideoFile(file(name))).toBe(false);
+    }
+  });
+
+  it("isMediaType: áudio e vídeo sim, o resto e o desconhecido não", () => {
+    expect(isMediaType("AUDIO")).toBe(true);
+    expect(isMediaType("VIDEO")).toBe(true);
+    expect(isMediaType("PDF")).toBe(false);
+    expect(isMediaType("IMAGE")).toBe(false);
+    expect(isMediaType(undefined)).toBe(false);
+    expect(isMediaType(null)).toBe(false);
+  });
+
+  it("o limite do vídeo é maior que o do áudio, e cada um vale só para o seu tipo", () => {
+    expect(MAX_VIDEO_BYTES).toBe(1024 * 1024 * 1024);
+    expect(mediaLimitFor(file("a.mp4"))).toBe(MAX_VIDEO_BYTES);
+    expect(mediaLimitFor(file("a.mp3"))).toBe(MAX_AUDIO_BYTES);
+    // Um arquivo que um áudio não poderia ter é válido como vídeo.
+    const between = MAX_AUDIO_BYTES + 1;
+    expect(mediaProblem({ name: "aula.mp4", size: between } as File)).toBeNull();
+    expect(mediaProblem({ name: "aula.mp3", size: between } as File)).toContain("limite é 200 MB");
+  });
+
+  it("recusa um vídeo acima do limite dizendo que é um vídeo, e exatamente no limite passa", () => {
+    expect(mediaProblem({ name: "aula.mkv", size: MAX_VIDEO_BYTES } as File)).toBeNull();
+    expect(mediaProblem({ name: "aula.mkv", size: MAX_VIDEO_BYTES + 1 } as File)).toBe(
+      `O vídeo tem ${formatFileSize(MAX_VIDEO_BYTES + 1)} e o limite é ${formatFileSize(MAX_VIDEO_BYTES)}.`,
+    );
+    expect(mediaProblem(file("aula.mp4", 0))).toBe("O arquivo está vazio.");
+  });
+
+  it("a mensagem de extensão inválida cita áudio e vídeo", () => {
+    expect(mediaProblem(file("notas.pdf"))).toMatch(/áudio.*vídeo/);
+  });
+
+  it("contentTypeOf reconhece vídeo e áudio pelo tipo ou pela extensão, sem mudar PDF e imagem", () => {
+    expect(contentTypeOf(new File(["x"], "a.mp4", { type: "video/mp4" }))).toBe("VIDEO");
+    expect(contentTypeOf(new File(["x"], "a.mkv", { type: "" }))).toBe("VIDEO");
+    expect(contentTypeOf(new Blob(["x"], { type: "video/webm" }))).toBe("VIDEO");
+    expect(contentTypeOf(new File(["x"], "a.m4a", { type: "" }))).toBe("AUDIO");
+    expect(contentTypeOf(new Blob(["x"], { type: "application/pdf" }))).toBe("PDF");
+    expect(contentTypeOf(new Blob(["x"], { type: "image/png" }))).toBe("IMAGE");
+  });
+
+  it("não deixa a captura gerar um nome de imagem para vídeo", () => {
+    const video = new File(["x"], "aula.mp4", { type: "video/mp4" });
+
+    expect(ensureUploadFilename(video, "VIDEO")).toBe(video);
+    expect(ensureUploadFilename(new Blob(["x"], { type: "video/mp4" }), "VIDEO").name).toMatch(/^video-\d+\.mp4$/);
+  });
+});
+
 describe("kind de arquivo de turma", () => {
   it("deriva o kind da extensão", () => {
     expect(classroomKindForFileName("notas.pdf")).toBe("pdf");
@@ -138,15 +219,20 @@ describe("kind de arquivo de turma", () => {
     expect(classroomKindForFileName("foto.jpeg")).toBe("image");
     expect(classroomKindForFileName("foto.png")).toBe("image");
     expect(classroomKindForFileName("aula.m4a")).toBe("audio");
+    expect(classroomKindForFileName("aula.MP4")).toBe("video");
+    expect(classroomKindForFileName("aula.mov")).toBe("video");
+    expect(classroomKindForFileName("aula.mkv")).toBe("video");
+    expect(classroomKindForFileName("aula.webm")).toBe("video");
   });
 
   it("devolve null para o que a turma não aceita", () => {
-    expect(classroomKindForFileName("clip.mp4")).toBeNull();
+    expect(classroomKindForFileName("clip.avi")).toBeNull();
     expect(classroomKindForFileName("sem-extensao")).toBeNull();
   });
 
   it("dá o limite de cada kind", () => {
     expect(classroomLimitFor("audio")).toBe(MAX_AUDIO_BYTES);
+    expect(classroomLimitFor("video")).toBe(MAX_VIDEO_BYTES);
     expect(classroomLimitFor("pdf")).toBe(MAX_DOCUMENT_BYTES);
     expect(classroomLimitFor("image")).toBe(MAX_DOCUMENT_BYTES);
   });

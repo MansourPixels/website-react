@@ -223,7 +223,7 @@ export function uploadClassroomContent(
   if (kind === null) {
     throw new ApiError(
       400,
-      "Envie um PDF, uma imagem (JPG, JPEG ou PNG) ou um áudio (MP3, M4A, WAV, OGG ou FLAC).",
+      "Envie um PDF, uma imagem (JPG, JPEG ou PNG), um áudio (MP3, M4A, WAV, OGG ou FLAC) ou um vídeo (MP4, MOV, MKV ou WEBM).",
     );
   }
 
