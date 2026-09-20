@@ -93,7 +93,8 @@ export function formatFileSize(bytes: number) {
   const kilobytes = bytes / 1024;
   if (kilobytes < 1024) return `${Math.round(kilobytes)} KB`;
 
-  return `${(kilobytes / 1024).toFixed(1).replace(".", ",")} MB`;
+  // "200 MB", não "200,0 MB": os limites de envio são números redondos.
+  return `${(kilobytes / 1024).toFixed(1).replace(".", ",").replace(/,0$/, "")} MB`;
 }
 
 // Fotos da câmera chegam como Blob sem nome/extensão, e o back valida a

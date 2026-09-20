@@ -52,6 +52,7 @@ describe("formatFileSize", () => {
 
   it("mostra MB com vírgula decimal (pt-BR)", () => {
     expect(formatFileSize(1024 * 1024 * 2.5)).toBe("2,5 MB");
+    expect(formatFileSize(1024 * 1024 * 200)).toBe("200 MB");
   });
 });
 
@@ -119,7 +120,7 @@ describe("áudio", () => {
   it("explica por que recusa: extensão, vazio e tamanho", () => {
     expect(audioProblem(audio("notas.pdf"))).toContain("áudio");
     expect(audioProblem(audio("aula.mp3", 0))).toBe("O arquivo está vazio.");
-    expect(audioProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES + 1 } as File)).toContain("limite é 200,0 MB");
+    expect(audioProblem({ name: "aula.mp3", size: MAX_AUDIO_BYTES + 1 } as File)).toContain("limite é 200 MB");
   });
 
   it("não deixa a captura gerar um nome de imagem para áudio", () => {
