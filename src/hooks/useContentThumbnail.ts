@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 
 // Resolve a URL de preview de um Content de imagem, caindo para uma foto fixa
 // (por seed do id) quando o download falha ou a própria imagem não carrega.
-// PDF e áudio não têm miniatura: buscar a URL de um áudio como se fosse uma
-// imagem baixaria o arquivo inteiro por nada.
+// PDF, áudio e vídeo não têm miniatura: buscar a URL de uma mídia como se fosse
+// uma imagem baixaria o arquivo inteiro por nada.
 export function useContentThumbnail(content: Content) {
   const { id, contentType } = content;
   const isImage = contentType === "IMAGE";

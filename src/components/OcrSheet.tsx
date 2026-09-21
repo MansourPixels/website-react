@@ -21,6 +21,8 @@ interface OcrSheetProps {
    * painel acompanha por mais tempo (com intervalo crescente) e diz "transcrição".
    */
   isMedia?: boolean;
+  /** Só muda os textos: "áudio" ou "vídeo". */
+  mediaKind?: "audio" | "video";
 }
 
 const POLL_INTERVAL_MS = 3_000;
@@ -33,7 +35,8 @@ const POLL_MAX_DURATION_MS = 60_000;
  * Nasce espiando, não escondido: para quem não lê, o botão de ouvir precisa
  * estar visível sem depender de descobrir um gesto.
  */
-export function OcrSheet({ contentId, classroomContent, onContentUnavailable, isMedia = false }: OcrSheetProps) {
+export function OcrSheet({ contentId, classroomContent, onContentUnavailable, isMedia = false, mediaKind = "audio" }: OcrSheetProps) {
+  const mediaWord = mediaKind === "video" ? "vídeo" : "áudio";
   const noun = isMedia ? "a transcrição" : "o texto extraído";
   const title = isMedia ? "Transcrição" : "Texto extraído";
   const [content, setContent] = useState<ContentText | ClassroomContentText | undefined>(undefined);
@@ -122,7 +125,7 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable, is
 
   return (
     <section
-      aria-label={isMedia ? "Transcrição do áudio" : "Texto extraído do material"}
+      aria-label={isMedia ? `Transcrição do ${mediaWord}` : "Texto extraído do material"}
       className={cn(
         "sheet-in bg-surface pointer-events-auto absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 rounded-t-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-surface",
         isExpanded ? "max-h-[70svh]" : "max-h-48",
@@ -153,13 +156,13 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable, is
           <h2 className="font-semibold">{title}</h2>
           <p className="text-muted text-xs">
             {hasText
-              ? isMedia ? "Transcrita do áudio pelo Revi IA." : "Extraído do material pelo Revi IA."
-              : isMedia ? "Transcrição do áudio pelo Revi IA." : "Leitura de texto do material pelo Revi IA."}
+              ? isMedia ? `Transcrita do ${mediaWord} pelo Revi IA.` : "Extraído do material pelo Revi IA."
+              : isMedia ? `Transcrição do ${mediaWord} pelo Revi IA.` : "Leitura de texto do material pelo Revi IA."}
           </p>
         </div>
 
         {hasText ? (
-          <SpeakButton label={isMedia ? "a transcrição deste áudio" : "o texto extraído deste material"} text={text} />
+          <SpeakButton label={isMedia ? `a transcrição deste ${mediaWord}` : "o texto extraído deste material"} text={text} />
         ) : null}
 
         <Button
@@ -184,20 +187,20 @@ export function OcrSheet({ contentId, classroomContent, onContentUnavailable, is
       ) : content === undefined ? (
         <div className="flex shrink-0 items-center gap-2 py-1" aria-busy="true">
           <Spinner size="sm" />
-          <span className="text-muted text-sm">{isMedia ? "Lendo a transcrição do áudio…" : "Lendo o texto do material…"}</span>
+          <span className="text-muted text-sm">{isMedia ? `Lendo a transcrição do ${mediaWord}…` : "Lendo o texto do material…"}</span>
         </div>
       ) : contentStatus === "pending" ? (
         <p className="text-muted flex shrink-0 items-center gap-2 text-sm text-pretty">
           <Sparkles className="size-4 shrink-0" aria-hidden="true" />
-          {isMedia ? "O Revi IA ainda está transcrevendo este áudio. Isso leva alguns minutos." : "O Revi IA ainda está processando este material."}
+          {isMedia ? `O Revi IA ainda está transcrevendo este ${mediaWord}. Isso leva alguns minutos.` : "O Revi IA ainda está processando este material."}
         </p>
       ) : contentStatus === "failed" ? (
         <p role="alert" className="text-danger shrink-0 text-sm text-pretty">
-          {processing?.error || (isMedia ? "Não foi possível transcrever o áudio. Ele continua disponível para ouvir." : "Não foi possível extrair o texto. O download do arquivo continua disponível.")}
+          {processing?.error || (isMedia ? `Não foi possível transcrever o ${mediaWord}. Ele continua disponível para ${mediaKind === "video" ? "assistir" : "ouvir"}.` : "Não foi possível extrair o texto. O download do arquivo continua disponível.")}
         </p>
       ) : contentStatus === "empty" ? (
         <p className="text-muted shrink-0 text-sm text-pretty">
-          {isMedia ? "Não encontramos fala neste áudio." : "Nenhum texto legível foi encontrado neste material."}
+          {isMedia ? `Não encontramos fala neste ${mediaWord}.` : "Nenhum texto legível foi encontrado neste material."}
         </p>
       ) : (
         <div

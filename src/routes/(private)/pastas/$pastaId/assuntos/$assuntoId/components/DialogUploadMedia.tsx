@@ -1,5 +1,5 @@
 import { Button, Modal } from "@heroui/react";
-import { AudioLines, FileUp } from "lucide-react";
+import { AudioLines, FileUp, Video } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { ApiError } from "@/api/client";
@@ -7,13 +7,16 @@ import { uploadMedia } from "@/api/media";
 import { useFeedback } from "@/hooks/useFeedback";
 import type { Content } from "@/types/api/content";
 import {
-  AUDIO_ACCEPT,
   MAX_AUDIO_BYTES,
-  audioProblem,
+  MAX_VIDEO_BYTES,
+  MEDIA_ACCEPT,
   formatFileSize,
+  isAudioFile,
+  isVideoFile,
+  mediaProblem,
 } from "@/utils/materials";
 
-interface DialogUploadAudioProps {
+interface DialogUploadMediaProps {
   childFolderId: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -23,23 +26,26 @@ interface DialogUploadAudioProps {
 const NETWORK_ERROR =
   "O envio foi interrompido. Confira a conexão e o tamanho do arquivo (o limite é de " +
   formatFileSize(MAX_AUDIO_BYTES) +
-  ") e tente de novo.";
+  " para áudio e " +
+  formatFileSize(MAX_VIDEO_BYTES) +
+  " para vídeo) e tente de novo.";
 
 /**
- * Envia um áudio direto para um assunto. Não passa pela captura: a captura lê
- * o material (OCR) para sugerir uma pasta, e um áudio não tem imagem para ler
- * nem pasta a sugerir, porque o assunto já está escolhido.
+ * Envia um áudio ou um vídeo direto para um assunto. Não passa pela captura: a
+ * captura lê o material (OCR) para sugerir uma pasta, e uma mídia não tem
+ * imagem para ler nem pasta a sugerir, porque o assunto já está escolhido. Um
+ * vídeo é transcrito pela faixa de áudio; o arquivo original fica para assistir.
  *
  * O tamanho e a extensão são conferidos aqui antes de qualquer envio: um
  * arquivo muito acima do limite não recebe `413` do servidor (a conexão é
  * fechada no meio do envio e o navegador só vê um erro de rede).
  */
-export function DialogUploadAudio({
+export function DialogUploadMedia({
   childFolderId,
   isOpen,
   onOpenChange,
   onUploaded,
-}: DialogUploadAudioProps) {
+}: DialogUploadMediaProps) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -48,7 +54,8 @@ export function DialogUploadAudio({
   const feedback = useFeedback();
 
   const isSending = progress !== null;
-  const problem = file === null ? null : audioProblem(file);
+  const problem = file === null ? null : mediaProblem(file);
+  const detected = file === null ? null : isVideoFile(file) ? "vídeo" : isAudioFile(file) ? "áudio" : null;
 
   // Fechar o diálogo durante o envio o cancela (não fica upload órfão) e
   // limpa o formulário para a próxima vez.
@@ -103,17 +110,21 @@ export function DialogUploadAudio({
             <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Icon className="bg-default text-foreground">
-                <AudioLines className="size-5" />
+                {detected === "vídeo" ? (
+                  <Video className="size-5" />
+                ) : (
+                  <AudioLines className="size-5" />
+                )}
               </Modal.Icon>
-              <Modal.Heading>Enviar áudio</Modal.Heading>
+              <Modal.Heading>Enviar áudio ou vídeo</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-4">
               <input
                 ref={inputRef}
                 type="file"
-                accept={AUDIO_ACCEPT}
+                accept={MEDIA_ACCEPT}
                 className="sr-only"
-                aria-label="Arquivo de áudio"
+                aria-label="Arquivo de áudio ou vídeo"
                 onChange={(event) => {
                   setFile(event.target.files?.[0] ?? null);
                   setError(null);
@@ -127,13 +138,13 @@ export function DialogUploadAudio({
                 onPress={() => inputRef.current?.click()}
               >
                 <FileUp className="size-4" />
-                {file === null ? "Escolher áudio" : "Trocar áudio"}
+                {file === null ? "Escolher arquivo" : "Trocar arquivo"}
               </Button>
 
               <p className="text-muted text-xs text-pretty">
                 {file === null
-                  ? `MP3, M4A, WAV, OGG ou FLAC, até ${formatFileSize(MAX_AUDIO_BYTES)}. A transcrição, o resumo e os momentos-chave ficam prontos em alguns minutos.`
-                  : `${file.name} (${formatFileSize(file.size)})`}
+                  ? `Áudio (MP3, M4A, WAV, OGG ou FLAC) até ${formatFileSize(MAX_AUDIO_BYTES)}, ou vídeo (MP4, MOV, MKV ou WEBM) até ${formatFileSize(MAX_VIDEO_BYTES)}. A transcrição, o resumo e os momentos-chave ficam prontos em alguns minutos.`
+                  : `${file.name}${detected === null ? "" : `: ${detected}`}, ${formatFileSize(file.size)}`}
               </p>
 
               {problem !== null ? (
@@ -175,7 +186,7 @@ export function DialogUploadAudio({
                 isDisabled={file === null || problem !== null || isSending}
                 onPress={() => void handleUpload()}
               >
-                {isSending ? "Enviando…" : "Enviar áudio"}
+                {isSending ? "Enviando…" : detected === null ? "Enviar" : `Enviar ${detected}`}
               </Button>
             </Modal.Body>
           </Modal.Dialog>

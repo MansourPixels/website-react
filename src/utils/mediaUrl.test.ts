@@ -6,6 +6,7 @@ import {
   URL_RENEW_MARGIN_MS,
   URL_TTL_MS,
   canRenewUrl,
+  classifyMediaError,
   isUrlStale,
 } from "./mediaUrl";
 
@@ -51,5 +52,24 @@ describe("canRenewUrl", () => {
     const old = Array.from({ length: 10 }, () => now - RENEWAL_WINDOW_MS - 1);
 
     expect(canRenewUrl(old, now)).toBe(true);
+  });
+});
+
+describe("classifyMediaError", () => {
+  it("um formato que o navegador não toca, numa URL recém pedida, não é URL vencida", () => {
+    expect(classifyMediaError(4, 0)).toBe("unsupported");
+    expect(classifyMediaError(4, 60_000)).toBe("unsupported");
+  });
+
+  it("o mesmo erro numa URL perto de vencer ou vencida é a URL: renova", () => {
+    expect(classifyMediaError(4, URL_TTL_MS - URL_RENEW_MARGIN_MS)).toBe("renew");
+    expect(classifyMediaError(4, URL_TTL_MS + 1)).toBe("renew");
+  });
+
+  it("uma falha de rede ou de decodificação no meio da reprodução renova", () => {
+    expect(classifyMediaError(2, 0)).toBe("renew");
+    expect(classifyMediaError(3, 0)).toBe("renew");
+    expect(classifyMediaError(null, 0)).toBe("renew");
+    expect(classifyMediaError(undefined, 0)).toBe("renew");
   });
 });

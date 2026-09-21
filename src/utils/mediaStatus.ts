@@ -1,5 +1,7 @@
 import type { Content, ProcessingStatus } from "@/types/api/content";
 
+import { isMediaType } from "./materials";
+
 /** PDF e imagem levam segundos: continuam com o limite curto de sempre. */
 export const DOCUMENT_POLL_LIMIT_MS = 60_000;
 
@@ -42,7 +44,7 @@ export function pollLimitMs(
   >[],
 ): number {
   return contents.some(
-    (content) => content.contentType === "AUDIO" && needsPolling(content),
+    (content) => isMediaType(content.contentType) && needsPolling(content),
   )
     ? MEDIA_POLL_LIMIT_MS
     : DOCUMENT_POLL_LIMIT_MS;

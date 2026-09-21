@@ -13,10 +13,11 @@ import { MaterialViewer } from "@/components/MaterialViewer";
 import { NavMenu } from "@/components/NavMenu";
 import type { Content } from "@/types/api/content";
 import type { ViewableFile } from "@/types/capture";
+import { isMediaType } from "@/utils/materials";
 import { needsPolling, nextPollDelay, pollLimitMs } from "@/utils/mediaStatus";
 import { pageMeta } from "@/utils/pageMeta";
 import { normalizeText } from "@/utils/text";
-import { DialogUploadAudio } from "./components/DialogUploadAudio";
+import { DialogUploadMedia } from "./components/DialogUploadMedia";
 import { MaterialTile } from "./components/MaterialTile";
 import { StudyTypeCard } from "./components/StudyTypeCard";
 
@@ -178,9 +179,9 @@ export default function SubjectDetailsPage() {
   async function handleOpenMaterial(content: Content) {
     setViewerError(null);
 
-    // Áudio tem tela própria (player, momentos e transcrição); PDF e imagem
-    // continuam no visualizador em modal.
-    if (content.contentType === "AUDIO") {
+    // Áudio e vídeo têm tela própria (player, momentos e transcrição); PDF e
+    // imagem continuam no visualizador em modal.
+    if (isMediaType(content.contentType)) {
       navigate(`materiais/${content.id}`);
       return;
     }
@@ -267,7 +268,7 @@ export default function SubjectDetailsPage() {
           onPress={() => setIsAudioDialogOpen(true)}
         >
           <AudioLines className="size-4" />
-          Enviar áudio
+          Enviar áudio ou vídeo
         </Button>
       </div>
 
@@ -336,7 +337,7 @@ export default function SubjectDetailsPage() {
         onPress={() => navigate("camera")}
         className="bottom-[calc(var(--nav-inset)+1rem)]"
       />
-      <DialogUploadAudio
+      <DialogUploadMedia
         childFolderId={assuntoId}
         isOpen={isAudioDialogOpen}
         onOpenChange={setIsAudioDialogOpen}

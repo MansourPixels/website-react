@@ -1,4 +1,4 @@
-export type ContentType = "PDF" | "IMAGE" | "AUDIO";
+export type ContentType = "PDF" | "IMAGE" | "AUDIO" | "VIDEO";
 
 /**
  * Onde o processamento assíncrono do material está. `PENDING` logo após o

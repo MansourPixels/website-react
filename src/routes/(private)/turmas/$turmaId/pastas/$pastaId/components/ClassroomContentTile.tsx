@@ -7,6 +7,7 @@ import {
   FileType,
   Download,
   Headphones,
+  Video,
   Image as ImageIcon,
   Layers,
   Network,
@@ -48,6 +49,7 @@ const kindMeta: Record<
   pdf: { icon: FileType, label: "PDF" },
   image: { icon: ImageIcon, label: "Imagem" },
   audio: { icon: Headphones, label: "Áudio" },
+  video: { icon: Video, label: "Vídeo" },
 };
 
 function formatFileSize(bytes: number): string {
@@ -87,7 +89,9 @@ export function ClassroomContentTile({
 
   const canEdit = canEditContent(role, content, currentUserId);
   const canDelete = canDeleteContent(role, content, currentUserId);
-  const isAudio = content.kind === "audio";
+  // Áudio e vídeo são transcritos pela mesma fila e mostram os mesmos textos de andamento.
+  const isAudio = content.kind === "audio" || content.kind === "video";
+  const mediaWord = content.kind === "video" ? "vídeo" : "áudio";
   const isFile = content.kind === "pdf" || content.kind === "image" || isAudio;
   const isSnapshot = content.kind === "snapshot";
   const meta = kindMeta[content.kind];
@@ -135,7 +139,7 @@ export function ClassroomContentTile({
     try {
       const { url } = await getClassroomDownloadUrl(classroomId, folderId, content.id);
       if (open) {
-        setMaterial({ name: content.fileName || content.title, url, contentType: content.kind === "pdf" ? "PDF" : content.kind === "audio" ? "AUDIO" : "IMAGE" });
+        setMaterial({ name: content.fileName || content.title, url, contentType: content.kind === "pdf" ? "PDF" : content.kind === "audio" ? "AUDIO" : content.kind === "video" ? "VIDEO" : "IMAGE" });
       } else {
         window.open(url, "_blank", "noopener,noreferrer");
       }
@@ -240,9 +244,9 @@ export function ClassroomContentTile({
             ? isAudio ? "Transcrição pronta" : "Texto extraído"
             : status === "failed"
               ? isAudio
-                ? `Falha ao transcrever${processingError ? `: ${processingError}` : "."} O áudio continua disponível.`
+                ? `Falha ao transcrever${processingError ? `: ${processingError}` : "."} O ${mediaWord} continua disponível.`
                 : "Falha ao extrair texto. O download continua disponível."
-              : isAudio ? "Transcrevendo o áudio…" : "Processando texto…"}
+              : isAudio ? `Transcrevendo o ${mediaWord}…` : "Processando texto…"}
         </p>
       ) : null}
       {isFile ? (
