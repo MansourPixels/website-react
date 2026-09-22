@@ -1,4 +1,5 @@
-import { Button, ButtonGroup, Popover } from "@heroui/react";
+import { Button, ButtonGroup, Popover, cn } from "@heroui/react";
+import { buttonVariants } from "@heroui/styles";
 import {
   ClipboardList,
   Copy,
@@ -251,7 +252,18 @@ export function ClassroomContentTile({
       ) : null}
       {isFile ? (
         <div className="grid grid-cols-2 gap-2">
-          <Button className="min-h-11" variant="secondary" onPress={() => requestFile(true)}>Abrir</Button>
+          {isAudio ? (
+            // O áudio e o vídeo têm tela própria: player, resumo, momentos, transcrição e os
+            // artefatos do material. PDF e imagem continuam no modal.
+            <Link
+              to={`/turmas/${classroomId}/pastas/${folderId}/materiais/${content.id}`}
+              className={cn(buttonVariants({ variant: "secondary" }), "min-h-11")}
+            >
+              Abrir
+            </Link>
+          ) : (
+            <Button className="min-h-11" variant="secondary" onPress={() => requestFile(true)}>Abrir</Button>
+          )}
           <Button className="min-h-11" variant="secondary" onPress={() => requestFile(false)}><Download className="size-4" />Baixar</Button>
         </div>
       ) : null}

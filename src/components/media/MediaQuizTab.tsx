@@ -3,7 +3,7 @@ import { Check, ChevronRight, ListCheck, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { ApiError } from "@/api/client";
-import { gradeMediaQuiz } from "@/api/media";
+import type { MediaSource } from "@/api/mediaSource";
 import { AlternativeOption } from "@/components/AlternativeOption";
 import { ErrorState } from "@/components/ErrorState";
 import { Math as MathText } from "@/components/Math";
@@ -25,7 +25,7 @@ function optionText(question: QuizQuestion, option: QuizOption) {
 }
 
 interface MediaQuizTabProps {
-  contentId: string;
+  source: MediaSource;
   quiz: ArtifactState<QuizQuestion[]>;
   noun?: "áudio" | "vídeo";
   onSeek: (seconds: number) => void;
@@ -36,7 +36,7 @@ interface MediaQuizTabProps {
  * correção mostra a alternativa certa e leva de volta ao momento do áudio em
  * que ela é explicada.
  */
-export function MediaQuizTab({ contentId, quiz, onSeek, noun = "áudio" }: MediaQuizTabProps) {
+export function MediaQuizTab({ source, quiz, onSeek, noun = "áudio" }: MediaQuizTabProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<QuizOption | null>(null);
   const [answers, setAnswers] = useState<Map<string, QuizOption>>(new Map());
@@ -75,8 +75,7 @@ export function MediaQuizTab({ contentId, quiz, onSeek, noun = "áudio" }: Media
     try {
       // Só o que foi respondido: o backend recusa (400) pergunta de outro material,
       // e a que ficou sem resposta ele já dá como errada.
-      const graded = await gradeMediaQuiz(
-        contentId,
+      const graded = await source.gradeQuiz(
         (questions ?? []).flatMap((question) => {
           const selectedOption = nextAnswers.get(question.id);
 
