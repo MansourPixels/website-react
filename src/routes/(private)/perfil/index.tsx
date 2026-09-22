@@ -8,6 +8,7 @@ import {
   Mail,
   MailCheck,
   Pencil,
+  ShieldCheck,
   Trophy,
   Unplug,
   UserPlus,
@@ -18,7 +19,7 @@ import { Link } from "react-router";
 import { resendVerificationEmail } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { getStreak } from "@/api/streak";
-import { getWhoami } from "@/api/user";
+import { getWhoami, isAdmin } from "@/api/user";
 import { ErrorState } from "@/components/ErrorState";
 import { GoogleConnectCard } from "@/components/GoogleConnectCard";
 import { NavMenu } from "@/components/NavMenu";
@@ -98,13 +99,17 @@ export default function PerfilPage() {
   }, [reloadKey]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Da mesma leitura do whoami: o link da administração só aparece para admin.
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     getWhoami()
-      .then(({ avatarUrl: stored }) => {
-        if (!cancelled) setAvatarUrl(stored);
+      .then((whoami) => {
+        if (cancelled) return;
+        setAvatarUrl(whoami.avatarUrl);
+        setShowAdmin(isAdmin(whoami));
       })
       .catch(() => {
         // Sem avatar o card cai nas iniciais sozinho — não é motivo para
@@ -282,6 +287,27 @@ export default function PerfilPage() {
             </p>
           </div>
         </Link>
+
+        {showAdmin ? (
+          <Link
+            to="/admin"
+            className={buttonVariants({
+              variant: "ghost",
+              className:
+                "bg-surface rounded-lg shadow-surface p-3 flex items-center gap-4 h-auto w-full",
+            })}
+          >
+            <div className="size-9 rounded-lg flex items-center justify-center bg-accent text-accent-foreground">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="font-semibold">Administração</h3>
+              <p className="text-xs text-muted font-normal whitespace-normal">
+                Custos, usuários e falhas da plataforma.
+              </p>
+            </div>
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">

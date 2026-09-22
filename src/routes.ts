@@ -41,6 +41,15 @@ export default [
   // logado e para quem não está, sem nenhum dos dois redirecionar antes.
   route("*", "routes/(not-found)/index.tsx"),
   layout("routes/(private)/layout.tsx", [
+    // Área de administração: o layout próprio aplica o portão do papel `admin`
+    // e desenha o menu das seções. Fora da lista `prerender`.
+    layout("routes/(private)/admin/layout.tsx", [
+      route("admin", "routes/(private)/admin/index.tsx"),
+      route("admin/custos", "routes/(private)/admin/custos/index.tsx"),
+      route("admin/usuarios", "routes/(private)/admin/usuarios/index.tsx"),
+      route("admin/filas", "routes/(private)/admin/filas/index.tsx"),
+      route("admin/cotas", "routes/(private)/admin/cotas/index.tsx"),
+    ]),
     route("perfil", "routes/(private)/perfil/index.tsx"),
     route("perfil/avatar", "routes/(private)/perfil/avatar/index.tsx"),
     route(
