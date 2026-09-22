@@ -109,10 +109,12 @@ const sections: LegalSection[] = [
 
         <h3>Material de estudo</h3>
         <p>
-          Guardamos os arquivos que você envia (fotos, imagens e PDFs), os nomes
-          das pastas e assuntos que você cria, o texto extraído desses arquivos e
-          o material que a IA gera a partir dele: resumos, flash cards, questões
-          de simulado e mapas mentais.
+          Guardamos os arquivos que você envia (fotos, imagens, PDFs, áudios e
+          vídeos), os nomes das pastas e assuntos que você cria, o texto
+          extraído desses arquivos — incluindo a transcrição do áudio ou do
+          vídeo, com o tempo de cada trecho falado — e o material que a IA gera
+          a partir dele: resumos, momentos-chave, flash cards, questões de
+          simulado e mapas mentais.
         </p>
 
         <h3>Uso e desempenho</h3>
@@ -292,27 +294,38 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          Tudo o que o Revi apresenta como <strong>Revi IA</strong> depende de um
-          provedor externo de inteligência artificial — hoje a{" "}
-          <strong>OpenAI</strong>, ou um provedor compatível que venha a
-          substituí-la.
+          Tudo o que o Revi apresenta como <strong>Revi IA</strong> depende de
+          provedores externos de inteligência artificial — hoje a{" "}
+          <strong>OpenAI</strong>, para extrair texto de imagens e gerar o
+          material de estudo, e, para transcrever áudio e vídeo, a{" "}
+          <strong>OpenAI</strong> ou a <strong>Mistral AI</strong>, conforme o
+          provedor configurado no momento. Qualquer um deles pode ser substituído
+          por um provedor compatível no futuro.
         </p>
-        <p>São enviados a esse provedor:</p>
+        <p>São enviados a esses provedores:</p>
         <ul>
           <li>
             <strong>As imagens</strong> que você envia, para extração do texto
             (OCR).
           </li>
           <li>
-            <strong>O texto</strong> extraído das imagens e o texto contido nos
-            PDFs, para gerar resumo, flash cards, questões de simulado e mapa
-            mental, e para sugerir em qual disciplina e assunto o material se
-            encaixa.
+            <strong>O áudio ou o vídeo</strong> que você envia, para gerar a
+            transcrição com o tempo de cada trecho falado, o resumo, os
+            momentos-chave e os demais materiais gerados a partir dele.
+          </li>
+          <li>
+            <strong>O texto</strong> extraído das imagens, dos PDFs e das
+            transcrições de áudio e vídeo, para gerar resumo, flash cards,
+            questões de simulado e mapa mental, e para sugerir em qual
+            disciplina e assunto o material se encaixa.
           </li>
         </ul>
         <p>
           No caso dos PDFs, a leitura da camada de texto é feita nos nossos
-          próprios servidores; só o texto resultante segue para a IA. O texto
+          próprios servidores; só o texto resultante segue para a IA. No caso do
+          vídeo, extraímos a faixa de áudio também nos nossos próprios
+          servidores antes de transcrever — apenas o áudio extraído, nunca a
+          imagem do vídeo, segue para o provedor de transcrição. O texto
           extraído é guardado junto ao material, para você poder buscar por ele e
           ouvi-lo em voz alta.
         </p>
@@ -347,9 +360,12 @@ const sections: LegalSection[] = [
           </li>
           <li>
             <strong>
-              Provedor de inteligência artificial (OpenAI ou compatível)
+              Provedores de inteligência artificial (OpenAI e, para
+              transcrição de áudio e vídeo, também a Mistral AI, ou
+              compatíveis)
             </strong>{" "}
-            — recebe as imagens e os textos descritos acima.
+            — recebem as imagens, os áudios, os vídeos e os textos descritos na
+            seção anterior.
           </li>
           <li>
             <strong>Provedor de envio de e-mail</strong> — entrega as mensagens de
@@ -677,7 +693,7 @@ export default function PoliticaPrivacidadePage() {
     <LegalPage
       title="Política de Privacidade"
       description="O que o Revi coleta, por que coleta, com quem compartilha e como você decide sobre isso. Escrito para ser lido — sem letra miúda."
-      updatedAt="16 de setembro de 2026"
+      updatedAt="22 de setembro de 2026"
       sections={sections}
     />
   );
