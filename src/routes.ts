@@ -100,6 +100,10 @@ export default [
       "routes/(private)/turmas/$turmaId/pastas/$pastaId/index.tsx",
     ),
     route("tarefas", "routes/(private)/tarefas/index.tsx"),
+    route(
+      "turmas/:turmaId/pastas/:pastaId/materiais/:contentId",
+      "routes/(private)/turmas/$turmaId/pastas/$pastaId/materiais/$contentId/index.tsx",
+    ),
     route("turmas/:turmaId/pastas/:pastaId/resumo", "routes/(private)/turmas/$turmaId/pastas/$pastaId/resumo/index.tsx"),
     route("turmas/:turmaId/pastas/:pastaId/flash-cards", "routes/(private)/turmas/$turmaId/pastas/$pastaId/flash-cards/index.tsx"),
     route("turmas/:turmaId/pastas/:pastaId/simulado-prova", "routes/(private)/turmas/$turmaId/pastas/$pastaId/simulado-prova/index.tsx"),

@@ -3,10 +3,10 @@ import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { ApiError } from "@/api/client";
-import { regenerateMediaArtifacts } from "@/api/media";
 
 interface RegenerateArtifactsProps {
-  contentId: string;
+  /** A ação de gerar de novo; a tela só monta o botão quando a fonte a oferece. */
+  regenerate: () => Promise<void>;
   /** "áudio" ou "vídeo", para os textos. */
   noun?: "áudio" | "vídeo";
   /** Depois do `202`: quem chama limpa o que estava na tela e volta a consultar. */
@@ -18,7 +18,7 @@ interface RegenerateArtifactsProps {
  * Pede confirmação porque troca o que já existe, e é também a saída de uma
  * geração que falhou (artefatos derivados não têm status próprio).
  */
-export function RegenerateArtifacts({ contentId, noun = "áudio", onRegenerated }: RegenerateArtifactsProps) {
+export function RegenerateArtifacts({ regenerate, noun = "áudio", onRegenerated }: RegenerateArtifactsProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export function RegenerateArtifacts({ contentId, noun = "áudio", onRegenerated 
     setError(null);
 
     try {
-      await regenerateMediaArtifacts(contentId);
+      await regenerate();
       setIsConfirming(false);
       onRegenerated();
     } catch (caught) {

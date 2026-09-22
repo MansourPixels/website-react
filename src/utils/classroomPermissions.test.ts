@@ -9,6 +9,7 @@ import {
   canManageClassroomTasks,
   canManageFolders,
   canManageMembers,
+  canRegenerateMedia,
   roleLabel,
 } from "./classroomPermissions";
 
@@ -91,5 +92,13 @@ describe("roleLabel", () => {
     expect(roleLabel("owner")).toBe("Dono");
     expect(roleLabel("editor")).toBe("Editor");
     expect(roleLabel("viewer")).toBe("Membro");
+  });
+});
+
+describe("canRegenerateMedia", () => {
+  it("permite a dono e editor, e nega a quem só assiste", () => {
+    expect(canRegenerateMedia("owner")).toBe(true);
+    expect(canRegenerateMedia("editor")).toBe(true);
+    expect(canRegenerateMedia("viewer")).toBe(false);
   });
 });
