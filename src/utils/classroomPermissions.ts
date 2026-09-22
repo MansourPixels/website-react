@@ -25,6 +25,14 @@ export function canManageFolders(role: ClassroomRole): boolean {
   return role === "owner" || role === "editor";
 }
 
+/**
+ * Dono e editor pedem para gerar de novo o simulado, os flashcards e o mapa mental de um áudio
+ * ou vídeo da turma (cada geração custa IA). Quem só assiste lê e responde o simulado.
+ */
+export function canRegenerateMedia(role: ClassroomRole): boolean {
+  return role === "owner" || role === "editor";
+}
+
 export function canManageClassroom(role: ClassroomRole): boolean {
   return role === "owner";
 }
