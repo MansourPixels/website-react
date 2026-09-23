@@ -52,7 +52,6 @@ export default [
       ),
       route("admin/usuarios", "routes/(private)/admin/usuarios/index.tsx"),
       route("admin/filas", "routes/(private)/admin/filas/index.tsx"),
-      route("admin/cotas", "routes/(private)/admin/cotas/index.tsx"),
     ]),
     route("perfil", "routes/(private)/perfil/index.tsx"),
     route("perfil/avatar", "routes/(private)/perfil/avatar/index.tsx"),

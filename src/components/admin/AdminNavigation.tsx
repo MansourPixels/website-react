@@ -1,5 +1,5 @@
 import { cn } from "@heroui/styles";
-import { Coins, Gauge, Inbox, type LucideIcon, Scale, Users } from "lucide-react";
+import { Coins, Gauge, Inbox, type LucideIcon, Users } from "lucide-react";
 import { NavLink } from "react-router";
 
 interface AdminSection {
@@ -14,7 +14,6 @@ const ADMIN_SECTIONS: AdminSection[] = [
   { to: "/admin/custos", label: "Custos", icon: Coins },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/filas", label: "Filas e falhas", icon: Inbox },
-  { to: "/admin/cotas", label: "Cotas e planos", icon: Scale },
 ];
 
 /**

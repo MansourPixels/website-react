@@ -1,5 +1,5 @@
 import { Spinner } from "@heroui/react";
-import { Coins, Inbox, Scale, Users } from "lucide-react";
+import { Coins, Inbox, Users } from "lucide-react";
 
 import { getUsageSummary, listDeadLetterQueues } from "@/api/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -93,13 +93,6 @@ export default function AdminHomePage() {
           title="Usuários"
           description="Busque contas, veja o custo de cada uma e desative quem abusa."
           icon={Users}
-        />
-
-        <AdminShortcutCard
-          to="/admin/cotas"
-          title="Cotas e planos"
-          description="Limites de uso por plano."
-          icon={Scale}
         />
       </div>
     </>
