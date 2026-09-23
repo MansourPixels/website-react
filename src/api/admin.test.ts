@@ -21,6 +21,7 @@ import {
   ADMIN_FORBIDDEN_EVENT,
   AdminForbiddenError,
   disableUser,
+  discardDeadLetters,
   enableUser,
   getTopUsers,
   getUsageBreakdown,
@@ -28,6 +29,9 @@ import {
   getUserUsage,
   listAdminUsers,
   listDeadLetterQueues,
+  listFailures,
+  peekDeadLetters,
+  replayDeadLetters,
 } from "./admin";
 
 describe("admin API", () => {
@@ -120,6 +124,50 @@ describe("admin API", () => {
 
     await expect(listDeadLetterQueues()).resolves.toEqual({ queues: [] });
     expect(apiFetch).toHaveBeenCalledWith("/api/admin/dead-letters", {
+      signal: undefined,
+    });
+  });
+
+  it("peeks a dead-letter queue with its name encoded", async () => {
+    apiFetch.mockResolvedValue({ messages: [] });
+
+    await peekDeadLetters("revi.quiz.generation.dlq", 20);
+    await peekDeadLetters("a/b c", 5);
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/admin/dead-letters/revi.quiz.generation.dlq/messages?limit=20", {
+      signal: undefined,
+    });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/admin/dead-letters/a%2Fb%20c/messages?limit=5", {
+      signal: undefined,
+    });
+  });
+
+  it("replays and discards with an optional limit", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await replayDeadLetters("revi.quiz.generation.dlq");
+    await replayDeadLetters("revi.quiz.generation.dlq", 3);
+    await discardDeadLetters("revi.quiz.generation.dlq");
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/admin/dead-letters/revi.quiz.generation.dlq/replay", {
+      method: "POST",
+    });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/admin/dead-letters/revi.quiz.generation.dlq/replay?limit=3", {
+      method: "POST",
+    });
+    expect(apiFetch).toHaveBeenNthCalledWith(3, "/api/admin/dead-letters/revi.quiz.generation.dlq/discard", {
+      method: "POST",
+    });
+  });
+
+  it("lists the failures, filtered by source and paged", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await listFailures({});
+    await listFailures({ source: "classroom-processing", page: 1, size: 20 });
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/admin/failures", { signal: undefined });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/admin/failures?source=classroom-processing&page=1&size=20", {
       signal: undefined,
     });
   });

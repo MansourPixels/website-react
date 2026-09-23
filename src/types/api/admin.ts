@@ -92,3 +92,46 @@ export interface DeadLetterQueue {
 export interface DeadLetterQueues {
   queues: DeadLetterQueue[];
 }
+
+/** Onde e por que a mensagem morreu da primeira vez; qualquer campo pode faltar. */
+export interface DeadLetterDeath {
+  exchange: string | null;
+  routingKey: string | null;
+  queue: string | null;
+  /** `rejected`, `expired`, `maxlen` ou `delivery_limit`, como o RabbitMQ registra. */
+  reason: string | null;
+  time: string | null;
+}
+
+/** Uma mensagem espiada numa fila morta: só o tipo e os ids do corpo, nunca o corpo inteiro. */
+export interface DeadLetterMessage {
+  typeId: string | null;
+  /** Os campos do corpo terminados em `Id` (`contentId`, `ownerId`...). */
+  ids: Record<string, string>;
+  firstDeath: DeadLetterDeath | null;
+  deathCount: number;
+}
+
+export interface DeadLetterMessages {
+  messages: DeadLetterMessage[];
+}
+
+export type FailureSource = "categorization" | "classroom-processing";
+
+export interface RecordedFailure {
+  source: FailureSource;
+  contentId: string;
+  folderId: string | null;
+  fileName: string | null;
+  contentType: string | null;
+  errorMessage: string | null;
+  failedAt: string;
+}
+
+/** Uma página de falhas registradas, mais recentes primeiro; `page` começa em 0. */
+export interface FailurePage {
+  total: number;
+  page: number;
+  size: number;
+  failures: RecordedFailure[];
+}

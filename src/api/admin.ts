@@ -1,6 +1,9 @@
 import type {
   AdminUserPage,
+  DeadLetterMessages,
   DeadLetterQueues,
+  FailurePage,
+  FailureSource,
   TopUsers,
   UsageBreakdown,
   UsageDimension,
@@ -124,6 +127,47 @@ export function enableUser(ownerId: string): Promise<void> {
 
 export function listDeadLetterQueues(signal?: AbortSignal): Promise<DeadLetterQueues> {
   return adminFetch<DeadLetterQueues>("/api/admin/dead-letters", { signal });
+}
+
+function deadLetterPath(queue: string, action: string, limit?: number): string {
+  const query = limit === undefined ? "" : `?limit=${limit}`;
+
+  return `/api/admin/dead-letters/${encodeURIComponent(queue)}/${action}${query}`;
+}
+
+/** As primeiras mensagens de uma fila morta, sem tirá-las da fila. */
+export function peekDeadLetters(queue: string, limit: number, signal?: AbortSignal): Promise<DeadLetterMessages> {
+  return adminFetch<DeadLetterMessages>(deadLetterPath(queue, "messages", limit), { signal });
+}
+
+/** Manda as mensagens de volta para a fila de trabalho que falhou; sem `limit`, até 100. */
+export function replayDeadLetters(queue: string, limit?: number): Promise<{ replayed: number }> {
+  return adminFetch<{ replayed: number }>(deadLetterPath(queue, "replay", limit), { method: "POST" });
+}
+
+/** Apaga as mensagens da fila morta; sem `limit`, até 100. Não tem volta. */
+export function discardDeadLetters(queue: string, limit?: number): Promise<{ discarded: number }> {
+  return adminFetch<{ discarded: number }>(deadLetterPath(queue, "discard", limit), { method: "POST" });
+}
+
+export interface FailureQuery {
+  /** Sem origem, as duas juntas. */
+  source?: FailureSource;
+  /** Começa em 0. */
+  page?: number;
+  size?: number;
+}
+
+export function listFailures({ source, page, size }: FailureQuery, signal?: AbortSignal): Promise<FailurePage> {
+  const params = new URLSearchParams();
+
+  if (source) params.set("source", source);
+  if (page !== undefined) params.set("page", String(page));
+  if (size !== undefined) params.set("size", String(size));
+
+  const search = params.toString();
+
+  return adminFetch<FailurePage>(`/api/admin/failures${search.length === 0 ? "" : `?${search}`}`, { signal });
 }
 
 // Exportado para os módulos das próximas telas de admin reaproveitarem.

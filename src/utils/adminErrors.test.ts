@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ApiError } from "@/api/client";
 
-import { accountActionError, adminLoadError } from "./adminErrors";
+import { accountActionError, adminLoadError, deadLetterActionError } from "./adminErrors";
 
 function apiError(status: number): ApiError {
   return new ApiError(status, "do servidor");
@@ -33,5 +33,15 @@ describe("adminLoadError", () => {
   it("uses the block's own message otherwise, never the server's English detail", () => {
     expect(adminLoadError(apiError(500), "Falhou.")).toBe("Falhou.");
     expect(adminLoadError(new TypeError("offline"), "Falhou.")).toBe("Falhou.");
+  });
+});
+
+describe("deadLetterActionError", () => {
+  it.each([
+    [404, "Esta fila não existe mais."],
+    [503, "O RabbitMQ está fora do ar. Tente de novo em instantes."],
+    [500, "Não foi possível concluir agora."],
+  ])("explains a %i", (status, message) => {
+    expect(deadLetterActionError(apiError(status))).toBe(message);
   });
 });
