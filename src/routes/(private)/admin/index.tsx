@@ -1,12 +1,11 @@
 import { Spinner } from "@heroui/react";
 import { Coins, Inbox, Scale, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
-import { AdminForbiddenError, getUsageSummary, listDeadLetterQueues } from "@/api/admin";
-import { ApiError } from "@/api/client";
+import { getUsageSummary, listDeadLetterQueues } from "@/api/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminShortcutCard } from "@/components/admin/AdminShortcutCard";
 import { ErrorState } from "@/components/ErrorState";
+import { useAdminResource } from "@/hooks/useAdminResource";
 import type { UsageSummary } from "@/types/api/admin";
 import { formatMoney } from "@/utils/adminFormat";
 import { saoPauloDay } from "@/utils/adminDates";
@@ -19,66 +18,23 @@ export function meta() {
   });
 }
 
-type Load<T> = { state: "loading" } | { state: "ready"; value: T } | { state: "error"; message: string };
-
-function messageOf(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? error.detail : fallback;
-}
-
-/**
- * Carrega um bloco da página sem depender dos outros: a falha de um cartão não
- * apaga os demais. Um `403` não vira erro aqui, porque o layout já troca a
- * página inteira por "Acesso restrito". `retry` volta ao estado de carregamento
- * e busca de novo.
- */
-function useBlock<T>(load: (signal: AbortSignal) => Promise<T>, fallback: string): [Load<T>, () => void] {
-  const [block, setBlock] = useState<Load<T>>({ state: "loading" });
-  const [attempt, setAttempt] = useState(0);
-  // O carregador é recriado a cada render; a ref deixa o efeito depender só da tentativa.
-  const loader = useRef({ load, fallback });
-
-  // Declarado antes do efeito de carga: os efeitos rodam na ordem, então a carga
-  // sempre usa o carregador do render mais recente.
-  useEffect(() => {
-    loader.current = { load, fallback };
-  });
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    loader.current
-      .load(controller.signal)
-      .then((value) => setBlock({ state: "ready", value }))
-      .catch((error) => {
-        if (controller.signal.aborted || error instanceof AdminForbiddenError) return;
-        setBlock({ state: "error", message: messageOf(error, loader.current.fallback) });
-      });
-
-    return () => controller.abort();
-  }, [attempt]);
-
-  const retry = () => {
-    setBlock({ state: "loading" });
-    setAttempt((value) => value + 1);
-  };
-
-  return [block, retry];
-}
-
 export default function AdminHomePage() {
   const today = saoPauloDay();
 
-  const [todayCost, retryToday] = useBlock(
+  const [todayCost, retryToday] = useAdminResource(
     (signal) => getUsageSummary({ from: today, to: today }, signal),
     "Não foi possível carregar o custo de hoje.",
+    today,
   );
-  const [monthCost, retryMonth] = useBlock(
+  const [monthCost, retryMonth] = useAdminResource(
     (signal) => getUsageSummary({}, signal),
     "Não foi possível carregar o custo dos últimos 30 dias.",
+    "30d",
   );
-  const [queues, retryQueues] = useBlock(
+  const [queues, retryQueues] = useAdminResource(
     (signal) => listDeadLetterQueues(signal),
     "Não foi possível consultar as filas.",
+    "queues",
   );
 
   return (

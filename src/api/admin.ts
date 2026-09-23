@@ -1,4 +1,11 @@
-import type { DeadLetterQueues, UsageSummary } from "@/types/api/admin";
+import type {
+  DeadLetterQueues,
+  TopUsers,
+  UsageBreakdown,
+  UsageDimension,
+  UsageSummary,
+  UserUsage,
+} from "@/types/api/admin";
 
 import { apiFetch, ApiError } from "./client";
 
@@ -59,6 +66,27 @@ export function getUsageSummary(
   return adminFetch<UsageSummary>(`/api/admin/usage/summary${periodQuery(period)}`, {
     signal,
   });
+}
+
+export function getUsageBreakdown(
+  period: AdminPeriod,
+  by: UsageDimension,
+  signal?: AbortSignal,
+): Promise<UsageBreakdown> {
+  return adminFetch<UsageBreakdown>(`/api/admin/usage/breakdown${periodQuery(period, { by })}`, { signal });
+}
+
+export function getTopUsers(period: AdminPeriod, limit: number, signal?: AbortSignal): Promise<TopUsers> {
+  return adminFetch<TopUsers>(`/api/admin/usage/top-users${periodQuery(period, { limit: String(limit) })}`, {
+    signal,
+  });
+}
+
+export function getUserUsage(ownerId: string, period: AdminPeriod, signal?: AbortSignal): Promise<UserUsage> {
+  return adminFetch<UserUsage>(
+    `/api/admin/usage/users/${encodeURIComponent(ownerId)}${periodQuery(period)}`,
+    { signal },
+  );
 }
 
 export function listDeadLetterQueues(signal?: AbortSignal): Promise<DeadLetterQueues> {

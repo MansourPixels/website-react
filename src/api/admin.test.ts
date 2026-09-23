@@ -20,7 +20,10 @@ vi.mock("./client", () => ({ apiFetch, ApiError }));
 import {
   ADMIN_FORBIDDEN_EVENT,
   AdminForbiddenError,
+  getTopUsers,
+  getUsageBreakdown,
   getUsageSummary,
+  getUserUsage,
   listDeadLetterQueues,
 } from "./admin";
 
@@ -48,6 +51,36 @@ describe("admin API", () => {
     expect(apiFetch).toHaveBeenCalledWith(
       "/api/admin/usage/summary?from=2026-09-01&to=2026-09-30",
       { signal },
+    );
+  });
+
+  it("asks for a breakdown with its dimension", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await getUsageBreakdown({ from: "2026-09-01", to: "2026-09-07" }, "day");
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/admin/usage/breakdown?from=2026-09-01&to=2026-09-07&by=day",
+      { signal: undefined },
+    );
+  });
+
+  it("asks for the top users with a limit", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await getTopUsers({}, 20);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/admin/usage/top-users?limit=20", { signal: undefined });
+  });
+
+  it("asks for one user's usage with the id encoded", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await getUserUsage("a/b", { from: "2026-09-01", to: "2026-09-30" });
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/admin/usage/users/a%2Fb?from=2026-09-01&to=2026-09-30",
+      { signal: undefined },
     );
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatCount, formatMoney } from "./adminFormat";
+import { countOf, formatCount, formatMoney } from "./adminFormat";
 
 // O Intl põe um espaço não separável entre o símbolo e o número.
 const normalize = (text: string) => text.replace(/\s/g, " ");
@@ -27,5 +27,13 @@ describe("formatCount", () => {
   it("groups thousands the Brazilian way", () => {
     expect(formatCount(20113455)).toBe("20.113.455");
     expect(formatCount(Number.NaN)).toBe("0");
+  });
+});
+
+describe("countOf", () => {
+  it("agrees the noun with the number", () => {
+    expect(countOf(1, "chamada", "chamadas")).toBe("1 chamada");
+    expect(countOf(0, "chamada", "chamadas")).toBe("0 chamadas");
+    expect(countOf(1200, "chamada", "chamadas")).toBe("1.200 chamadas");
   });
 });

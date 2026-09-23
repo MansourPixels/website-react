@@ -41,3 +41,8 @@ const INTEGER = new Intl.NumberFormat("pt-BR");
 export function formatCount(value: number): string {
   return INTEGER.format(Number.isFinite(value) ? value : 0);
 }
+
+/** "1 chamada", "2 chamadas": a contagem formatada com o substantivo no número certo. */
+export function countOf(value: number, singular: string, plural: string): string {
+  return `${formatCount(value)} ${value === 1 ? singular : plural}`;
+}

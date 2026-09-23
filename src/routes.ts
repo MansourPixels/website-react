@@ -46,6 +46,10 @@ export default [
     layout("routes/(private)/admin/layout.tsx", [
       route("admin", "routes/(private)/admin/index.tsx"),
       route("admin/custos", "routes/(private)/admin/custos/index.tsx"),
+      route(
+        "admin/custos/usuarios/:ownerId",
+        "routes/(private)/admin/custos/usuarios/$ownerId/index.tsx",
+      ),
       route("admin/usuarios", "routes/(private)/admin/usuarios/index.tsx"),
       route("admin/filas", "routes/(private)/admin/filas/index.tsx"),
       route("admin/cotas", "routes/(private)/admin/cotas/index.tsx"),
