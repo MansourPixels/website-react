@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import type { DeadLetterMessage } from "@/types/api/admin";
 import { saoPauloMoment } from "@/utils/adminDates";
 import { countOf } from "@/utils/adminFormat";
@@ -32,9 +34,20 @@ export function DeadLetterMessageList({ messages }: { messages: DeadLetterMessag
                 {ids.map(([field, value]) => (
                   <div key={field} className="flex items-center gap-2">
                     <dt className="w-20 shrink-0 text-xs text-muted">{idLabel(field)}</dt>
-                    <dd className="min-w-0 flex-1 truncate font-mono text-xs" title={value}>
-                      {value}
-                    </dd>
+                    {field === "ownerId" && message.ownerUsername !== null ? (
+                      <dd className="min-w-0 flex-1 truncate text-xs" title={value}>
+                        <Link
+                          to={`/admin/custos/usuarios/${value}`}
+                          className="font-medium underline-offset-2 hover:underline"
+                        >
+                          {message.ownerUsername}
+                        </Link>
+                      </dd>
+                    ) : (
+                      <dd className="min-w-0 flex-1 truncate font-mono text-xs" title={value}>
+                        {value}
+                      </dd>
+                    )}
                     <CopyIdButton value={value} label={`id de ${idLabel(field).toLowerCase()}`} />
                   </div>
                 ))}

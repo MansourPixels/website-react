@@ -108,6 +108,8 @@ export interface DeadLetterMessage {
   typeId: string | null;
   /** Os campos do corpo terminados em `Id` (`contentId`, `ownerId`...). */
   ids: Record<string, string>;
+  /** O nome de usuário do dono (`ids.ownerId`); `null` sem dono ou quando o diretório não o conhece. */
+  ownerUsername: string | null;
   firstDeath: DeadLetterDeath | null;
   deathCount: number;
 }
