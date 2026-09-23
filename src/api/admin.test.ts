@@ -20,10 +20,13 @@ vi.mock("./client", () => ({ apiFetch, ApiError }));
 import {
   ADMIN_FORBIDDEN_EVENT,
   AdminForbiddenError,
+  disableUser,
+  enableUser,
   getTopUsers,
   getUsageBreakdown,
   getUsageSummary,
   getUserUsage,
+  listAdminUsers,
   listDeadLetterQueues,
 } from "./admin";
 
@@ -82,6 +85,34 @@ describe("admin API", () => {
       "/api/admin/usage/users/a%2Fb?from=2026-09-01&to=2026-09-30",
       { signal: undefined },
     );
+  });
+
+  it("lists every user when there is no search", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await listAdminUsers({});
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/admin/users", { signal: undefined });
+  });
+
+  it("sends the search encoded, the page and the size", async () => {
+    apiFetch.mockResolvedValue({});
+
+    await listAdminUsers({ query: "ana+lu@x", page: 2, size: 20 });
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/admin/users?query=ana%2Blu%40x&page=2&size=20", {
+      signal: undefined,
+    });
+  });
+
+  it("disables and enables a user with a POST", async () => {
+    apiFetch.mockResolvedValue(undefined);
+
+    await disableUser("a/b");
+    await enableUser("u1");
+
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/admin/users/a%2Fb/disable", { method: "POST" });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/admin/users/u1/enable", { method: "POST" });
   });
 
   it("lists the dead-letter queues", async () => {

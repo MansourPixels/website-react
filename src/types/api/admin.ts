@@ -64,6 +64,25 @@ export interface UserUsage {
   byFeature: UsageGroup[];
 }
 
+/** Uma conta do diretório de usuários, com o estado no Keycloak e o uso dos últimos 30 dias. */
+export interface AdminUser {
+  ownerId: string;
+  username: string;
+  email: string | null;
+  enabled: boolean;
+  costUsd30d: number;
+  calls30d: number;
+}
+
+/** Uma página da busca de usuários; `page` começa em 0. */
+export interface AdminUserPage {
+  total: number;
+  page: number;
+  size: number;
+  users: AdminUser[];
+  usdBrlRate: number;
+}
+
 export interface DeadLetterQueue {
   name: string;
   workQueue: string;

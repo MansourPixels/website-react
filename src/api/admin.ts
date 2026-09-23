@@ -1,4 +1,5 @@
 import type {
+  AdminUserPage,
   DeadLetterQueues,
   TopUsers,
   UsageBreakdown,
@@ -87,6 +88,38 @@ export function getUserUsage(ownerId: string, period: AdminPeriod, signal?: Abor
     `/api/admin/usage/users/${encodeURIComponent(ownerId)}${periodQuery(period)}`,
     { signal },
   );
+}
+
+export interface AdminUserQuery {
+  /** Começo do nome de usuário ou do e-mail; vazio lista todos. */
+  query?: string;
+  /** Começa em 0. */
+  page?: number;
+  size?: number;
+}
+
+export function listAdminUsers(
+  { query, page, size }: AdminUserQuery,
+  signal?: AbortSignal,
+): Promise<AdminUserPage> {
+  const params = new URLSearchParams();
+
+  if (query) params.set("query", query);
+  if (page !== undefined) params.set("page", String(page));
+  if (size !== undefined) params.set("size", String(size));
+
+  const search = params.toString();
+
+  return adminFetch<AdminUserPage>(`/api/admin/users${search.length === 0 ? "" : `?${search}`}`, { signal });
+}
+
+/** Desativa a conta e encerra as sessões dela. `409` para a própria conta. */
+export function disableUser(ownerId: string): Promise<void> {
+  return adminFetch<void>(`/api/admin/users/${encodeURIComponent(ownerId)}/disable`, { method: "POST" });
+}
+
+export function enableUser(ownerId: string): Promise<void> {
+  return adminFetch<void>(`/api/admin/users/${encodeURIComponent(ownerId)}/enable`, { method: "POST" });
 }
 
 export function listDeadLetterQueues(signal?: AbortSignal): Promise<DeadLetterQueues> {

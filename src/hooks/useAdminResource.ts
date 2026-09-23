@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminForbiddenError } from "@/api/admin";
-import { ApiError } from "@/api/client";
+import { adminLoadError } from "@/utils/adminErrors";
 
 export type AdminResource<T> =
   | { state: "loading" }
@@ -12,13 +12,14 @@ export type AdminResource<T> =
  * Um bloco de uma tela de admin que carrega sozinho: a falha de um não apaga os
  * outros. Busca de novo quando `key` muda (o período, por exemplo) e cancela a
  * busca anterior. Um `403` não vira erro aqui, porque o layout já troca a página
- * por "Acesso restrito". `retry` volta a carregar.
+ * por "Acesso restrito". `retry` volta a carregar; `update` troca o valor já
+ * carregado (uma atualização otimista) e não faz nada fora do estado pronto.
  */
 export function useAdminResource<T>(
   load: (signal: AbortSignal) => Promise<T>,
   fallback: string,
   key: string,
-): [AdminResource<T>, () => void] {
+): [AdminResource<T>, () => void, (change: (value: T) => T) => void] {
   const [resource, setResource] = useState<AdminResource<T>>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [loadedKey, setLoadedKey] = useState(key);
@@ -44,10 +45,7 @@ export function useAdminResource<T>(
       .then((value) => setResource({ state: "ready", value }))
       .catch((error) => {
         if (controller.signal.aborted || error instanceof AdminForbiddenError) return;
-        setResource({
-          state: "error",
-          message: error instanceof ApiError ? error.detail : loader.current.fallback,
-        });
+        setResource({ state: "error", message: adminLoadError(error, loader.current.fallback) });
       });
 
     return () => controller.abort();
@@ -58,5 +56,9 @@ export function useAdminResource<T>(
     setAttempt((value) => value + 1);
   };
 
-  return [resource, retry];
+  const update = (change: (value: T) => T) => {
+    setResource((current) => (current.state === "ready" ? { state: "ready", value: change(current.value) } : current));
+  };
+
+  return [resource, retry, update];
 }
