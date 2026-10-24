@@ -1,5 +1,4 @@
 import { Gift } from "lucide-react";
-import { Link } from "react-router";
 
 const actionClassName =
   "shrink-0 rounded-full bg-accent-foreground px-3 py-1 text-xs font-semibold text-accent outline-offset-2 outline-accent-foreground focus-visible:outline-2 cursor-pointer hover:bg-accent-foreground/90 active:bg-accent-foreground/80 disabled:cursor-not-allowed disabled:opacity-50";
@@ -10,7 +9,7 @@ export function RaffleBanner({
   isParticipating,
   onParticipate,
 }: {
-  /** Quem já tem sessão vai para a tela do sorteio em vez de abrir o cadastro. */
+  /** Quem já entrou no sorteio vê o aviso em vez do botão que abre o cadastro. */
   isParticipating: boolean;
   onParticipate: () => void;
 }) {
@@ -27,9 +26,7 @@ export function RaffleBanner({
         </span>
       </p>
       {isParticipating ? (
-        <Link to="/sorteio" className={actionClassName}>
-          Ver participação
-        </Link>
+        <span className="shrink-0 text-xs font-semibold">Você está participando</span>
       ) : (
         <button
           type="button"

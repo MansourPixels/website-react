@@ -27,7 +27,9 @@ import { decodeAccessTokenClaims } from "@/utils/jwt";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
-export type AuthResult = { ok: true } | { ok: false; error: string };
+export type AuthResult =
+  | { ok: true }
+  | { ok: false; error: string; status?: number };
 
 const GENERIC_NETWORK_ERROR = "Não foi possível conectar. Tente novamente.";
 
@@ -151,7 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return { ok: true };
       } catch (error) {
-        if (error instanceof ApiError) return { ok: false, error: error.detail };
+        if (error instanceof ApiError) {
+          return { ok: false, error: error.detail, status: error.status };
+        }
 
         return { ok: false, error: GENERIC_NETWORK_ERROR };
       }
@@ -170,7 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return { ok: true };
       } catch (error) {
-        if (error instanceof ApiError) return { ok: false, error: error.detail };
+        if (error instanceof ApiError) {
+          return { ok: false, error: error.detail, status: error.status };
+        }
 
         return { ok: false, error: GENERIC_NETWORK_ERROR };
       }

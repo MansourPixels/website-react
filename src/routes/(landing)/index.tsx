@@ -30,13 +30,13 @@ export default function LandingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sorteioRequested = searchParams.get("sorteio") === "true";
-  // O modal de sorteio cria a conta ali mesmo, então só abre sozinho para quem
-  // ainda não tem sessão.
   const [sorteioOpen, setSorteioOpen] = useState(false);
   // Depois que o modal abre uma vez, a landing para de redirecionar sozinha:
   // quem cria a conta e fecha no X continua aqui, e só o botão "Começar a usar
   // o Revi" leva ao app (e dali ao onboarding).
   const [sorteioStarted, setSorteioStarted] = useState(false);
+  // Vira true quando o modal confirma a participação (nova ou já existente).
+  const [participating, setParticipating] = useState(false);
 
   function openSorteio() {
     setSorteioOpen(true);
@@ -44,19 +44,19 @@ export default function LandingPage() {
   }
 
   useEffect(() => {
-    if (!sorteioRequested || status !== "unauthenticated") return;
+    // Com o QR do sorteio, o modal abre para quem não tem sessão (cadastro ou
+    // login) e para quem já tem (só Instagram e aceite).
+    if (!sorteioRequested || status === "loading") return;
 
     setSorteioOpen(true);
     setSorteioStarted(true);
   }, [sorteioRequested, status]);
 
   useEffect(() => {
-    if (status !== "authenticated" || sorteioStarted) return;
+    // Com o QR do sorteio, quem já tem sessão fica para ver o modal.
+    if (status !== "authenticated" || sorteioStarted || sorteioRequested) return;
 
-    // Quem já tem conta e chega pelo QR do sorteio vai direto à tela do evento.
-    navigate(sorteioRequested ? "/sorteio" : resolveNextRoute(null), {
-      replace: true,
-    });
+    navigate(resolveNextRoute(null), { replace: true });
   }, [status, navigate, sorteioRequested, sorteioStarted]);
 
   function closeSorteio() {
@@ -91,7 +91,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-1 flex-col">
       <RaffleBanner
-        isParticipating={status === "authenticated"}
+        isParticipating={participating}
         onParticipate={openSorteio}
       />
       <LandingNav />
@@ -114,6 +114,7 @@ export default function LandingPage() {
           if (!open) closeSorteio();
         }}
         onFinish={() => navigate(resolveNextRoute(null), { replace: true })}
+        onJoined={() => setParticipating(true)}
       />
     </div>
   );
