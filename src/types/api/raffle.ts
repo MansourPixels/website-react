@@ -10,6 +10,8 @@ export interface RaffleEntry {
   displayName: string;
   /** Nulo quando a conta não tem e-mail verificado. */
   email: string | null;
+  /** Sem o "@" inicial. Nulo para quem entrou sem informar. */
+  instagram: string | null;
   registeredAt: string;
   drawn: boolean;
   drawnAt: string | null;

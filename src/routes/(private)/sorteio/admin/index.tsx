@@ -158,6 +158,11 @@ export default function SorteioAdminPage() {
                 <p className="text-sm break-all">
                   {winner.email ?? "Sem e-mail verificado"}
                 </p>
+                {/* Para quem acabou de criar a conta, o e-mail ainda não está
+                    verificado: o Instagram é o canal para avisar o sorteado. */}
+                {winner.instagram !== null && (
+                  <p className="text-sm break-all">@{winner.instagram}</p>
+                )}
               </div>
             )}
 
@@ -173,6 +178,7 @@ export default function SorteioAdminPage() {
                     </span>
                     <span className="text-muted truncate text-xs">
                       {entry.email ?? "Sem e-mail verificado"}
+                      {entry.instagram !== null && ` · @${entry.instagram}`}
                     </span>
                   </div>
                   {entry.drawn && (
