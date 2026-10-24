@@ -95,6 +95,13 @@ export default [
       "turmas/:turmaId/pastas/:pastaId",
       "routes/(private)/turmas/$turmaId/pastas/$pastaId/index.tsx",
     ),
+    // Sem link em nenhum menu: o endereço só chega por QR code no evento. Ficam
+    // dentro de (private) de propósito, porque o objetivo do sorteio é gerar
+    // contas: quem abre sem sessão cai no login/cadastro e volta para cá
+    // (parâmetro `proximo`, preservado também pelo onboarding). O acesso à
+    // tela de organização é decidido pelo servidor (role `sorteio`).
+    route("sorteio", "routes/(private)/sorteio/index.tsx"),
+    route("sorteio/admin", "routes/(private)/sorteio/admin/index.tsx"),
     route("tarefas", "routes/(private)/tarefas/index.tsx"),
     route("turmas/:turmaId/pastas/:pastaId/resumo", "routes/(private)/turmas/$turmaId/pastas/$pastaId/resumo/index.tsx"),
     route("turmas/:turmaId/pastas/:pastaId/flash-cards", "routes/(private)/turmas/$turmaId/pastas/$pastaId/flash-cards/index.tsx"),
