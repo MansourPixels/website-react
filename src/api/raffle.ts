@@ -12,12 +12,13 @@ export function getRaffleStatus(signal?: AbortSignal): Promise<RaffleStatus> {
 
 /**
  * Entra no sorteio. Nome e e-mail não viajam: o servidor os lê do token. É
- * idempotente — quem já entrou recebe `200` com a mesma resposta.
+ * idempotente — quem já entrou recebe `200` com a mesma resposta. Quando a
+ * pessoa informa o Instagram (fluxo de cadastro pela landing), ele segue junto.
  */
-export function registerForRaffle(): Promise<RaffleStatus> {
+export function registerForRaffle(instagram?: string): Promise<RaffleStatus> {
   return apiFetch<RaffleStatus>("/api/raffle/registrations", {
     method: "POST",
-    body: { consent: true },
+    body: instagram ? { consent: true, instagram } : { consent: true },
   });
 }
 

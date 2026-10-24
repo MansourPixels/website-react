@@ -45,6 +45,15 @@ describe("raffle API", () => {
     });
   });
 
+  it("sends the Instagram handle along with the consent when provided", async () => {
+    apiFetch.mockResolvedValue({ registered: true, registeredAt: "x" });
+    await registerForRaffle("revi.app");
+    expect(apiFetch).toHaveBeenCalledWith("/api/raffle/registrations", {
+      method: "POST",
+      body: { consent: true, instagram: "revi.app" },
+    });
+  });
+
   it("probes the admin role: success is yes, 403 is no", async () => {
     apiFetch.mockResolvedValueOnce(undefined);
     await expect(probeRaffleAdmin()).resolves.toBe(true);

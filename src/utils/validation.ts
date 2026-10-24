@@ -27,6 +27,26 @@ export function getUsernameError(username: string): string | null {
   return null;
 }
 
+// Instagram: 1–30 caracteres, letras, números, ponto ou underline — as mesmas
+// regras de um @ real. O arroba inicial é opcional e removido antes de validar.
+const instagramPattern = /^[a-zA-Z0-9._]{1,30}$/;
+
+export function normalizeInstagram(handle: string) {
+  return handle.trim().replace(/^@+/, "");
+}
+
+export function isValidInstagram(handle: string) {
+  return instagramPattern.test(normalizeInstagram(handle));
+}
+
+export function getInstagramError(handle: string): string | null {
+  if (normalizeInstagram(handle) === "") return "Informe seu Instagram.";
+  if (!isValidInstagram(handle)) {
+    return "Use até 30 letras, números, ponto ou _ (sem espaços).";
+  }
+  return null;
+}
+
 export function getPasswordError(password: string): string | null {
   if (password === "") return "Informe sua senha.";
   if (password.length < MIN_PASSWORD_LENGTH) {

@@ -96,7 +96,8 @@ export default function SorteioAdminPage() {
 
   if (access === "denied") return <NotFoundPage />;
 
-  const entryUrl = `${window.location.origin}/sorteio`;
+  // Leva para a landing, que abre o modal de cadastro do sorteio pelo parâmetro.
+  const entryUrl = `${window.location.origin}/?sorteio=true`;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
