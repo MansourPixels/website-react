@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router typegen && tsc -b && react-router build",
-    "postbuild": "rm -rf build/server",
+    "postbuild": "node -e \"require('fs').rmSync('build/server', { recursive: true, force: true })\"",
+    "preview": "vite preview --outDir build/client --host 127.0.0.1 --port 4173",
     "lint": "oxlint",
     "test": "vitest run",
     "start": "react-router-serve ./build/server/index.js",

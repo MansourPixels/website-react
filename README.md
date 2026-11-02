@@ -47,15 +47,19 @@ npm install
 
 ## Configuração
 
-Copie o arquivo de exemplo e ajuste os valores conforme seu ambiente:
+Copie o arquivo de exemplo:
 
 ```bash
 cp .env.example .env
 ```
 
+O exemplo já aponta para a API publicada (`https://backend-revi.gioiainvestimentos.cloud`),
+então basta copiá-lo para o app funcionar sem subir o back-end. As demais variáveis são
+opcionais.
+
 | Variável                 | Obrigatória | Descrição                                                                                                                                                                                                                                                                                    |
 | ------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE_URL`      | Sim         | URL base da API `revi-back`: `http://localhost:8080` com o back-end local ou a URL da API publicada                                                                                                                                                                                         |
+| `VITE_API_BASE_URL`      | Sim         | URL base da API `revi-back`: `https://backend-revi.gioiainvestimentos.cloud` (API publicada, valor do exemplo) ou `http://localhost:8080` com o back-end local                                                                                                                              |
 | `VITE_SPOTIFY_CLIENT_ID` | Não         | Client ID de um app no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), usado no fluxo opcional de tocar música durante o estudo (Authorization Code + PKCE). Sem essa variável, a integração com Spotify fica desabilitada e o restante do app funciona normalmente. |
 | `VITE_GOOGLE_CLIENT_ID`  | Não         | Cliente OAuth do Google Cloud Console, usado para conectar Drive e Agenda. Detalhes em [`GOOGLE.md`](GOOGLE.md).                                                                                                                                                                              |
 | `VITE_GOOGLE_API_KEY`    | Não         | Chave de API restrita à Picker API. Sem ela (e sem `VITE_GOOGLE_APP_ID`), a importação do Drive não aparece.                                                                                                                                                                                 |
@@ -76,8 +80,8 @@ Build de produção:
 npm run build
 ```
 
-Servir o build de produção localmente (mesmo comportamento do hosting estático final,
-incluindo fallback de rota para as URLs dinâmicas):
+Servir o build de produção localmente em `http://127.0.0.1:4173` (mesmo comportamento do
+hosting estático final, incluindo fallback de rota para as URLs dinâmicas):
 
 ```bash
 npm run preview
@@ -95,8 +99,9 @@ npm run lint
 O front-end depende da API [`revi-back`](https://github.com/MansourPixels/revi-back) para
 login, cadastro e todas as telas internas. Há duas formas de usá-la:
 
-- **API publicada:** aponte `VITE_API_BASE_URL` para a URL da API em produção (a mesma usada
-  pelo deploy na Vercel). Nada precisa rodar localmente além do `npm run dev`.
+- **API publicada:** `VITE_API_BASE_URL=https://backend-revi.gioiainvestimentos.cloud`, valor
+  que já vem no `.env.example` (é a mesma API usada pelo deploy na Vercel). Nada precisa rodar
+  localmente além do `npm run dev`.
 - **API local:** siga os passos abaixo. A referência dos endpoints está em
   [`docs/API.md`](docs/API.md) e a coleção do Postman em `docs/postman/`.
 
