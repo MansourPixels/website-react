@@ -175,7 +175,14 @@ código gerado foi revisado e ajustado pela equipe; a lista completa está em [`
 
 ## Usuários e senhas necessários para teste
 
-**No deploy da Vercel**, o cadastro é self-service: crie sua conta em
+**No deploy da Vercel** (e localmente com a API publicada), use a conta de demonstração em
+[`/auth/entrar`](https://revi-jovi.vercel.app/auth/entrar):
+
+| E-mail                     | Senha       |
+| -------------------------- | ----------- |
+| `erick.capito@hotmail.com` | `Teste@123` |
+
+Também é possível criar uma conta própria em
 [`/auth/cadastro`](https://revi-jovi.vercel.app/auth/cadastro) informando nome de usuário,
 e-mail e senha (mínimo de 8 caracteres). O cadastro já efetua login e leva ao onboarding.
 Para acessar novamente depois, use [`/auth/entrar`](https://revi-jovi.vercel.app/auth/entrar)
